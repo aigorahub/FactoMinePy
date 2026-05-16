@@ -78,3 +78,13 @@ def r_catdes_tea() -> dict:
 @pytest.fixture(scope="session")
 def r_condes_decathlon() -> dict:
     return _load_r_fixture("condes", "decathlon_Points")
+
+
+@pytest.fixture(scope="session")
+def r_condes_tea_age() -> dict:
+    return _load_r_fixture("condes", "tea_age")
+
+
+@pytest.fixture(scope="session")
+def r_dimdesc_pca_decathlon_proba50() -> dict:
+    return _load_r_fixture("dimdesc", "pca_decathlon_proba50")

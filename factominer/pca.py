@@ -216,6 +216,12 @@ def PCA(  # noqa: N802 — mirrors R's function name
         if quali_sup_idx
         else None
     )
+    quanti_sup_frame = (
+        X.iloc[active_rows, quanti_sup_idx].copy()
+        if quanti_sup_idx
+        else None
+    )
+    active_frame = X.iloc[active_rows, active_cols].copy()
     return Result(
         eig=eig_df,
         svd=SVD(vs=vs.copy(), U=U_tilde.copy(), V=V_tilde.copy()),
@@ -233,6 +239,8 @@ def PCA(  # noqa: N802 — mirrors R's function name
             "active_row_labels": active_row_labels,
             "active_col_labels": active_col_labels,
             "quali_sup_frame": quali_sup_frame,
+            "quanti_sup_frame": quanti_sup_frame,
+            "active_frame": active_frame,
         },
         ind=ind_block,
         var=var_block,

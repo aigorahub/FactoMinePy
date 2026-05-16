@@ -69,10 +69,18 @@ jobs:
           mkdir -p artifacts
           git --no-pager diff tests/fixtures/r_outputs/ > artifacts/r_fixture_drift.diff || true
           wc -l artifacts/r_fixture_drift.diff || true
+          tar -czf artifacts/r_outputs_fresh.tar.gz -C tests/fixtures r_outputs || true
       - name: Upload fixture drift diff
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: r-fixture-drift
           path: artifacts/r_fixture_drift.diff
+          if-no-files-found: ignore
+      - name: Upload regenerated fixtures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r-outputs-fresh
+          path: artifacts/r_outputs_fresh.tar.gz
           if-no-files-found: ignore
