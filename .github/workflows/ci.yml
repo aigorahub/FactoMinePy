@@ -66,4 +66,13 @@ jobs:
         if: always()
         run: |
           git --no-pager diff --stat tests/fixtures/r_outputs/ || true
-          git --no-pager diff tests/fixtures/r_outputs/ | head -200 || true
+          mkdir -p artifacts
+          git --no-pager diff tests/fixtures/r_outputs/ > artifacts/r_fixture_drift.diff || true
+          wc -l artifacts/r_fixture_drift.diff || true
+      - name: Upload fixture drift diff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r-fixture-drift
+          path: artifacts/r_fixture_drift.diff
+          if-no-files-found: ignore
