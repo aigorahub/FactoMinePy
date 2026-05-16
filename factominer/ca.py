@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import pandas as pd
 
-from ._result import Block, Result, SVD
+from ._result import SVD, Block, Result
 from ._scaling import row_indices
 from ._svd import standard_svd
 

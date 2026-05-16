@@ -47,8 +47,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/aigorahub/factominePy"
-Issues = "https://github.com/aigorahub/factominePy/issues"
+Homepage = "https://github.com/aigorahub/FactoMinePy"
+Issues = "https://github.com/aigorahub/FactoMinePy/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["factominer"]

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-from itertools import combinations
 
 from factominer import HCPC, PCA
 from factominer.datasets import load_decathlon

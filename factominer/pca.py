@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import pandas as pd
 
-from ._result import Block, Result, SVD
-from ._scaling import center_scale, column_indices, coerce_numeric, row_indices
+from ._result import SVD, Block, Result
+from ._scaling import center_scale, coerce_numeric, column_indices, row_indices
 from ._svd import standard_svd
 
 
@@ -193,7 +191,6 @@ def PCA(  # noqa: N802 — mirrors R's function name
                 # v-test: standardized barycenter on each axis
                 p = w.size / n_active
                 if 0 < p < 1:
-                    factor = np.sqrt((n_active - 1) / (n_active * (1 - p) / p))
                     # FactoMineR uses sqrt((nA*(N-1))/(N - nA)) for the multiplier
                     nA = w.size
                     multiplier = np.sqrt((nA * (n_active - 1)) / (n_active - nA)) if (n_active - nA) > 0 else 0.0

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from factominer import CA
 from factominer._sign import align_to_reference

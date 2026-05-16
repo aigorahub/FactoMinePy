@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import pandas as pd
 
-from ._result import Block, Result, SVD
+from ._result import Block, Result
 from ._scaling import column_indices, row_indices
-from ._svd import standard_svd
 from .ca import CA
 
 
@@ -107,7 +104,7 @@ def MCA(  # noqa: N802 — mirrors R
     eta2 = np.zeros((q_vars, var_block_coord.shape[1]))
     var_names = list(X_active.columns)
     offset = 0
-    for vi, var_name in enumerate(var_names):
+    for vi in range(len(var_names)):
         ncat = cat_counts_per_var[vi]
         slice_coords = var_block_coord.iloc[offset:offset + ncat].to_numpy()
         slice_counts = cat_counts[offset:offset + ncat]

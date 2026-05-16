@@ -11,12 +11,12 @@ For now only the matplotlib backend is available; the plotly stubs raise
 
 from .matplotlib_backend import (
     plot,
-    plot_pca_biplot,
-    plot_pca_ind,
-    plot_pca_var,
     plot_ca,
     plot_hcpc,
     plot_mca,
+    plot_pca_biplot,
+    plot_pca_ind,
+    plot_pca_var,
     plot_scree,
 )
 
