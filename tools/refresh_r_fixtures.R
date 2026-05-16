@@ -108,14 +108,20 @@ cat("[fixtures] mca/tea.json\n")
 
 # ---- HCPC on PCA(decathlon) -----------------------------------------------
 res_hcpc <- HCPC(res_pca_plain, nb.clust = 4, consol = TRUE, graph = FALSE)
-write_json(
-  list(
-    clust = as.character(res_hcpc$data.clust$clust),
-    data_clust_index = rownames(res_hcpc$data.clust),
-    nb_clust = 4L
-  ),
-  file.path(out_dir("hcpc"), "decathlon_plain_k4.json")
+hcpc_desc_var <- res_hcpc$desc.var
+hcpc_payload <- list(
+  clust = as.character(res_hcpc$data.clust$clust),
+  data_clust_index = rownames(res_hcpc$data.clust),
+  data_clust_columns = colnames(res_hcpc$data.clust),
+  nb_clust = 4L,
+  desc.var = list(
+    test.chi2  = if (!is.null(hcpc_desc_var$test.chi2)) as.data.frame(hcpc_desc_var$test.chi2) else NULL,
+    category   = if (!is.null(hcpc_desc_var$category))  lapply(hcpc_desc_var$category, as.data.frame) else NULL,
+    quanti.var = if (!is.null(hcpc_desc_var$quanti.var)) as.data.frame(hcpc_desc_var$quanti.var) else NULL,
+    quanti     = if (!is.null(hcpc_desc_var$quanti))     lapply(hcpc_desc_var$quanti, as.data.frame) else NULL
+  )
 )
+write_json(hcpc_payload, file.path(out_dir("hcpc"), "decathlon_plain_k4.json"))
 cat("[fixtures] hcpc/decathlon_plain_k4.json\n")
 
 # ---- dimdesc / catdes / condes -------------------------------------------

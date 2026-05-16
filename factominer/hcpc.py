@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -11,6 +12,8 @@ from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import pdist
 
 from ._result import Result
+from .desc.catdes import catdes
+from .desc.condes import condes
 
 
 @dataclass(frozen=True)
@@ -68,16 +71,43 @@ def HCPC(  # noqa: N802 — mirrors R
     if consol:
         clusters = _kmeans_consolidate(coord.to_numpy(), clusters, iter_max=iter_max, random_state=random_state)
 
-    # Build data.clust frame: coordinates + cluster column
-    data_clust = coord.copy()
-    data_clust["clust"] = pd.Categorical(clusters, categories=sorted(set(clusters)))
+    # Build data.clust frame. R's HCPC: when the input is a PCA/MCA/CA/etc
+    # result, data.clust = original X (from res$call$X) + clust column. When
+    # the input is a raw data.frame, data.clust = X + clust.
+    raw_X = _raw_frame(res)
+    cluster_categorical = pd.Categorical(
+        clusters.astype(int), categories=sorted(set(int(c) for c in clusters))
+    )
+    if raw_X is not None:
+        data_clust = raw_X.copy()
+        data_clust = data_clust.loc[coord.index]  # align row order to coord
+        data_clust["clust"] = cluster_categorical
+    else:
+        # Fallback: use coordinates if we have no raw frame.
+        data_clust = coord.copy()
+        data_clust["clust"] = cluster_categorical
 
-    desc_axes = _describe_axes(coord, clusters)
+    # desc.var: catdes on data.clust with clust as the target. We pass the
+    # full frame so the categorical and quantitative variables are described
+    # the way R FactoMineR does it.
+    try:
+        desc_var = catdes(data_clust, num_var="clust")
+    except (KeyError, ValueError):
+        desc_var = {}
+
+    # desc.axes: condes on each axis described by the cluster column.
+    desc_axes: dict[str, Any] = {}
+    axes_frame = coord.copy()
+    axes_frame["clust"] = cluster_categorical
+    for axis_name in coord.columns:
+        with contextlib.suppress(KeyError, ValueError):
+            desc_axes[str(axis_name)] = condes(axes_frame, num_var=str(axis_name))
+
     desc_ind = _describe_individuals(coord, clusters)
 
     return HCPCResult(
         data_clust=data_clust,
-        desc_var={},  # populated by callers that pass the raw data
+        desc_var=desc_var,
         desc_axes=desc_axes,
         desc_ind=desc_ind,
         call={
@@ -90,6 +120,18 @@ def HCPC(  # noqa: N802 — mirrors R
             "n": n,
         },
     )
+
+
+def _raw_frame(res: Result) -> pd.DataFrame | None:
+    """Recover the input data frame stashed in res.call. PCA / MCA / CA all put
+    the original active frame under ``call["active_frame"]``."""
+    if not isinstance(res.call, dict):
+        return None
+    for key in ("active_frame", "X"):
+        frame = res.call.get(key)
+        if isinstance(frame, pd.DataFrame):
+            return frame
+    return None
 
 
 def _individuals_coord(res: Result) -> pd.DataFrame:
@@ -152,24 +194,6 @@ def _kmeans_consolidate(
                 # Re-seed an empty cluster with a random point.
                 centroids[ci] = X[rng.integers(0, X.shape[0])]
     return labels
-
-
-def _describe_axes(coord: pd.DataFrame, clusters: np.ndarray) -> dict[str, Any]:
-    """v-test of each axis vs each cluster (means standardized under H0)."""
-    n = coord.shape[0]
-    out: dict[str, Any] = {}
-    for c in sorted(np.unique(clusters)):
-        mask = clusters == c
-        nA = int(mask.sum())
-        if nA == 0 or nA == n:
-            continue
-        mean_A = coord.loc[mask].mean()
-        mean_all = coord.mean()
-        var_all = coord.var(ddof=1)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            v = (mean_A - mean_all) / np.sqrt(var_all * (n - nA) / (nA * (n - 1)))
-        out[str(c)] = pd.DataFrame({"v.test": v, "Mean.in.category": mean_A, "Overall.mean": mean_all})
-    return out
 
 
 def _describe_individuals(coord: pd.DataFrame, clusters: np.ndarray) -> dict[str, Any]:
