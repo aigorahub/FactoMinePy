@@ -18,7 +18,9 @@ def test_pca_runs():
     df = load_decathlon()
     res = PCA(df, ncp=5, quanti_sup=["Rank", "Points"], quali_sup=["Competition"])
     assert res.method == "PCA"
-    assert res.eig.shape[0] == 5
+    # R FactoMineR returns all eigenvalues regardless of ncp; only the
+    # coord/cos2/contrib blocks are truncated to ncp.
+    assert res.eig.shape[0] >= 5
     assert res.ind.coord.shape == (df.shape[0], 5)
     assert "Dim.1" in res.ind.coord.columns
 
