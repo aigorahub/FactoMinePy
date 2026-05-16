@@ -38,6 +38,7 @@ dev = [
     "mypy>=1.10",
     "sphinx>=7",
     "myst-parser",
+    "myst-nb",
     "nbformat",
     "nbclient",
     "jupyter",
