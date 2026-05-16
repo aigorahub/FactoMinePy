@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "17 4 * * 1"  # Mondays 04:17 UTC
+  workflow_dispatch:
 
 jobs:
   lint-and-test:
@@ -27,8 +30,9 @@ jobs:
         run: sphinx-build -b html docs docs/_build/html
 
   rpy2-parity:
-    # Optional weekly cross-check live against R FactoMineR.
-    if: github.event_name == 'schedule'
+    # Live cross-check against R FactoMineR. Runs on the weekly schedule
+    # and is manually triggerable via workflow_dispatch.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
