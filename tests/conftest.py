@@ -1,0 +1,80 @@
+"""Pytest fixtures shared across the test suite."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pandas as pd
+import pytest
+
+R_FIXTURES = Path(__file__).parent / "fixtures" / "r_outputs"
+
+
+def _load_r_fixture(method: str, dataset: str) -> dict:
+    path = R_FIXTURES / method / f"{dataset}.json"
+    if not path.exists():
+        pytest.skip(f"missing R fixture: {path}")
+    return json.loads(path.read_text())
+
+
+def _as_df(payload: list | None, label: str) -> pd.DataFrame | None:
+    if not payload:
+        return None
+    rows = pd.DataFrame(payload)
+    # jsonlite serializes data.frames as list-of-objects with a row-name key (e.g. "_row")
+    # depending on options. Detect and strip.
+    for cand in ("_row", "rowname", "X"):
+        if cand in rows.columns:
+            rows = rows.set_index(cand)
+            rows.index.name = label
+            break
+    # numeric coercion where possible
+    for c in rows.columns:
+        rows[c] = pd.to_numeric(rows[c], errors="ignore")
+    return rows
+
+
+@pytest.fixture(scope="session")
+def r_pca_decathlon() -> dict:
+    return _load_r_fixture("pca", "decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_pca_decathlon_plain() -> dict:
+    return _load_r_fixture("pca", "decathlon_plain")
+
+
+@pytest.fixture(scope="session")
+def r_ca_children() -> dict:
+    return _load_r_fixture("ca", "children")
+
+
+@pytest.fixture(scope="session")
+def r_ca_children_plain() -> dict:
+    return _load_r_fixture("ca", "children_plain")
+
+
+@pytest.fixture(scope="session")
+def r_mca_tea() -> dict:
+    return _load_r_fixture("mca", "tea")
+
+
+@pytest.fixture(scope="session")
+def r_hcpc_decathlon() -> dict:
+    return _load_r_fixture("hcpc", "decathlon_plain_k4")
+
+
+@pytest.fixture(scope="session")
+def r_dimdesc_pca_decathlon() -> dict:
+    return _load_r_fixture("dimdesc", "pca_decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_catdes_tea() -> dict:
+    return _load_r_fixture("catdes", "tea_Tea")
+
+
+@pytest.fixture(scope="session")
+def r_condes_decathlon() -> dict:
+    return _load_r_fixture("condes", "decathlon_Points")

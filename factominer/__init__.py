@@ -1,0 +1,37 @@
+"""factominer — a Python port of R's FactoMineR.
+
+This module re-exports the public API. The supported-methods table in
+``README.md`` is the source of truth for which symbols are live and which are
+stubs that raise ``NotImplementedError``.
+"""
+
+from __future__ import annotations
+
+from ._result import Result
+from .ca import CA
+from .desc import catdes, condes, dimdesc
+from .hcpc import HCPC
+from .mca import MCA
+from .pca import PCA
+
+# Deferred methods (Round 2). Imported so ``from factominer import HMFA`` works,
+# but the implementations raise NotImplementedError when called.
+from ._deferred import DMFA, FAMD, GPA, HMFA, MFA
+
+__all__ = [
+    "PCA",
+    "CA",
+    "MCA",
+    "FAMD",
+    "MFA",
+    "HMFA",
+    "DMFA",
+    "GPA",
+    "HCPC",
+    "dimdesc",
+    "catdes",
+    "condes",
+    "Result",
+]
+
+__version__ = "0.1.0.dev0"

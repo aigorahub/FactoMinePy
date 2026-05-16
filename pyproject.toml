@@ -1,0 +1,81 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "factominer"
+version = "0.1.0.dev0"
+description = "FactoMineR-compatible multivariate exploratory data analysis for Python"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Aigora", email = "hello@aigora.com" }]
+keywords = ["pca", "ca", "mca", "famd", "mfa", "hcpc", "factor analysis", "factominer", "multivariate"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "pandas>=2.2",
+    "matplotlib>=3.9",
+]
+
+[project.optional-dependencies]
+plotly = ["plotly>=5.20"]
+rpy2 = ["rpy2>=3.5"]
+dev = [
+    "pytest>=8",
+    "pytest-cov",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "sphinx>=7",
+    "myst-parser",
+    "nbformat",
+    "nbclient",
+    "jupyter",
+    "build",
+    "twine",
+]
+
+[project.urls]
+Homepage = "https://github.com/aigorahub/factominePy"
+Issues = "https://github.com/aigorahub/factominePy/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["factominer"]
+
+[tool.hatch.build.targets.sdist]
+include = ["factominer", "tests", "docs", "tools", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["docs/_build", "dist", "build"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict_optional = true
+ignore_missing_imports = true
+exclude = ["docs/_build", "dist", "build"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "rpy2: requires rpy2 + R + FactoMineR installed; opt-in only",
+    "slow: longer-running tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
