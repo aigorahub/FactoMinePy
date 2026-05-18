@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import pandas as pd
 
-from ._result import Block, Result, SVD
-from ._scaling import center_scale, column_indices, coerce_numeric, row_indices
+from ._result import SVD, Block, Result
+from ._scaling import center_scale, coerce_numeric, column_indices, row_indices
 from ._svd import standard_svd
 
 
@@ -78,7 +76,12 @@ def PCA(  # noqa: N802 — mirrors R's function name
     sqrt_cw = np.sqrt(active_col_w)
     Y = (X_scaled * sqrt_rw[:, None]) * sqrt_cw[None, :]
     U_tilde, vs, V_tilde = standard_svd(Y, n_pc)
-    eigenvalues = vs**2  # variance explained on each axis (sum to total inertia)
+    eigenvalues = vs**2  # variance explained on each axis (kept)
+    # R FactoMineR returns ALL eigenvalues in res$eig regardless of ncp; only
+    # the coord/cos2/contrib blocks are truncated. Compute the full singular
+    # spectrum so eig matches R's row count.
+    vs_full = np.linalg.svd(Y, compute_uv=False)
+    eigenvalues_full = vs_full**2
     total_inertia = float((X_scaled**2 * active_row_w[:, None] * active_col_w[None, :]).sum())
 
     # Individual coordinates: F = X_scaled * diag(col_w) * V / sqrt(eig) * eig ... simpler:
@@ -112,11 +115,11 @@ def PCA(  # noqa: N802 — mirrors R's function name
 
     eig_df = pd.DataFrame(
         {
-            "eigenvalue": eigenvalues,
-            "percentage of variance": eigenvalues / total_inertia * 100.0,
-            "cumulative percentage of variance": np.cumsum(eigenvalues) / total_inertia * 100.0,
+            "eigenvalue": eigenvalues_full,
+            "percentage of variance": eigenvalues_full / total_inertia * 100.0,
+            "cumulative percentage of variance": np.cumsum(eigenvalues_full) / total_inertia * 100.0,
         },
-        index=[f"comp {i + 1}" for i in range(n_pc)],
+        index=[f"comp {i + 1}" for i in range(eigenvalues_full.size)],
     )
 
     ind_block = Block(
@@ -176,8 +179,32 @@ def PCA(  # noqa: N802 — mirrors R's function name
         v_test_list: list[pd.DataFrame] = []
         cos2_list: list[pd.DataFrame] = []
         dist_list: list[pd.Series] = []
+        eta2_rows: list[pd.DataFrame] = []
         for j in quali_sup_idx:
             col = X.iloc[active_rows, j].astype("category")
+            # eta²[var, axis] = sum_c(n_c * mean_c^2) / sum_i(F_i^2)
+            # (FactoMineR-style: F is mean-zero so SS_between/SS_total).
+            eta2_vec = np.zeros(ind_coord.shape[1])
+            for axis_k in range(ind_coord.shape[1]):
+                F = ind_coord[:, axis_k]
+                ss_total = float((F * F * active_row_w).sum())
+                if ss_total <= 0:
+                    continue
+                ss_between = 0.0
+                for cat in col.cat.categories:
+                    m = (col == cat).to_numpy()
+                    if not m.any():
+                        continue
+                    w = active_row_w[m]
+                    wsum = float(w.sum())
+                    if wsum <= 0:
+                        continue
+                    mean_c = float((F[m] * w).sum() / wsum)
+                    ss_between += wsum * mean_c * mean_c
+                eta2_vec[axis_k] = ss_between / ss_total
+            eta2_rows.append(
+                pd.DataFrame([eta2_vec], index=[X.columns[j]], columns=dim_names)
+            )
             for cat in col.cat.categories:
                 mask = (col == cat).to_numpy()
                 if not mask.any():
@@ -193,7 +220,6 @@ def PCA(  # noqa: N802 — mirrors R's function name
                 # v-test: standardized barycenter on each axis
                 p = w.size / n_active
                 if 0 < p < 1:
-                    factor = np.sqrt((n_active - 1) / (n_active * (1 - p) / p))
                     # FactoMineR uses sqrt((nA*(N-1))/(N - nA)) for the multiplier
                     nA = w.size
                     multiplier = np.sqrt((nA * (n_active - 1)) / (n_active - nA)) if (n_active - nA) > 0 else 0.0
@@ -212,6 +238,7 @@ def PCA(  # noqa: N802 — mirrors R's function name
                 v_test=pd.concat(v_test_list),
                 cos2=pd.concat(cos2_list),
                 dist=pd.concat(dist_list),
+                eta2=pd.concat(eta2_rows) if eta2_rows else None,
             )
 
     quali_sup_frame = (
@@ -219,9 +246,15 @@ def PCA(  # noqa: N802 — mirrors R's function name
         if quali_sup_idx
         else None
     )
+    quanti_sup_frame = (
+        X.iloc[active_rows, quanti_sup_idx].copy()
+        if quanti_sup_idx
+        else None
+    )
+    active_frame = X.iloc[active_rows, active_cols].copy()
     return Result(
         eig=eig_df,
-        svd=SVD(vs=vs.copy(), U=U_tilde.copy(), V=V_tilde.copy()),
+        svd=SVD(vs=vs_full.copy(), U=U_tilde.copy(), V=V_tilde.copy()),
         call={
             "scale_unit": scale_unit,
             "ncp": ncp,
@@ -236,6 +269,8 @@ def PCA(  # noqa: N802 — mirrors R's function name
             "active_row_labels": active_row_labels,
             "active_col_labels": active_col_labels,
             "quali_sup_frame": quali_sup_frame,
+            "quanti_sup_frame": quanti_sup_frame,
+            "active_frame": active_frame,
         },
         ind=ind_block,
         var=var_block,

@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
 
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 from matplotlib.patches import Ellipse
-from scipy.cluster.hierarchy import dendrogram
 from scipy import stats
+from scipy.cluster.hierarchy import dendrogram
 
 from .._result import Result
 from ..hcpc import HCPCResult

@@ -1,4 +1,19 @@
-"""``catdes`` — describe a categorical variable by the others."""
+"""``catdes`` — describe a categorical variable by the others.
+
+Tracks R FactoMineR 2.14's ``R/catdes.r`` so the output schema and ordering
+match exactly:
+
+- ``test_chi2``: ``p.value``, ``df`` (sorted ascending by p.value).
+- ``category[level]``: ``Cla/Mod``, ``Mod/Cla``, ``Global``, ``p.value``,
+  ``v.test``. p.value is the two-sided hypergeometric ("mid-p") test of the
+  cluster×modality cell vs the marginals; v.test is ``±qnorm(p/2)`` signed
+  by direction.
+- ``quanti_var``: ``Eta2``, ``P-value`` (note: capital P and hyphen — R quirk).
+- ``quanti[level]``: ``v.test``, ``Mean in category``, ``Overall mean``,
+  ``sd in category``, ``Overall sd``, ``p.value``, ``n``. v.test uses the
+  population sd (divide by N), matching R's ``ec()`` helper, not the sample
+  sd. Sorted per level by v.test descending.
+"""
 
 from __future__ import annotations
 
@@ -8,16 +23,6 @@ from scipy import stats
 
 
 def catdes(df: pd.DataFrame, num_var: int | str, proba: float = 0.05) -> dict[str, object]:
-    """Describe the categorical variable ``num_var`` by all other variables.
-
-    Returns a dict with keys:
-
-    - ``test_chi2``: per-categorical-variable chi-square test of independence.
-    - ``category``: per-category v-test against each level of ``num_var``.
-    - ``quanti_var``: per-continuous-variable eta² + F-test against ``num_var``.
-    - ``quanti``: per-category mean / overall-mean / v-test for each continuous
-      variable.
-    """
     if isinstance(num_var, str):
         if num_var not in df.columns:
             raise KeyError(num_var)
@@ -33,111 +38,191 @@ def catdes(df: pd.DataFrame, num_var: int | str, proba: float = 0.05) -> dict[st
     quantitatives = others.select_dtypes(include=[np.number]).columns.tolist()
 
     out: dict[str, object] = {}
+    target_codes = target.cat.codes.to_numpy()
+    target_levels = list(target.cat.categories)
 
-    # chi² independence tests
-    chi2_rows = []
+    # ---- chi² independence + per-cluster modality breakdown -----------------
+    chi2_rows: list[tuple[str, float, int]] = []
+    category_by_level: dict[str, list[tuple[str, float, float, float, float, float]]] = {
+        str(lvl): [] for lvl in target_levels
+    }
     for col in qualitatives:
-        tab = pd.crosstab(target, others[col])
+        series = others[col].astype("category")
+        if len(series.cat.categories) < 2 or len(target_levels) < 2:
+            continue
+        # contingency table: rows = target levels, cols = modality levels
+        tab = pd.crosstab(target, series)
         if tab.shape[0] < 2 or tab.shape[1] < 2:
             continue
-        chi2, p, dof, _ = stats.chi2_contingency(tab.to_numpy())
-        chi2_rows.append((col, chi2, dof, p))
+        chi2, p, dof, _ = stats.chi2_contingency(tab.to_numpy(), correction=False)
+        chi2_rows.append((col, float(p), int(dof)))
+
+        row_sums = tab.sum(axis=1).to_numpy()  # nA per target level
+        col_sums = tab.sum(axis=0).to_numpy()  # nB per modality
+        N = int(col_sums.sum())
+        for j, lvl in enumerate(target_levels):
+            nA = int(row_sums[j])
+            if nA == 0 or nA == N:
+                continue
+            for k, mod in enumerate(series.cat.categories):
+                nB = int(col_sums[k])
+                if nB == 0 or nB == N:
+                    continue
+                nAB = int(tab.iat[j, k])
+                # Two-sided hypergeometric mid-p (matches R FactoMineR catdes.r:73):
+                #   left  = 2 * P(X < nAB) + P(X = nAB)
+                #   right = 2 * P(X > nAB) + P(X = nAB)
+                #   p     = min(left, right)
+                # P(X ≤ nAB-1) uses hypergeom.cdf(nAB-1, N, nA, nB).
+                #   X ~ Hypergeom(N total, nA successes, nB draws).
+                rv = stats.hypergeom(N, nA, nB)
+                pmf = float(rv.pmf(nAB))
+                cdf_lt = float(rv.cdf(nAB - 1))  # P(X ≤ nAB-1) = P(X < nAB)
+                sf_gt = float(rv.sf(nAB))  # P(X > nAB)
+                left = 2 * cdf_lt + pmf
+                right = 2 * sf_gt + pmf
+                p_cell = min(left, right)
+                p_cell = float(min(p_cell, 1.0))
+                if p_cell > proba:
+                    continue
+                expected_prop = nB / N
+                observed_prop = nAB / nA
+                sign = 1.0 if observed_prop > expected_prop else -1.0
+                # qnorm(p/2) is negative; v.test = -sign * qnorm(p/2) gives
+                # positive for over-rep, negative for under-rep.
+                z = float(stats.norm.ppf(p_cell / 2))
+                v_test = -sign * z
+                cla_mod = (nAB / nB) * 100.0
+                mod_cla = (nAB / nA) * 100.0
+                global_pct = (nB / N) * 100.0
+                category_by_level[str(lvl)].append(
+                    (f"{col}={mod}", cla_mod, mod_cla, global_pct, p_cell, v_test)
+                )
+
     if chi2_rows:
-        out["test_chi2"] = (
-            pd.DataFrame(chi2_rows, columns=["variable", "chi2", "df", "p.value"])
+        df_chi = (
+            pd.DataFrame(chi2_rows, columns=["variable", "p.value", "df"])
             .set_index("variable")
             .sort_values("p.value")
         )
+        df_chi = df_chi[df_chi["p.value"] <= proba]
+        if not df_chi.empty:
+            out["test_chi2"] = df_chi
 
-    # v-test per category × each level of target
-    cat_rows = []
-    n = len(df)
-    for lvl in target.cat.categories:
-        mask_lvl = (target == lvl).to_numpy()
-        nA = int(mask_lvl.sum())
-        if nA == 0 or nA == n:
+    cat_frames = {}
+    for lvl, rows in category_by_level.items():
+        if not rows:
             continue
-        for col in qualitatives:
-            series = others[col].astype("category")
-            for sub_lvl in series.cat.categories:
-                mask_cat = (series == sub_lvl).to_numpy()
-                nB = int(mask_cat.sum())
-                nAB = int((mask_lvl & mask_cat).sum())
-                # Hypergeometric tail
-                if nB == 0 or nB == n:
-                    continue
-                # FactoMineR: v.test = z = (nAB - n*pA*pB) / sqrt(n*pA*pB*(1-pA)*(1-pB)) on a multinomial
-                pA = nA / n
-                pB = nB / n
-                expected = n * pA * pB
-                var = expected * (1 - pA) * (1 - pB)
-                if var <= 0:
-                    continue
-                v = (nAB - expected) / np.sqrt(var)
-                p_cat = 2 * (1 - stats.norm.cdf(abs(v)))
-                cat_rows.append((str(lvl), f"{col}={sub_lvl}", v, p_cat, nAB, nA, nB, n))
-    if cat_rows:
-        df_cat = pd.DataFrame(
-            cat_rows,
-            columns=["target_level", "category", "v.test", "p.value", "nAB", "nA", "nB", "n"],
-        )
-        df_cat = df_cat[df_cat["p.value"] <= proba]
-        out["category"] = (
-            df_cat.set_index(["target_level", "category"])
-            .sort_values(["target_level", "v.test"], ascending=[True, False])
-        )
+        frame = pd.DataFrame(
+            rows,
+            columns=["category", "Cla/Mod", "Mod/Cla", "Global", "p.value", "v.test"],
+        ).set_index("category")
+        # R sorts per-level by v.test descending.
+        frame = frame.sort_values("v.test", ascending=False)
+        cat_frames[lvl] = frame
+    if cat_frames:
+        out["category"] = cat_frames
 
-    # quantitative description per category
+    # ---- quanti.var (Eta2 + ANOVA P-value) and per-level quanti tables ------
     if quantitatives:
         qv_rows = []
-        per_level_rows = []
+        per_level_rows: dict[str, list[tuple[str, float, float, float, float, float, float, int]]] = {
+            str(lvl): [] for lvl in target_levels
+        }
         for col in quantitatives:
-            F = others[col].to_numpy()
-            codes = target.cat.codes.to_numpy()
-            ss_total = float(((F - F.mean()) ** 2).sum())
+            F = others[col].to_numpy(dtype=np.float64)
+            present = np.isfinite(F)
+            if not present.any():
+                continue
+            ss_total = float(((F[present] - F[present].mean()) ** 2).sum())
             if ss_total <= 0:
                 continue
-            arrays = [F[codes == k] for k in range(len(target.cat.categories))]
-            arrays = [a for a in arrays if len(a) > 1]
-            if len(arrays) < 2:
+            level_arrays = [F[(target_codes == k) & present] for k in range(len(target_levels))]
+            keep = [a for a in level_arrays if a.size > 1]
+            if len(keep) < 2:
                 continue
-            f_stat, p_value = stats.f_oneway(*arrays)
-            ss_between = sum(len(a) * (a.mean() - F.mean()) ** 2 for a in arrays)
+            try:
+                _, p_anova = stats.f_oneway(*keep)
+            except (ValueError, ZeroDivisionError):
+                p_anova = np.nan
+            ss_between = sum(
+                a.size * (a.mean() - F[present].mean()) ** 2 for a in level_arrays if a.size > 0
+            )
             eta2 = ss_between / ss_total
-            qv_rows.append((col, eta2, p_value))
-            for ci, lvl in enumerate(target.cat.categories):
-                mask = codes == ci
-                if not mask.any():
+            qv_rows.append((col, eta2, float(p_anova) if np.isfinite(p_anova) else float("nan")))
+
+            # R's catdes uses population sd (sqrt(SS/N)), not sample sd.
+            overall_mean = float(F[present].mean())
+            overall_sd = float(np.sqrt(((F[present] - overall_mean) ** 2).mean()))
+            n_present = int(present.sum())
+            for j, lvl in enumerate(target_levels):
+                level_mask = (target_codes == j) & present
+                n_in_level_present = int(level_mask.sum())
+                n_in_level_total = int((target_codes == j).sum())
+                if n_in_level_present <= 0:
                     continue
-                nA = int(mask.sum())
-                if nA == n:
+                if n_in_level_total >= n_present:
                     continue
-                mean_A = float(F[mask].mean())
-                mean_all = float(F.mean())
-                var_all = float(np.var(F, ddof=1))
-                if var_all <= 0:
+                arr = F[level_mask]
+                mean_in_cat = float(arr.mean())
+                sd_in_cat = float(np.sqrt(((arr - mean_in_cat) ** 2).mean()))
+                if overall_sd <= 0:
                     continue
-                se = np.sqrt(var_all * (n - nA) / (nA * (n - 1)))
-                if se <= 0:
+                denom = np.sqrt((n_present - n_in_level_total) / (n_present - 1)) if n_present > 1 else 0.0
+                if denom <= 0:
                     continue
-                v = (mean_A - mean_all) / se
-                p_cat = 2 * (1 - stats.norm.cdf(abs(v)))
-                per_level_rows.append((str(lvl), col, v, mean_A, mean_all, p_cat))
+                v_test = (
+                    (mean_in_cat - overall_mean)
+                    / overall_sd
+                    * np.sqrt(n_in_level_total)
+                    / denom
+                )
+                p_lvl = float(2 * stats.norm.sf(abs(v_test)))
+                if p_lvl > proba:
+                    continue
+                per_level_rows[str(lvl)].append(
+                    (
+                        col,
+                        float(v_test),
+                        mean_in_cat,
+                        overall_mean,
+                        sd_in_cat,
+                        overall_sd,
+                        p_lvl,
+                        n_in_level_present,
+                    )
+                )
+
         if qv_rows:
-            out["quanti_var"] = (
-                pd.DataFrame(qv_rows, columns=["variable", "Eta2", "p.value"])
+            df_qv = (
+                pd.DataFrame(qv_rows, columns=["variable", "Eta2", "P-value"])
                 .set_index("variable")
-                .sort_values("p.value")
+                .sort_values("P-value")
             )
-        if per_level_rows:
-            df_pl = pd.DataFrame(
-                per_level_rows,
-                columns=["target_level", "variable", "v.test", "Mean.in.category", "Overall.mean", "p.value"],
-            )
-            df_pl = df_pl[df_pl["p.value"] <= proba]
-            out["quanti"] = (
-                df_pl.set_index(["target_level", "variable"])
-                .sort_values(["target_level", "v.test"], ascending=[True, False])
-            )
+            df_qv = df_qv[df_qv["P-value"] <= proba]
+            if not df_qv.empty:
+                out["quanti_var"] = df_qv
+
+        quanti_frames = {}
+        for lvl, rows in per_level_rows.items():
+            if not rows:
+                continue
+            frame = pd.DataFrame(
+                rows,
+                columns=[
+                    "variable",
+                    "v.test",
+                    "Mean in category",
+                    "Overall mean",
+                    "sd in category",
+                    "Overall sd",
+                    "p.value",
+                    "n",
+                ],
+            ).set_index("variable")
+            frame = frame.sort_values("v.test", ascending=False)
+            quanti_frames[lvl] = frame
+        if quanti_frames:
+            out["quanti"] = quanti_frames
 
     return out

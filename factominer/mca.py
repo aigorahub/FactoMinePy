@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import pandas as pd
 
-from ._result import Block, Result, SVD
+from ._result import Block, Result
 from ._scaling import column_indices, row_indices
-from ._svd import standard_svd
 from .ca import CA
 
 
@@ -79,27 +76,32 @@ def MCA(  # noqa: N802 — mirrors R
 
     # Per FactoMineR: eigenvalues from the indicator method need a Greenacre-style correction
     # only if method="burt" with adjustment. We expose raw indicator eigenvalues for now.
-    eig_df = ca_res.eig.copy()
-    eigenvalues = eig_df["eigenvalue"].to_numpy()
+    # R MCA reports total_cat - q_vars eigenvalues (the "real" axes; the remaining
+    # q_vars - 1 singular values from the indicator CA are spurious dummy-coding
+    # artifacts). svd$vs in res keeps the full singular spectrum.
+    eig_df = ca_res.eig.iloc[: total_cat - q_vars].copy()
+    eig_df.index = [f"dim {i + 1}" for i in range(eig_df.shape[0])]
+    # Rescale percentages to total_inertia of the real eigenvalues only.
+    real_total = eig_df["eigenvalue"].sum()
+    eig_df["percentage of variance"] = eig_df["eigenvalue"] / real_total * 100.0
+    eig_df["cumulative percentage of variance"] = eig_df["percentage of variance"].cumsum()
 
     ind_block = ca_res.row
     var_block_coord = ca_res.col.coord.copy()
     var_block_cos2 = ca_res.col.cos2.copy()
     var_block_contrib = ca_res.col.contrib.copy()
 
-    # v-test for categories: (coord / sqrt(eig)) * sqrt(nA * (N - 1) / (N - nA))
-    # where nA is the count of individuals in the category, N is the active sample size.
+    # v-test for categories (R MCA.R line 278-280):
+    #   v.test = standard_coord * sqrt(n_c * (N - 1) / (N - n_c))
+    # where standard_coord is res$var$coord (FactoMineR's MCA uses the standard
+    # category coordinate ψ_c for active categories, so no /sqrt(eig) needed).
     cat_counts = Z.sum(axis=0)
     multiplier = np.where(
         (n - cat_counts) > 0,
         np.sqrt((cat_counts * (n - 1)) / (n - cat_counts)),
         0.0,
     )
-    axis_std = np.sqrt(eigenvalues)
-    v_test = np.zeros_like(var_block_coord.to_numpy())
-    for k in range(v_test.shape[1]):
-        if axis_std[k] > 0:
-            v_test[:, k] = var_block_coord.to_numpy()[:, k] / axis_std[k] * multiplier
+    v_test = var_block_coord.to_numpy() * multiplier[:, None]
     v_test_df = pd.DataFrame(v_test, index=var_block_coord.index, columns=var_block_coord.columns)
 
     # eta² per variable per axis: sum of (n_A * coord_A^2) / (n * eig) over A in var
@@ -107,13 +109,18 @@ def MCA(  # noqa: N802 — mirrors R
     eta2 = np.zeros((q_vars, var_block_coord.shape[1]))
     var_names = list(X_active.columns)
     offset = 0
-    for vi, var_name in enumerate(var_names):
+    for vi in range(len(var_names)):
         ncat = cat_counts_per_var[vi]
         slice_coords = var_block_coord.iloc[offset:offset + ncat].to_numpy()
         slice_counts = cat_counts[offset:offset + ncat]
+        # MCA convention: var.coord is the STANDARD category coordinate ψ_c
+        # (G_c = ψ_c * sqrt(lambda_k)). Therefore
+        #   SS_between(v, k) = sum_c n_c * (ψ_c * sqrt(lambda_k))^2
+        #                    = lambda_k * sum_c n_c * ψ_c^2
+        #   SS_total(k)      = N * lambda_k
+        #   eta²(v, k)       = SS_between / SS_total = sum_c n_c * ψ_c^2 / N
         for k in range(eta2.shape[1]):
-            if eigenvalues[k] > 0:
-                eta2[vi, k] = float((slice_counts * slice_coords[:, k] ** 2).sum()) / (n_active * eigenvalues[k])
+            eta2[vi, k] = float((slice_counts * slice_coords[:, k] ** 2).sum()) / n_active
         offset += ncat
     eta2_df = pd.DataFrame(eta2, index=var_names, columns=var_block_coord.columns)
 

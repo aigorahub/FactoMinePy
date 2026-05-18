@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import pandas as pd
 
-from ._result import Block, Result, SVD
+from ._result import SVD, Block, Result
 from ._scaling import row_indices
 from ._svd import standard_svd
 
@@ -52,6 +50,15 @@ def CA(  # noqa: N802 — mirrors R
     n_pc = min(ncp, min(A.shape) - 1)
     U_tilde, vs, V_tilde = standard_svd(S, n_pc)
     eigenvalues = vs**2
+    # R returns all eigenvalues in res$eig (full rank, not truncated to ncp).
+    vs_full = np.linalg.svd(S, compute_uv=False)
+    eigenvalues_full = vs_full**2
+    # CA's rank is min(I,J)-1 (centering removes one axis); drop the trailing
+    # near-zero residual so the count matches FactoMineR's res$eig row count.
+    rank_ca = min(A.shape) - 1
+    if eigenvalues_full.size > rank_ca:
+        eigenvalues_full = eigenvalues_full[:rank_ca]
+        vs_full = vs_full[:rank_ca]
     total_inertia = float((S**2).sum())
 
     # Row / column coordinates (chi-square distance, "symmetric" rendering).
@@ -82,11 +89,11 @@ def CA(  # noqa: N802 — mirrors R
 
     eig_df = pd.DataFrame(
         {
-            "eigenvalue": eigenvalues,
-            "percentage of variance": eigenvalues / total_inertia * 100.0,
-            "cumulative percentage of variance": np.cumsum(eigenvalues) / total_inertia * 100.0,
+            "eigenvalue": eigenvalues_full,
+            "percentage of variance": eigenvalues_full / total_inertia * 100.0,
+            "cumulative percentage of variance": np.cumsum(eigenvalues_full) / total_inertia * 100.0,
         },
-        index=[f"comp {i + 1}" for i in range(n_pc)],
+        index=[f"dim {i + 1}" for i in range(eigenvalues_full.size)],
     )
 
     row_block = Block(
@@ -140,7 +147,7 @@ def CA(  # noqa: N802 — mirrors R
 
     return Result(
         eig=eig_df,
-        svd=SVD(vs=vs.copy(), U=U_tilde.copy(), V=V_tilde.copy()),
+        svd=SVD(vs=vs_full.copy(), U=U_tilde.copy(), V=V_tilde.copy()),
         call={
             "ncp": ncp,
             "row_sup": row_sup_idx,

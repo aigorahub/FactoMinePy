@@ -108,14 +108,20 @@ cat("[fixtures] mca/tea.json\n")
 
 # ---- HCPC on PCA(decathlon) -----------------------------------------------
 res_hcpc <- HCPC(res_pca_plain, nb.clust = 4, consol = TRUE, graph = FALSE)
-write_json(
-  list(
-    clust = as.character(res_hcpc$data.clust$clust),
-    data_clust_index = rownames(res_hcpc$data.clust),
-    nb_clust = 4L
-  ),
-  file.path(out_dir("hcpc"), "decathlon_plain_k4.json")
+hcpc_desc_var <- res_hcpc$desc.var
+hcpc_payload <- list(
+  clust = as.character(res_hcpc$data.clust$clust),
+  data_clust_index = rownames(res_hcpc$data.clust),
+  data_clust_columns = colnames(res_hcpc$data.clust),
+  nb_clust = 4L,
+  desc.var = list(
+    test.chi2  = if (!is.null(hcpc_desc_var$test.chi2)) as.data.frame(hcpc_desc_var$test.chi2) else NULL,
+    category   = if (!is.null(hcpc_desc_var$category))  lapply(hcpc_desc_var$category, as.data.frame) else NULL,
+    quanti.var = if (!is.null(hcpc_desc_var$quanti.var)) as.data.frame(hcpc_desc_var$quanti.var) else NULL,
+    quanti     = if (!is.null(hcpc_desc_var$quanti))     lapply(hcpc_desc_var$quanti, as.data.frame) else NULL
+  )
 )
+write_json(hcpc_payload, file.path(out_dir("hcpc"), "decathlon_plain_k4.json"))
 cat("[fixtures] hcpc/decathlon_plain_k4.json\n")
 
 # ---- dimdesc / catdes / condes -------------------------------------------
@@ -153,5 +159,32 @@ condes_payload <- list(
 )
 write_json(condes_payload, file.path(out_dir("condes"), "decathlon_Points.json"))
 cat("[fixtures] condes/decathlon_Points.json\n")
+
+# condes on tea ~ age — exercises the quali + category branches (every Tea
+# variable interacts with age in some way; many will be significant). Uses
+# proba = 0.20 so we keep a richer cross-section than the default 0.05.
+condes_tea_age <- condes(tea, num.var = which(names(tea) == "age"), proba = 0.20)
+condes_tea_age_payload <- list(
+  quanti   = if (!is.null(condes_tea_age$quanti)) as.data.frame(condes_tea_age$quanti) else NULL,
+  quali    = if (!is.null(condes_tea_age$quali))  as.data.frame(condes_tea_age$quali)  else NULL,
+  category = if (!is.null(condes_tea_age$category)) as.data.frame(condes_tea_age$category) else NULL
+)
+write_json(condes_tea_age_payload, file.path(out_dir("condes"), "tea_age.json"))
+cat("[fixtures] condes/tea_age.json\n")
+
+# dimdesc on PCA(decathlon) with a loose proba so quali / category are populated.
+desc_loose <- dimdesc(res_pca, axes = 1:2, proba = 0.50)
+desc_loose_payload <- list()
+for (k in seq_along(desc_loose)) {
+  axis_name <- names(desc_loose)[k]
+  d <- desc_loose[[k]]
+  desc_loose_payload[[axis_name]] <- list(
+    quanti = if (!is.null(d$quanti)) as.data.frame(d$quanti) else NULL,
+    quali  = if (!is.null(d$quali))  as.data.frame(d$quali)  else NULL,
+    category = if (!is.null(d$category)) as.data.frame(d$category) else NULL
+  )
+}
+write_json(desc_loose_payload, file.path(out_dir("dimdesc"), "pca_decathlon_proba50.json"))
+cat("[fixtures] dimdesc/pca_decathlon_proba50.json\n")
 
 cat("\ndone.\n")
