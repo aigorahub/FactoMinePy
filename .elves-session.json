@@ -9,7 +9,8 @@
   "learnings_path": "docs/elves/learnings.md",
   "execution_log_path": "docs/elves/execution-log.md",
   "roadmap_path": "ROADMAP.md",
-  "pr_number": null,
+  "pr_number": 3,
+  "pr_url": "https://github.com/aigorahub/FactoMinePy/pull/3",
   "continuation_guard": {
     "remaining_batches": 5,
     "stop_allowed": false,

@@ -16,7 +16,7 @@
 - **Active batch:** Batch 0/5 (session setup)
 - **Last completed batch:** none yet
 - **Next exact batch:** Batch 1 (FAMD port)
-- **Active PR:** not created yet (created at end of staging)
+- **Active PR:** [#3](https://github.com/aigorahub/FactoMinePy/pull/3)
 - **Docs promoted this run:** none yet
 - **Latest Elves Report:** not generated yet
 
@@ -30,7 +30,7 @@
 **Learnings:** `docs/elves/learnings.md`
 **Execution log:** `docs/elves/execution-log.md`
 **Branch:** `feat/elves-run-1`
-**PR:** not created yet (will be opened with the Batch 0 push)
+**PR:** [#3](https://github.com/aigorahub/FactoMinePy/pull/3) — opened immediately after the Batch 0 push, per elves convention
 **Run mode:** finite | **User returns:** within ~24h, finite no fixed deadline
 **Checkpoint semantics:** none | **Actual stop conditions:** any "stop condition" in `docs/plans/elves-run-1.md`, three consecutive same-job CI failures, or a tolerance-loosening requirement
 **Active compute at launch:** none

@@ -258,7 +258,7 @@ populated with `pip install -e '.[dev]'`.
 - **Roadmap:** `ROADMAP.md`
 - **Session JSON:** `.elves-session.json`
 - **Branch:** `feat/elves-run-1`
-- **PR number:** _to be filled after PR is created in Batch 0 commit_
+- **PR number:** #3 — https://github.com/aigorahub/FactoMinePy/pull/3
 - **Plan hash at session start:** _filled when session JSON is initialized_
 
 ---
