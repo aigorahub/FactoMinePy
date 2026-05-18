@@ -21,7 +21,7 @@ source_suffix = {
 }
 
 master_doc = "index"
-exclude_patterns = ["_build"]
+exclude_patterns = ["_build", "plans"]
 
 html_theme = "alabaster"
 html_title = "factominer"
