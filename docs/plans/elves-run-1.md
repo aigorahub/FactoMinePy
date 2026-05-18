@@ -4,9 +4,12 @@
 family (MFA / HMFA / DMFA) by adding FAMD, GPA, and a plotly backend, plus
 plot-data parity tests. Bump to `v0.2.0.dev0`.
 
-**Branch convention:** one branch per batch, named
-`feat/<batch-id>-<short-name>`. PR per batch, reviewed by `/codex review`
-or independent subagent before merge.
+**Branch convention:** one working branch `feat/elves-run-1` for the
+entire run; commits accumulate on it batch by batch (per the elves skill
+default). Open a single PR after Batch 0 (session setup) and use it
+throughout. Review happens continuously via PR comments / bots / subagent
+reviews between batches; the user merges the PR after the final batch
+lands.
 
 **Compaction-recovery anchor:** this file. If context is lost mid-run, the
 "Resume here" line at the top of each batch tells you what the next

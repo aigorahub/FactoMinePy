@@ -1,0 +1,110 @@
+{
+  "session_id": "elves-2026-05-18-factominepy-run-1",
+  "version": "1.9.0",
+  "status": "staged",
+  "branch": "feat/elves-run-1",
+  "plan_path": "docs/plans/elves-run-1.md",
+  "plan_hash_md5": "e1d79a00229d5679ede31c9e54280b0c",
+  "survival_guide_path": "docs/elves/survival-guide.md",
+  "learnings_path": "docs/elves/learnings.md",
+  "execution_log_path": "docs/elves/execution-log.md",
+  "roadmap_path": "ROADMAP.md",
+  "pr_number": null,
+  "continuation_guard": {
+    "remaining_batches": 5,
+    "stop_allowed": false,
+    "checkpoint_is_stop": false,
+    "next_required_action": "Launch in a fresh Claude Code session: paste the launch prompt from docs/elves/survival-guide.md and start with Batch 1 (FAMD)."
+  },
+  "test_baseline": {
+    "passed": 83,
+    "total": 85,
+    "skipped": 2,
+    "status": "captured",
+    "reason": "Baseline captured at main tip 6315896 during staging preflight. The 2 skips are condes(decathlon, num.var=Points) quali and category — R legitimately returns empty for that fixture at proba=0.05."
+  },
+  "run_mode": "finite",
+  "current_batch": null,
+  "batches": [
+    {
+      "id": 1,
+      "name": "FAMD port",
+      "status": "pending",
+      "commit": null,
+      "rollback_tag": "elves/pre-batch-1",
+      "started_at": null,
+      "completed_at": null,
+      "deliverables": [
+        "factominer/famd.py implementing FAMD(X, ncp=5, ind_sup=None, quanti_sup=None, quali_sup=None, ...)",
+        "tools/refresh_r_fixtures.R extended with a FAMD(wine) fixture",
+        "tests/test_famd.py asserting every R-emitted column",
+        "README row + factominer/_deferred.py stub removed",
+        "CHANGELOG entry"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "GPA port",
+      "status": "pending",
+      "commit": null,
+      "rollback_tag": "elves/pre-batch-2",
+      "started_at": null,
+      "completed_at": null,
+      "deliverables": [
+        "factominer/gpa.py implementing iterative orthogonal Procrustes with scaling",
+        "tools/refresh_r_fixtures.R extended with a GPA(wine) fixture",
+        "tests/test_gpa.py asserting consensus, Xfin, RV, simi, correlation",
+        "README row + stub removed",
+        "CHANGELOG entry"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "plotly backend",
+      "status": "pending",
+      "commit": null,
+      "rollback_tag": "elves/pre-batch-3",
+      "started_at": null,
+      "completed_at": null,
+      "deliverables": [
+        "factominer/plot/plotly_backend.py mirroring matplotlib_backend.py public surface",
+        "tests/test_plots.py extended with structural plotly tests",
+        "Example notebook re-rendered with plotly backend",
+        "README row updated to live",
+        "CHANGELOG entry"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "plot-data parity tests",
+      "status": "pending",
+      "commit": null,
+      "rollback_tag": "elves/pre-batch-4",
+      "started_at": null,
+      "completed_at": null,
+      "deliverables": [
+        "factominer/plot/_data.py exposing pure-data extractors",
+        "Refactor matplotlib_backend.py to consume _data.py",
+        "tools/refresh_r_fixtures.R extended with R plot.* data dumps",
+        "tests/test_plot_parity.py asserting plot-data parity"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "polish + v0.2.0.dev0",
+      "status": "pending",
+      "commit": null,
+      "rollback_tag": "elves/pre-batch-5",
+      "started_at": null,
+      "completed_at": null,
+      "deliverables": [
+        "README status table updated (every cell except MFA family ✅)",
+        "Soften experimental warning to pre-1.0 note",
+        "pyproject.toml version 0.1.0.dev0 → 0.2.0.dev0",
+        "CHANGELOG [Unreleased] → [0.2.0.dev0] with date",
+        "git tag v0.2.0.dev0 + push → release.yml auto-publishes to PyPI"
+      ]
+    }
+  ],
+  "review_comments": []
+}
