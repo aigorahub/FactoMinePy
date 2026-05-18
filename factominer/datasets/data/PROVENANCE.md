@@ -5,6 +5,23 @@ package's built-in data exports for parity-testing purposes. The underlying
 data are publicly documented in the FactoMineR textbooks and published
 sources cited below.
 
+## Licensing summary
+
+- **Data values** (the numbers and category strings) are facts and not
+  themselves subject to copyright in the United States or the European
+  Union.
+- **The specific tabulations** distributed with R FactoMineR are part of
+  the FactoMineR package and inherit its GPL license. We keep the
+  FactoMineR-flavoured tabulations bundled here only so the parity tests
+  in this repository run reproducibly. They are clearly attributed below
+  and in [the project's NOTICE file](../../../NOTICE.md).
+- **This package's code** is MIT (see [LICENSE](../../../LICENSE)). MIT
+  code does not depend on these CSVs at runtime in any way that creates
+  derivative-work coupling; the data files are loaded as flat CSV via
+  pandas.
+- **If you need a strictly GPL-free bundle**, re-derive each dataset
+  from its primary source documented below.
+
 ## decathlon.csv
 
 - **Origin.** Performances and final standings of decathletes at the 2004 Athens

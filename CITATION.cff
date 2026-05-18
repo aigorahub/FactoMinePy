@@ -1,0 +1,62 @@
+cff-version: 1.2.0
+title: FactoMinePy
+message: >-
+  If you use FactoMinePy in published work, please cite both this software
+  package and the original R FactoMineR, which it ports.
+type: software
+authors:
+  - name: Aigora
+    website: https://aigora.com
+repository-code: https://github.com/aigorahub/FactoMinePy
+url: https://github.com/aigorahub/FactoMinePy
+abstract: >-
+  A Python port of the R package FactoMineR for multivariate exploratory data
+  analysis (PCA, CA, MCA, HCPC, dimdesc / catdes / condes). Reimplemented from
+  primitives on NumPy / SciPy / Pandas; validated for byte-identical fixture
+  output and column-by-column schema parity against R FactoMineR 2.14.
+keywords:
+  - factor-analysis
+  - PCA
+  - CA
+  - MCA
+  - HCPC
+  - multivariate-analysis
+  - exploratory-data-analysis
+  - python
+  - factominer
+license: MIT
+preferred-citation:
+  type: software
+  title: FactoMinePy
+  authors:
+    - name: Aigora
+  url: https://github.com/aigorahub/FactoMinePy
+references:
+  - type: software
+    title: FactoMineR
+    scope: The reference implementation this package ports.
+    authors:
+      - family-names: Lê
+        given-names: Sébastien
+      - family-names: Josse
+        given-names: Julie
+      - family-names: Husson
+        given-names: François
+    url: https://cran.r-project.org/package=FactoMineR
+    repository-code: https://github.com/husson/FactoMineR
+  - type: article
+    title: "FactoMineR: An R Package for Multivariate Analysis"
+    authors:
+      - family-names: Lê
+        given-names: Sébastien
+      - family-names: Josse
+        given-names: Julie
+      - family-names: Husson
+        given-names: François
+    journal: Journal of Statistical Software
+    year: 2008
+    volume: 25
+    issue: 1
+    start: 1
+    end: 18
+    doi: 10.18637/jss.v025.i01

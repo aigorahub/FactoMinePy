@@ -1,5 +1,10 @@
 # FactoMinePy
 
+[![CI](https://github.com/aigorahub/FactoMinePy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aigorahub/FactoMinePy/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
+[![Status](https://img.shields.io/badge/status-alpha-orange)](#status)
+
 > ⚠️ **Experimental — use with caution.** This is an independent Python port of the R package [FactoMineR](https://cran.r-project.org/package=FactoMineR). It is **not** affiliated with or endorsed by the authors of FactoMineR. The port is in early development; APIs may change, edge cases may differ from R, and several FactoMineR methods are not yet implemented (see status table below). For production work or published research, treat results as preliminary and cross-check against the original R package.
 
 A from-primitives reimplementation in pure NumPy/SciPy/Pandas of the R package [FactoMineR](https://cran.r-project.org/package=FactoMineR) for multivariate exploratory data analysis (PCA, CA, MCA, HCPC, dimdesc/catdes/condes).
@@ -127,9 +132,17 @@ Bundled datasets under `factominer.datasets`:
 
 See [factominer/datasets/data/PROVENANCE.md](factominer/datasets/data/PROVENANCE.md) for each dataset's origin and licensing notes.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, parity-bar expectations, and the PR / issue workflow. Bug reports and feature requests are welcome — please use the issue templates so we have the reproducer / R-side context up front. For security issues, see [SECURITY.md](SECURITY.md) and email `hello@aigora.com` rather than filing a public issue.
+
+## Citing
+
+If you use FactoMinePy in published work, please cite both this package and the original R FactoMineR (Lê, Josse, Husson, *J. Stat. Softw.* 2008, [doi:10.18637/jss.v025.i01](https://doi.org/10.18637/jss.v025.i01)). A [CITATION.cff](CITATION.cff) is included for tools that consume it automatically.
+
 ## License
 
-MIT for code. Bundled datasets carry their original licensing — see `PROVENANCE.md`. The package does **not** redistribute R FactoMineR source (GPL); everything is reimplemented from the published documentation and validated against R outputs.
+MIT for code. Bundled datasets carry their original licensing — see [factominer/datasets/data/PROVENANCE.md](factominer/datasets/data/PROVENANCE.md). The package does **not** redistribute R FactoMineR source (GPL); everything is reimplemented from the published documentation and validated against R outputs.
 
 ## Acknowledgments
 

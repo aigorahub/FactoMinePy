@@ -54,7 +54,20 @@ Issues = "https://github.com/aigorahub/FactoMinePy/issues"
 packages = ["factominer"]
 
 [tool.hatch.build.targets.sdist]
-include = ["factominer", "tests", "docs", "tools", "README.md", "LICENSE", "pyproject.toml"]
+include = [
+    "factominer",
+    "tests",
+    "docs",
+    "tools",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "CITATION.cff",
+    "CONTRIBUTING.md",
+    "NOTICE.md",
+    "SECURITY.md",
+    "pyproject.toml",
+]
 
 [tool.ruff]
 line-length = 100
