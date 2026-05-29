@@ -68,6 +68,55 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
+## 2026-05-29 — Batch 2 (GPA): HARD STOP, decision needed
+
+**Status:** HALTED pending a user decision. Rollback tag `elves/pre-batch-2`
+created; no GPA source code written. Branch is clean at Batch 1's state
+plus this status note and the saved research.
+
+**The blocker (triggers the run's "tolerance below ROADMAP bar" hard stop):**
+R FactoMineR's `GPA()` is **non-deterministic**. Confirmed by reading
+`/tmp/GPA.R` + the research workflow (saved to
+`docs/plans/gpa-research-findings.json`):
+- `f1ter` (GPA.R:749, 586-666) runs P=5 random restarts — unseeded
+  `sample()` config permutations, random column permutations, random
+  sign-flips — and keeps the best-of-5 by residual loss.
+- `procrustesbis` (GPA.R:289) uses `rnorm()` to complete the null-space
+  basis when a config block is rank-deficient.
+So the returned `consensus` / `Xfin` / `scaling` depend on R's RNG state.
+Exact 1e-9 parity on those (the bar every other method meets) is not
+achievable without replicating R's RNG in Python (infeasible: R's RNG ≠
+NumPy's), nor by seeding (the seeds aren't comparable across languages).
+
+**What IS deterministic and matchable:** `RV`, `RVs`, `simi` (computed
+from the RAW configurations Xdd, GPA.R:765-812 — rotation/scale-invariant,
+independent of the random restart). And `consensus`/`Xfin` can be compared
+to R via rotation-invariant quantities (inter-point distance matrices) or
+by Procrustes-aligning the Python output to R before comparing.
+
+**Other GPA complexity** (from the research, all in
+`docs/plans/gpa-research-findings.json`): 860-line source; reflections
+allowed (general orthogonal H, not pure rotation); eigen(AᵀA) not svd(A);
+two different tolerances (1e-7 first pass vs 1e-10 in f1ter); a separate
+unported `coeffRV` (RV + bias-corrected rvstd); a 3D `Xfin` array + K×K
+matrices that need a dedicated `GPAResult` dataclass (HCPCResult is the
+precedent); the canonical `wine` dataset is not bundled (research
+recommends a deterministic synthetic K-config CSV).
+
+**Options presented to the user (awaiting choice):**
+- A. Reorder — do Batch 3 (plotly) + Batch 4 (plot-data parity) now (both
+  hit the clean exact bar), defer the GPA decision.
+- B. Implement GPA with a two-tier parity story: Tier 1 exact (RV/RVs/simi
+  to 1e-7) + Tier 2 rotation-invariant (consensus/Xfin via inter-point
+  distances / Procrustes alignment). Port the deterministic `algogpa`
+  core, skip the stochastic `f1ter`, seed R's fixture. Honest but a weaker
+  parity guarantee than the other methods.
+- C. Defer GPA to "Round 2" alongside the MFA family; keep it a documented
+  stub. Ship FAMD + plotly + plot-data parity in run #1.
+
+No tolerance was loosened and no GPA code was committed — halted per the
+run's explicit hard-stop instruction.
+
 ## 2026-05-29 — Batch 1: FAMD port
 
 **Batch:** 1/5: FAMD port

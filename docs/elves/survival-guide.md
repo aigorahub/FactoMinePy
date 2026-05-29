@@ -52,9 +52,9 @@ All committed fixtures must remain byte-identical to live R FactoMineR
 ## Stop Gate
 
 - **Planned batches remaining:** 4
-- **Stop allowed right now:** no
-- **Why:** Batch 1 (FAMD) complete and parity-verified; Batches 2–5 remain
-- **Next required action:** start Batch 2 (GPA port) — create rollback tag `elves/pre-batch-2`, fetch R/GPA.R, fan out research or implement directly
+- **Stop allowed right now:** yes — HARD STOP hit on Batch 2 (GPA)
+- **Why:** GPA cannot meet the exact 1e-9 parity bar (R's GPA is non-deterministic: `f1ter` random multi-start + `rnorm` basis completion). The run's explicit hard-stop "a batch needs to loosen a parity tolerance below ROADMAP.md's bar" is triggered. Awaiting a user decision on the GPA parity approach (options A/B/C in the execution log).
+- **Next required action:** user picks A (reorder: plotly + plot-data parity first, defer GPA), B (implement GPA with two-tier rotation-invariant parity), or C (defer GPA to Round 2). Then resume.
 
 ---
 
