@@ -24,7 +24,7 @@ This package is **not** a wrapper around R; every method is reimplemented from t
 | `dimdesc` | `factominer.dimdesc` | ✅ | ✅ | quantitative + categorical description per axis |
 | `catdes` | `factominer.catdes` | ✅ | ✅ | `Cla/Mod`, `Mod/Cla`, `Global`, hypergeometric v-test; `quanti_var` Eta²; per-level `quanti` with `sd in category` / `Overall sd` / `n` |
 | `condes` | `factominer.condes` | ✅ | ✅ | correlation tests for a continuous target |
-| `plot.PCA / .CA / .MCA / .HCPC` | `factominer.plot.plot()` | ✅ | structural | matplotlib backend; factor maps, biplot, scree, contributions, dendrogram, ellipses, habillage |
+| `plot.PCA / .CA / .MCA / .HCPC` | `factominer.plot.plot()` | ✅ | structural + ellipse | matplotlib backend; factor maps, biplot, scree, contributions, dendrogram, habillage. Confidence/concentration ellipses (`coord.ellipse`) are vertex-parity-verified against R |
 | `FAMD` | `factominer.FAMD` | ✅ | ✅ | mixed quantitative + qualitative data; active variables (supplementary vars not yet supported) |
 | `MFA` | `factominer.MFA` | 🚧 stub | — | Round 2 |
 | `HMFA` | `factominer.HMFA` | 🚧 stub | — | Round 2 |

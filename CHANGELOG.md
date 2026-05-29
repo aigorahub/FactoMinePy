@@ -9,6 +9,14 @@ out of pre-release.
 
 ### Added
 
+- **Backend-agnostic plot-data layer** (`factominer/plot/_data.py`) with a
+  faithful port of R FactoMineR's `coord.ellipse`
+  (`t·scale·cos(a ± d/2)`, `d = acos(r)`, `t = sqrt(qchisq(level, 2))`).
+  The matplotlib backend now draws confidence/concentration ellipses from
+  this shared source, so they are **vertex-identical to R** (previously the
+  backend used an eigenvector + matplotlib `Ellipse` form that was only
+  geometrically equivalent). Verified by `tests/test_plot_parity.py` for
+  both `bary=False` and `bary=True` at 1e-9.
 - **`FAMD` (Factor Analysis of Mixed Data)** is now implemented and parity-
   verified against R FactoMineR 2.14 on the `poison` dataset (active
   variables). Mirrors R's approach of running an unscaled PCA on the mixed
