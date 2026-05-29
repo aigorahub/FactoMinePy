@@ -25,7 +25,7 @@ This package is **not** a wrapper around R; every method is reimplemented from t
 | `catdes` | `factominer.catdes` | ✅ | ✅ | `Cla/Mod`, `Mod/Cla`, `Global`, hypergeometric v-test; `quanti_var` Eta²; per-level `quanti` with `sd in category` / `Overall sd` / `n` |
 | `condes` | `factominer.condes` | ✅ | ✅ | correlation tests for a continuous target |
 | `plot.PCA / .CA / .MCA / .HCPC` | `factominer.plot.plot()` | ✅ | structural | matplotlib backend; factor maps, biplot, scree, contributions, dendrogram, ellipses, habillage |
-| `FAMD` | `factominer.FAMD` | 🚧 stub | — | Round 2 |
+| `FAMD` | `factominer.FAMD` | ✅ | ✅ | mixed quantitative + qualitative data; active variables (supplementary vars not yet supported) |
 | `MFA` | `factominer.MFA` | 🚧 stub | — | Round 2 |
 | `HMFA` | `factominer.HMFA` | 🚧 stub | — | Round 2 |
 | `DMFA` | `factominer.DMFA` | 🚧 stub | — | Round 2 |
@@ -111,8 +111,9 @@ pytest -q
 
 This port targets the most common FactoMineR API surface and is rigorously validated on the bundled datasets, but the following caveats apply:
 
-- **Several methods are stubs.** `FAMD`, `MFA`, `HMFA`, `DMFA`, `GPA` are importable but raise `NotImplementedError` when called.
-- **Parity is empirical, not exhaustive.** The 83 parity tests cover the active + supplementary blocks for PCA / CA / MCA / HCPC and the full output schemas of dimdesc / catdes / condes on standard fixtures (`decathlon`, `children`, `tea`). Behavior with row weights, missing values, very small samples, or `method="burt"` MCA has not been independently verified.
+- **Several methods are stubs.** `MFA`, `HMFA`, `DMFA`, `GPA` are importable but raise `NotImplementedError` when called.
+- **FAMD covers active variables only.** Supplementary variables/individuals (`sup.var` / `ind.sup` in R) are not yet implemented; pass only active data.
+- **Parity is empirical, not exhaustive.** The 100 parity tests cover the active + supplementary blocks for PCA / CA / MCA / HCPC, active-variable FAMD, and the full output schemas of dimdesc / catdes / condes on standard fixtures (`decathlon`, `children`, `tea`, `poison`). Behavior with row weights, missing values, very small samples, or `method="burt"` MCA has not been independently verified.
 - **Sign of axes is arbitrary.** SVD is sign-ambiguous; we apply a deterministic rule that may give the opposite sign from R on a given axis. Distances, clusters, contributions, and cos² are sign-invariant; coordinates may need a flip to align visually with R output.
 - **HCPC partitions can differ by one or two individuals.** K-means consolidation is sensitive to initialization; the adjusted Rand index against R is ≥ 0.999 on the decathlon test fixture but not exactly 1.0.
 - **No plotly backend yet.** Only matplotlib is implemented; the plotly module's functions raise `NotImplementedError`.
@@ -128,7 +129,7 @@ Bundled datasets under `factominer.datasets`:
 | `load_decathlon()` | IAAF 2004 Athens Olympic + Décastar 2004, re-derived from public results | PCA, dimdesc, HCPC |
 | `load_children()` | FactoMineR's `children` (children's worries by socio-educational category) | CA |
 | `load_tea()` | FactoMineR's `tea` (300-person tea-consumption survey) | MCA, catdes |
-| `load_poison()` | FactoMineR's `poison` (food-poisoning outbreak survey) | mixed quantitative + categorical |
+| `load_poison()` | FactoMineR's `poison` (food-poisoning outbreak survey) | FAMD, mixed quantitative + categorical |
 
 See [factominer/datasets/data/PROVENANCE.md](factominer/datasets/data/PROVENANCE.md) for each dataset's origin and licensing notes.
 

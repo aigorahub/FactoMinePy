@@ -72,25 +72,37 @@ def test_famd_svd_vs(r_famd_poison):
 # ---------------------------------------------------------------------------
 
 
+def _ind_positional(payload, ncp: int) -> np.ndarray:
+    # poison's row index (1..55) serializes as jsonlite "automatic" rownames,
+    # which it drops — so the ind rows carry no _row label. R emits them in
+    # poison's row order, identical to load_poison() / res.ind.coord order, so
+    # we compare positionally (same approach as the MCA tea ind block).
+    return np.asarray(
+        [[row[f"Dim.{i + 1}"] for i in range(ncp)] for row in payload],
+        dtype=np.float64,
+    )
+
+
 def test_famd_ind_coord(r_famd_poison):
     res = _famd()
-    r_arr, r_labels = _r_block_to_array(r_famd_poison["ind"]["coord"], 5)
-    py = res.ind.coord.loc[r_labels].to_numpy()[:, :5]
+    r_arr = _ind_positional(r_famd_poison["ind"]["coord"], 5)
+    py = res.ind.coord.to_numpy()[:, :5]
+    assert r_arr.shape == py.shape, f"{r_arr.shape} vs {py.shape}"
     py_aligned = align_to_reference(py, r_arr)
     assert np.allclose(py_aligned, r_arr, atol=1e-9, rtol=0)
 
 
 def test_famd_ind_cos2(r_famd_poison):
     res = _famd()
-    r_arr, r_labels = _r_block_to_array(r_famd_poison["ind"]["cos2"], 5)
-    py = res.ind.cos2.loc[r_labels].to_numpy()[:, :5]
+    r_arr = _ind_positional(r_famd_poison["ind"]["cos2"], 5)
+    py = res.ind.cos2.to_numpy()[:, :5]
     assert np.allclose(py, r_arr, atol=1e-9, rtol=0)
 
 
 def test_famd_ind_contrib(r_famd_poison):
     res = _famd()
-    r_arr, r_labels = _r_block_to_array(r_famd_poison["ind"]["contrib"], 5)
-    py = res.ind.contrib.loc[r_labels].to_numpy()[:, :5]
+    r_arr = _ind_positional(r_famd_poison["ind"]["contrib"], 5)
+    py = res.ind.contrib.to_numpy()[:, :5]
     assert np.allclose(py, r_arr, atol=1e-8, rtol=0)
 
 

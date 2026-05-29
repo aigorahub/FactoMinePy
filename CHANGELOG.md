@@ -9,6 +9,15 @@ out of pre-release.
 
 ### Added
 
+- **`FAMD` (Factor Analysis of Mixed Data)** is now implemented and parity-
+  verified against R FactoMineR 2.14 on the `poison` dataset (active
+  variables). Mirrors R's approach of running an unscaled PCA on the mixed
+  `[standardized-quanti | centered/sqrt(prop)-scaled indicator]` matrix.
+  Exposes `eig` (truncated to `ncp`), `ind`, `quanti_var`, `quali_var`
+  (with the principal category coordinate, cos², contrib, v.test), and the
+  combined `var` summary (squared loadings for quanti, eta² for quali).
+  `Result` gains `quanti_var` / `quali_var` Block fields. Supplementary
+  variables/individuals are not yet supported.
 - Full FactoMineR 2.14 schema parity for `dimdesc` / `catdes` / `condes`
   (`n` column on quanti tables; `Cla/Mod` / `Mod/Cla` / `Global` /
   hypergeometric `v.test` on catdes category; `Eta2` / `P-value` on
