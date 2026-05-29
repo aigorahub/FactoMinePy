@@ -51,10 +51,10 @@ All committed fixtures must remain byte-identical to live R FactoMineR
 
 ## Stop Gate
 
-- **Planned batches remaining:** 3 (PL, GPA, POLISH)
+- **Planned batches remaining:** 2 (GPA, POLISH)
 - **Stop allowed right now:** no
-- **Why:** Batch PD complete (plot-data layer + coord.ellipse vertex-parity, 103 passed). PL, GPA, POLISH remain.
-- **Next required action:** Batch PL (plotly backend). Create rollback tag `elves/pre-batch-pl`, add the remaining extractors to `factominer/plot/_data.py`, build `factominer/plot/plotly_backend.py` on them, add a `backend=` arg to the `plot()` dispatcher, structural tests in `test_plots.py`. No R needed (structural parity).
+- **Why:** Batches PD + PL complete (plot-data ellipse parity; plotly backend, 115 passed). GPA + POLISH remain.
+- **Next required action:** Batch GPA (two-tier parity). Create rollback tag `elves/pre-batch-gpa`. Research is done (`docs/plans/gpa-research-findings.json`). Implement deterministic `algogpa` core + `GPAResult` dataclass + a synthetic K-config dataset; Tier 1 exact RV/RVs/simi (1e-7), Tier 2 rotation-invariant consensus/Xfin (inter-point distances / Procrustes alignment). Run an adversarial-verify workflow per component, then the rpy2-parity loop (R fixture must use `set.seed`).
 
 ---
 

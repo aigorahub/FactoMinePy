@@ -11,11 +11,11 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-29 (Batch PD complete)
+- **Last updated:** 2026-05-29 (Batch PL complete)
 - **Current phase:** In progress
-- **Active batch:** Batch PL (plotly backend) — next
-- **Last completed batch:** Batch PD (plot-data layer + coord.ellipse parity)
-- **Next exact batch:** Batch PL (plotly backend)
+- **Active batch:** Batch GPA (two-tier parity) — next
+- **Last completed batch:** Batch PL (plotly backend)
+- **Next exact batch:** Batch GPA (two-tier parity port)
 - **Active PR:** [#3](https://github.com/aigorahub/FactoMinePy/pull/3)
 - **Docs promoted this run:** none yet
 - **Latest Elves Report:** not generated yet
@@ -67,6 +67,28 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## 2026-05-29 — Batch PL: plotly backend
+
+**Batch:** PL: plotly backend. **Contract status:** met (structural parity).
+
+**What changed:**
+- `factominer/plot/plotly_backend.py` (new): full mirror of the matplotlib surface returning `go.Figure`; PCA ind/var/biplot, scree, contrib; CA/MCA maps; HCPC factor map + dendrogram. ImportError with install hint if plotly absent.
+- `factominer/plot/_data.py`: added `DEFAULT_PALETTE` + pure `resolve_colors` (shared by both backends).
+- `factominer/plot/matplotlib_backend.py`: `_resolve_colors` delegates to `_data.resolve_colors`; palette imported from `_data` (centralized); `plot()` gains `backend=` arg routing to plotly.
+- `factominer/plot/__init__.py`: docstring documents both backends.
+- `pyproject.toml`: `plotly` added to the `dev` extra (still optional at runtime).
+- `tests/test_plotly.py` (new, 12 tests, importorskip-guarded).
+
+**Decisions made:**
+- No R parity for plots (R `plot.*` return no data); plotly is structural-parity like matplotlib. The one numeric plot quantity (ellipses) is already parity-tested in Batch PD and shared via `_data.coord_ellipse`.
+- Kept raw-coord slicing inline in each backend rather than routing through thin pass-through extractors — only the genuinely-shared computation (palette, ellipses) lives in `_data.py`, avoiding indirection with no value.
+
+**Test results:** Local ruff clean, 115 passed / 2 skipped, sphinx -W clean. PR lint-and-test run 26663337555 validates the plotly tests + dev-extra install on Linux (rpy2-parity correctly skipped — no R needed).
+
+**Regression attestation:** additive — new backend module, new test file, new `_data` palette helpers. The mpl edits are a color-resolver delegation (behavior-preserving; existing 9 test_plots.py tests still pass) and a new `backend=` kwarg (default "matplotlib" → unchanged path). Test count 103 → 115. Confidence: HIGH.
+
+**Next steps:** Batch GPA (two-tier parity port).
 
 ## 2026-05-29 — Batch PD: plot-data layer + coord.ellipse parity
 
