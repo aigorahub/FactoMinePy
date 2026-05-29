@@ -30,7 +30,7 @@ This package is **not** a wrapper around R; every method is reimplemented from t
 | `HMFA` | `factominer.HMFA` | 🚧 stub | — | Round 2 |
 | `DMFA` | `factominer.DMFA` | 🚧 stub | — | Round 2 |
 | `GPA` | `factominer.GPA` | 🚧 stub | — | Round 2 |
-| Plotly backend | `factominer.plot.plotly_*` | 🚧 stub | — | Round 2 |
+| Plotly backend | `factominer.plot.plot(..., backend="plotly")` | ✅ | structural | mirrors the matplotlib surface (ind/var/biplot/scree/contrib, CA/MCA maps, HCPC factor map + dendrogram); shares the `_data` geometry layer. Needs `pip install 'factominer[plotly]'` |
 
 Methods marked 🚧 are importable but raise `NotImplementedError("deferred — see docs/plans/factominer-python-port.md §2")` when called. This is by design so downstream code can `from factominer import HMFA` without an `ImportError`.
 
@@ -116,7 +116,7 @@ This port targets the most common FactoMineR API surface and is rigorously valid
 - **Parity is empirical, not exhaustive.** The 100 parity tests cover the active + supplementary blocks for PCA / CA / MCA / HCPC, active-variable FAMD, and the full output schemas of dimdesc / catdes / condes on standard fixtures (`decathlon`, `children`, `tea`, `poison`). Behavior with row weights, missing values, very small samples, or `method="burt"` MCA has not been independently verified.
 - **Sign of axes is arbitrary.** SVD is sign-ambiguous; we apply a deterministic rule that may give the opposite sign from R on a given axis. Distances, clusters, contributions, and cos² are sign-invariant; coordinates may need a flip to align visually with R output.
 - **HCPC partitions can differ by one or two individuals.** K-means consolidation is sensitive to initialization; the adjusted Rand index against R is ≥ 0.999 on the decathlon test fixture but not exactly 1.0.
-- **No plotly backend yet.** Only matplotlib is implemented; the plotly module's functions raise `NotImplementedError`.
+- **Plot parity is structural, not pixel-exact.** Both backends are verified to produce the expected traces/artists and the R-faithful `coord.ellipse` geometry, but not pixel-identical images. The plotly backend mirrors the matplotlib surface and shares the same data layer.
 
 For production analyses, journal submissions, or any use where reproducibility against R FactoMineR is load-bearing, cross-check results against the original R package.
 

@@ -9,6 +9,14 @@ out of pre-release.
 
 ### Added
 
+- **Plotly plotting backend** (`factominer/plot/plotly_backend.py`),
+  selected via `plot(res, ..., backend="plotly")`, returning
+  `plotly.graph_objects.Figure`. Mirrors the full matplotlib surface
+  (PCA ind/var/biplot, scree, contrib; CA/MCA row/col/biplot maps; HCPC
+  factor map + dendrogram) and draws from the same `_data` geometry layer
+  (shared palette + R-faithful ellipses). Added `plotly` to the `dev`
+  extra; it remains an optional runtime dependency
+  (`pip install 'factominer[plotly]'`).
 - **Backend-agnostic plot-data layer** (`factominer/plot/_data.py`) with a
   faithful port of R FactoMineR's `coord.ellipse`
   (`t·scale·cos(a ± d/2)`, `d = acos(r)`, `t = sqrt(qchisq(level, 2))`).

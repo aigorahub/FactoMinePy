@@ -11,13 +11,11 @@ from scipy.cluster.hierarchy import dendrogram
 
 from .._result import Result
 from ..hcpc import HCPCResult
-from ._data import coord_ellipse
-
-DEFAULT_PALETTE = [
-    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
-    "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
-    "#bcbd22", "#17becf",
-]
+from ._data import (  # noqa: F401  (DEFAULT_PALETTE re-exported)
+    DEFAULT_PALETTE,
+    coord_ellipse,
+    resolve_colors,
+)
 
 
 def plot(
@@ -30,13 +28,25 @@ def plot(
     title: str | None = None,
     ellipse: bool = False,
     ellipse_level: float = 0.95,
-) -> Axes:
+    backend: str = "matplotlib",
+):
     """High-level entry point matching ``plot.PCA`` / ``plot.CA`` / ``plot.MCA`` / ``plot.HCPC``.
 
     ``choix`` controls what is rendered: ``"ind"`` (individuals factor map), ``"var"``
     (variables / correlation circle), ``"biplot"``, ``"scree"``, ``"contrib"``,
     ``"dendrogram"``. Method-specific renderers handle the details.
+
+    ``backend`` selects the renderer: ``"matplotlib"`` (default, returns an
+    ``Axes``) or ``"plotly"`` (returns a ``plotly.graph_objects.Figure``; both
+    backends draw from the same geometry in ``factominer.plot._data``).
     """
+    if backend == "plotly":
+        from .plotly_backend import plot_plotly
+        return plot_plotly(res, choix=choix, axes=axes, habillage=habillage,
+                           invisible=invisible, title=title, ellipse=ellipse,
+                           ellipse_level=ellipse_level)
+    if backend != "matplotlib":
+        raise ValueError(f"unknown backend: {backend!r} (expected 'matplotlib' or 'plotly')")
     invisible = set(invisible or [])
     if isinstance(res, HCPCResult):
         if choix == "dendrogram":
@@ -289,18 +299,10 @@ def plot_contrib(res: Result, axis: int = 0, ax: Axes | None = None, title: str 
 
 
 def _resolve_colors(n: int, habillage, res: Result) -> list[str]:
-    if habillage is None:
-        return ["#1f77b4"] * n
-    if isinstance(habillage, str):
-        groups = res.call.get("quali_sup_frame")
-        if groups is None or habillage not in groups.columns:
-            return ["#1f77b4"] * n
-        groups = groups[habillage].astype("category")
-    else:
-        groups = pd.Series(habillage).astype("category")
-    levels = list(groups.cat.categories)
-    palette = {lvl: DEFAULT_PALETTE[i % len(DEFAULT_PALETTE)] for i, lvl in enumerate(levels)}
-    return [palette[lvl] for lvl in groups]
+    # Delegates to the backend-agnostic resolver so matplotlib and plotly
+    # assign identical group colors.
+    quali_sup_frame = res.call.get("quali_sup_frame") if isinstance(habillage, str) else None
+    return resolve_colors(n, habillage, quali_sup_frame)
 
 
 def _draw_confidence_ellipses(

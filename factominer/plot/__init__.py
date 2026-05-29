@@ -1,12 +1,16 @@
-"""Plotting utilities for factominer results (matplotlib backend by default).
+"""Plotting utilities for factominer results.
 
 Use::
 
     from factominer.plot import plot
-    plot(res, choix="ind", habillage=None, axes=(0, 1))
+    plot(res, choix="ind", habillage=None, axes=(0, 1))            # matplotlib
+    fig = plot(res, choix="ind", backend="plotly")                 # plotly
 
-For now only the matplotlib backend is available; the plotly stubs raise
-``NotImplementedError``.
+Two backends are available: matplotlib (default; returns an ``Axes``) and
+plotly (``backend="plotly"``; returns a ``plotly.graph_objects.Figure``).
+Both draw from the same backend-agnostic geometry in
+``factominer.plot._data``. The plotly backend needs the optional ``plotly``
+dependency (``pip install 'factominer[plotly]'``).
 """
 
 from .matplotlib_backend import (

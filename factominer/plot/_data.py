@@ -21,6 +21,33 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+# Shared categorical color palette (Matplotlib's tab10) so the matplotlib and
+# plotly backends assign identical colors to habillage groups.
+DEFAULT_PALETTE = [
+    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
+    "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
+    "#bcbd22", "#17becf",
+]
+
+
+def resolve_colors(n: int, habillage, quali_sup_frame=None) -> list[str]:
+    """Per-point colors for a habillage grouping, shared by both backends.
+
+    ``habillage`` may be None (single color), a column name resolved against
+    ``quali_sup_frame``, or a per-row group Series/array.
+    """
+    if habillage is None:
+        return [DEFAULT_PALETTE[0]] * n
+    if isinstance(habillage, str):
+        if quali_sup_frame is None or habillage not in quali_sup_frame.columns:
+            return [DEFAULT_PALETTE[0]] * n
+        groups = quali_sup_frame[habillage].astype("category")
+    else:
+        groups = pd.Series(list(habillage)).astype("category")
+    levels = list(groups.cat.categories)
+    palette = {lvl: DEFAULT_PALETTE[i % len(DEFAULT_PALETTE)] for i, lvl in enumerate(levels)}
+    return [palette[lvl] for lvl in groups]
+
 
 def coord_ellipse(
     coords,
