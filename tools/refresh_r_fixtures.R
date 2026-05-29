@@ -77,6 +77,17 @@ dump_mca <- function(res) {
   )
 }
 
+dump_famd <- function(res) {
+  list(
+    eig        = as.data.frame(res$eig),
+    ind        = dump_block(res$ind),
+    var        = dump_block(res$var),
+    quanti.var = dump_block(res$quanti.var),
+    quali.var  = dump_block(res$quali.var),
+    svd        = list(vs = as.numeric(res$svd$vs))
+  )
+}
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -105,6 +116,17 @@ data(tea)
 res_mca <- MCA(tea, quanti.sup = 19, quali.sup = c(20:36), ncp = 5, graph = FALSE)
 write_json(dump_mca(res_mca), file.path(out_dir("mca"), "tea.json"))
 cat("[fixtures] mca/tea.json\n")
+
+# ---- FAMD on poison --------------------------------------------------------
+# Read the committed CSV directly (instead of data(poison)) so the R input is
+# byte-identical to what factominer.datasets.load_poison() reads on the Python
+# side: index in column 1, strings -> factors with alphabetically-sorted levels
+# (which matches pandas' .astype("category")), Age/Time stay integer.
+poison_csv <- file.path(root, "factominer", "datasets", "data", "poison.csv")
+poison <- read.csv(poison_csv, row.names = 1, check.names = FALSE, stringsAsFactors = TRUE)
+res_famd <- FAMD(poison, ncp = 5, graph = FALSE)
+write_json(dump_famd(res_famd), file.path(out_dir("famd"), "poison.json"))
+cat("[fixtures] famd/poison.json\n")
 
 # ---- HCPC on PCA(decathlon) -----------------------------------------------
 res_hcpc <- HCPC(res_pca_plain, nb.clust = 4, consol = TRUE, graph = FALSE)

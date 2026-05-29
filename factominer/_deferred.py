@@ -13,9 +13,9 @@ from typing import Any
 def _deferred(name: str, hint: str) -> Any:
     def stub(*_args: Any, **_kwargs: Any) -> Any:
         raise NotImplementedError(
-            f"{name} is a Round 2 deferral. {hint} "
-            f"See docs/plans/factominer-python-port.md §2 and the README "
-            f"supported-methods table for the current status."
+            f"{name} is not yet implemented. {hint} "
+            f"See ROADMAP.md and the README supported-methods table for the "
+            f"current status."
         )
 
     stub.__name__ = name
@@ -24,10 +24,6 @@ def _deferred(name: str, hint: str) -> Any:
     return stub
 
 
-FAMD = _deferred(
-    "FAMD",
-    "Factor Analysis for Mixed Data is planned for the next iteration.",
-)
 MFA = _deferred(
     "MFA",
     "Multiple Factor Analysis is planned for the next iteration.",

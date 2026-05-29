@@ -61,6 +61,11 @@ def r_mca_tea() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_famd_poison() -> dict:
+    return _load_r_fixture("famd", "poison")
+
+
+@pytest.fixture(scope="session")
 def r_hcpc_decathlon() -> dict:
     return _load_r_fixture("hcpc", "decathlon_plain_k4")
 

@@ -62,6 +62,12 @@ class Result:
     row_sup: Block | None = None
     col_sup: Block | None = None
     quanti_var_sup: Block | None = None
+    # FAMD splits the variable description into a continuous block
+    # (``quanti_var``) and a categorical block (``quali_var``), mirroring
+    # R FactoMineR's ``res$quanti.var`` / ``res$quali.var``. ``var`` carries
+    # the combined summary (squared loadings for quanti, eta² for quali).
+    quanti_var: Block | None = None
+    quali_var: Block | None = None
     # Method tag for ``summary()``: "PCA", "CA", "MCA", ...
     method: str = ""
 
