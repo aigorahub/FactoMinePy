@@ -13,9 +13,9 @@
   "pr_url": "https://github.com/aigorahub/FactoMinePy/pull/3",
   "continuation_guard": {
     "remaining_batches": 4,
-    "stop_allowed": true,
+    "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "HARD STOP on Batch 2 (GPA): R's GPA is non-deterministic (f1ter random multi-start + rnorm basis completion), so exact 1e-9 parity on consensus/Xfin is impossible. Awaiting user decision: A (reorder plotly+plot-data first), B (two-tier rotation-invariant GPA parity), or C (defer GPA to Round 2). See docs/elves/execution-log.md and docs/plans/gpa-research-findings.json."
+    "next_required_action": "Batch PD (plot-data layer + parity). GPA hard stop resolved: user chose 'do it all' with two-tier GPA parity, clean batches first. Order: PD -> PL -> GPA -> POLISH (see docs/plans/elves-run-1.md Revised orchestration). Create elves/pre-batch-pd tag, launch the plot-data research workflow."
   },
   "test_baseline": {
     "passed": 83,

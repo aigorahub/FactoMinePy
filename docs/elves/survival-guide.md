@@ -51,10 +51,10 @@ All committed fixtures must remain byte-identical to live R FactoMineR
 
 ## Stop Gate
 
-- **Planned batches remaining:** 4
-- **Stop allowed right now:** yes — HARD STOP hit on Batch 2 (GPA)
-- **Why:** GPA cannot meet the exact 1e-9 parity bar (R's GPA is non-deterministic: `f1ter` random multi-start + `rnorm` basis completion). The run's explicit hard-stop "a batch needs to loosen a parity tolerance below ROADMAP.md's bar" is triggered. Awaiting a user decision on the GPA parity approach (options A/B/C in the execution log).
-- **Next required action:** user picks A (reorder: plotly + plot-data parity first, defer GPA), B (implement GPA with two-tier rotation-invariant parity), or C (defer GPA to Round 2). Then resume.
+- **Planned batches remaining:** 4 (PD, PL, GPA, POLISH)
+- **Stop allowed right now:** no
+- **Why:** GPA hard stop RESOLVED. User decision: do it all — GPA included with a two-tier parity story (Tier 1 exact RV/RVs/simi; Tier 2 rotation-invariant consensus/Xfin), and reorder so clean-bar batches (plot-data, plotly) land first. Revised order + per-batch workflow shapes are in `docs/plans/elves-run-1.md` ("Revised orchestration"). Tolerance is NOT loosened for the deterministic methods; GPA's weaker parity is inherent to the method and will be documented as such.
+- **Next required action:** Batch PD (plot-data layer + parity). Create rollback tag `elves/pre-batch-pd`, launch the plot-data research workflow (3 readers), then implement `factominer/plot/_data.py`.
 
 ---
 
