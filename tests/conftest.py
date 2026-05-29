@@ -66,6 +66,11 @@ def r_famd_poison() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_plot_ellipse_decathlon() -> dict:
+    return _load_r_fixture("plot", "ellipse_decathlon")
+
+
+@pytest.fixture(scope="session")
 def r_hcpc_decathlon() -> dict:
     return _load_r_fixture("hcpc", "decathlon_plain_k4")
 

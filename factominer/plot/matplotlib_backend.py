@@ -7,12 +7,11 @@ from collections.abc import Iterable
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.patches import Ellipse
-from scipy import stats
 from scipy.cluster.hierarchy import dendrogram
 
 from .._result import Result
 from ..hcpc import HCPCResult
+from ._data import coord_ellipse
 
 DEFAULT_PALETTE = [
     "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
@@ -319,26 +318,18 @@ def _draw_confidence_ellipses(
         groups = groups[habillage].astype("category")
     else:
         groups = pd.Series(habillage).astype("category")
-    chi2 = stats.chi2.ppf(level, df=2)
-    for lvl in groups.cat.categories:
-        mask = (groups == lvl).to_numpy()
+    # Use the R-faithful coord.ellipse parametrization (shared with the plotly
+    # backend) so our ellipses are vertex-identical to FactoMineR's, not the
+    # eigenvector form a matplotlib Ellipse patch would draw.
+    ellipses = coord_ellipse(coord.to_numpy(), groups, axes=(0, 1), level=level)
+    codes = groups.cat.codes.to_numpy()
+    for i, lvl in enumerate(groups.cat.categories):
+        mask = codes == i
         if mask.sum() < 3:
             continue
-        sub = coord.loc[mask].to_numpy()
-        center = sub.mean(axis=0)
-        cov = np.cov(sub, rowvar=False)
-        vals, vecs = np.linalg.eigh(cov)
-        order = np.argsort(vals)[::-1]
-        vals = vals[order]
-        vecs = vecs[:, order]
-        if (vals <= 0).any():
-            continue
-        width = 2 * np.sqrt(vals[0] * chi2)
-        height = 2 * np.sqrt(vals[1] * chi2)
-        angle = float(np.degrees(np.arctan2(vecs[1, 0], vecs[0, 0])))
+        pts = ellipses[str(lvl)]
         color = colors[int(np.argmax(mask))] if colors else "gray"
-        ax.add_patch(Ellipse(xy=center, width=width, height=height, angle=angle,
-                             fill=False, color=color, lw=1.2, alpha=0.7))
+        ax.plot(pts[:, 0], pts[:, 1], color=color, lw=1.2, alpha=0.7)
 
 
 def _axis_decoration(ax: Axes, res: Result, axes: tuple[int, int], title: str) -> None:

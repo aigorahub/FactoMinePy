@@ -128,6 +128,29 @@ res_famd <- FAMD(poison, ncp = 5, graph = FALSE)
 write_json(dump_famd(res_famd), file.path(out_dir("famd"), "poison.json"))
 cat("[fixtures] famd/poison.json\n")
 
+# ---- plot data: coord.ellipse on PCA(decathlon) individuals ----------------
+# The only genuinely-derived plot quantity not already covered by the analysis
+# fixtures is the confidence/concentration ellipse. Dump the EXACT input coords
+# (factor + Dim.1/Dim.2) alongside coord.ellipse's output for both bary modes,
+# so the Python test is a pure formula check (same coords in -> same ellipse).
+coord_simul <- cbind.data.frame(
+  Competition = decathlon[, "Competition"],
+  res_pca$ind$coord[, 1:2]
+)
+ell_indiv <- coord.ellipse(coord_simul, axes = c(1, 2), level.conf = 0.95, npoint = 100, bary = FALSE)
+ell_bary  <- coord.ellipse(coord_simul, axes = c(1, 2), level.conf = 0.95, npoint = 100, bary = TRUE)
+write_json(
+  list(
+    coord_simul   = as.data.frame(coord_simul),
+    ellipse_indiv = as.data.frame(ell_indiv$res),
+    ellipse_bary  = as.data.frame(ell_bary$res),
+    npoint = 100L,
+    level = 0.95
+  ),
+  file.path(out_dir("plot"), "ellipse_decathlon.json")
+)
+cat("[fixtures] plot/ellipse_decathlon.json\n")
+
 # ---- HCPC on PCA(decathlon) -----------------------------------------------
 res_hcpc <- HCPC(res_pca_plain, nb.clust = 4, consol = TRUE, graph = FALSE)
 hcpc_desc_var <- res_hcpc$desc.var
