@@ -1,7 +1,7 @@
 {
   "session_id": "elves-2026-05-18-factominepy-run-1",
   "version": "1.9.0",
-  "status": "staged",
+  "status": "in_progress",
   "branch": "feat/elves-run-1",
   "plan_path": "docs/plans/elves-run-1.md",
   "plan_hash_md5": "e1d79a00229d5679ede31c9e54280b0c",
@@ -12,10 +12,10 @@
   "pr_number": 3,
   "pr_url": "https://github.com/aigorahub/FactoMinePy/pull/3",
   "continuation_guard": {
-    "remaining_batches": 5,
+    "remaining_batches": 4,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "Launch in a fresh Claude Code session: paste the launch prompt from docs/elves/survival-guide.md and start with Batch 1 (FAMD)."
+    "next_required_action": "Start Batch 2 (GPA port): create elves/pre-batch-2 tag, read R/GPA.R, implement factominer/gpa.py."
   },
   "test_baseline": {
     "passed": 83,
@@ -25,16 +25,16 @@
     "reason": "Baseline captured at main tip 6315896 during staging preflight. The 2 skips are condes(decathlon, num.var=Points) quali and category — R legitimately returns empty for that fixture at proba=0.05."
   },
   "run_mode": "finite",
-  "current_batch": null,
+  "current_batch": {"id": 2, "name": "GPA port", "status": "pending"},
   "batches": [
     {
       "id": 1,
       "name": "FAMD port",
-      "status": "pending",
-      "commit": null,
+      "status": "complete",
+      "commit": "65acae0",
       "rollback_tag": "elves/pre-batch-1",
-      "started_at": null,
-      "completed_at": null,
+      "started_at": "2026-05-29",
+      "completed_at": "2026-05-29",
       "deliverables": [
         "factominer/famd.py implementing FAMD(X, ncp=5, ind_sup=None, quanti_sup=None, quali_sup=None, ...)",
         "tools/refresh_r_fixtures.R extended with a FAMD(wine) fixture",

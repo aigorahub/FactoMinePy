@@ -123,6 +123,43 @@ codebase — explain in the commit body. The format is
 
 ---
 
+## Batch 1 (FAMD) lessons
+
+### L8 — FAMD truncates `res$eig` to `ncp` (opposite of PCA/CA/MCA)
+
+FAMD.R:126 does `eig <- pca$eig[1:ncp,]`. Unlike PCA/CA/MCA (which return
+the full eigenvalue spectrum), FAMD returns exactly `ncp` rows. The
+spurious indicator-coding axes are removed by the ncp cap
+`min(ncp, n-1, n_quanti + n_cat - n_factors)` (FAMD.R:123) — the
+`- n_factors` is FAMD's analogue of MCA's `total_cat - q_vars`.
+
+### L9 — FAMD `quali.var$coord` is the PRINCIPAL coordinate (NOT the MCA standard coord)
+
+FAMD.R:154: `coord = pca_var_coord[dummy] / sqrt(prop) * sqrt(eig)`. This
+is the category barycenter on the same scale as `ind$coord` (overlay-able
+on one map). Contrast L1 (MCA stores the *standard* coord ψ_c). But
+`quali.var$v.test` (FAMD.R:157) uses the **raw** `pca$var$coord` of the
+dummy, not the transformed coord — easy to conflate.
+
+### L10 — FAMD = `PCA(X, scale.unit=FALSE, col.w=1)` on a pre-scaled mixed matrix
+
+The whole method delegates to PCA (FAMD.R:124). Quanti columns are
+standardized (population sd, `ec.tab` rule: sd≤1e-16 → 1); each indicator
+column is centered by its proportion and divided by `sqrt(prop)`. No
+per-column weight beyond that — `col.w=1` for every column. Our `PCA`
+accepts `scale_unit=False` + `row_w`, so the port is a wrapper, not a
+re-implementation of the SVD. This pattern (build scaled matrix → call
+PCA → post-process blocks) is the template for MFA in run #2.
+
+### L11 — jsonlite drops integer "1..N" rownames as "automatic"
+
+When an R data.frame has rownames `"1".."55"` (e.g. poison read with
+`row.names=1`), jsonlite omits the `_row` key entirely. The `ind` block
+fixture rows then have no label. Compare such blocks **positionally**
+(R emits rows in input order = our `res.ind.coord` order), exactly as the
+MCA tea ind block does. Datasets with real string rownames (decathlon,
+children) don't hit this.
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch

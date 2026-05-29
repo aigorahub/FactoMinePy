@@ -51,10 +51,10 @@ All committed fixtures must remain byte-identical to live R FactoMineR
 
 ## Stop Gate
 
-- **Planned batches remaining:** 5
+- **Planned batches remaining:** 4
 - **Stop allowed right now:** no
-- **Why:** staging just completed; no batch implementation has started
-- **Next required action:** in a fresh Claude Code session, launch the run with the prompt at the bottom of this file
+- **Why:** Batch 1 (FAMD) complete and parity-verified; Batches 2–5 remain
+- **Next required action:** start Batch 2 (GPA port) — create rollback tag `elves/pre-batch-2`, fetch R/GPA.R, fan out research or implement directly
 
 ---
 
@@ -144,17 +144,18 @@ root cause, that is a hard stop.
 
 ## Current Phase
 
-**Status:** Staging — launch-ready
+**Status:** In progress
 
-**Active batch:** Batch 0/5 (session setup)
+**Active batch:** Batch 2/5 (GPA port) — next
 
-**What was just finished:** Created `feat/elves-run-1` branch, generated
-survival guide / learnings / execution log / `.elves-session.json` from
-templates, ran preflight, captured launch prompt.
+**What was just finished:** Batch 1 (FAMD) complete. `factominer/famd.py`
+implemented as a weighted PCA wrapper; 18 FAMD parity tests pass against
+live R FactoMineR 2.14 (`poison` fixture); README/CHANGELOG updated; suite
+at 100 passed / 2 skipped.
 
-**Single next action:** in a fresh Claude Code session, paste the launch
-prompt at the bottom of this file. That session executes Batch 1 (FAMD)
-and continues through Batch 5.
+**Single next action:** Batch 2 (GPA). Create `elves/pre-batch-2` tag,
+read `husson/FactoMineR/R/GPA.R`, implement `factominer/gpa.py` (iterative
+Procrustes), add a GPA fixture + tests, run the rpy2-parity loop.
 
 ---
 
@@ -168,24 +169,24 @@ also CI-driven.
 
 ## Next Exact Batch
 
-**Batch:** 1: FAMD port
+**Batch:** 2: GPA port
 
 **Scope:**
-- New `factominer/famd.py` implementing `FAMD(X, ncp=5, ind_sup=None, quanti_sup=None, quali_sup=None, ...)`.
-- Update `tools/refresh_r_fixtures.R` with a `FAMD(wine)` fixture.
-- New `tests/test_famd.py` asserting every R-emitted column (eig, svd, ind, var, quanti.var, quali.var).
-- Remove `FAMD` stub from `factominer/_deferred.py`.
+- New `factominer/gpa.py` implementing Generalized Procrustes Analysis (iterative orthogonal Procrustes with scaling across K configurations). R source: `husson/FactoMineR/R/GPA.R` (~150 lines).
+- Update `tools/refresh_r_fixtures.R` with a GPA fixture (the FactoMineR `wine` dataset is the canonical GPA example — but `wine` is not bundled; check whether an existing bundled dataset can be reshaped into K configurations, else bundle `wine` with provenance, or pick a smaller documented GPA example).
+- New `tests/test_gpa.py` asserting `consensus`, `Xfin`, `RV`, `simi`, `correlation`.
+- Remove `GPA` stub from `factominer/_deferred.py`.
 - README row + CHANGELOG entry.
 
 **Acceptance criteria:**
-- [ ] `pytest -q` reports ≥85 passed, 2 skipped
+- [ ] `pytest -q` green
 - [ ] `ruff check factominer tests` clean
-- [ ] `rpy2-parity` CI run: zero fixture drift (0-byte diff)
-- [ ] 1e-9 absolute on coord/cos²/cor after sign alignment, 1e-8 on contrib, 1e-10 on eigenvalues
+- [ ] `rpy2-parity` CI run: zero fixture drift
+- [ ] Parity at ROADMAP tolerances after sign/rotation alignment
 
-**Risk:** R FactoMineR's FAMD `var$coord` convention (standard vs principal). Same class of trap as MCA's standard-coord trap from the previous round. Check the R source carefully before implementing; document the convention in `docs/elves/learnings.md` before coding.
+**Risk:** GPA needs K configurations (groups of columns). The dataset question is the first thing to settle — GPA's canonical example is `wine` with `group=`. Decide the fixture dataset before implementing. The Procrustes rotation makes sign/orientation alignment more involved than PCA's per-axis sign flip.
 
-**Rollback tag:** `elves/pre-batch-1` _(create this before starting)_
+**Rollback tag:** `elves/pre-batch-2` _(create this before starting)_
 
 ---
 

@@ -11,11 +11,11 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-18 (staging complete)
-- **Current phase:** Staging — launch-ready
-- **Active batch:** Batch 0/5 (session setup)
-- **Last completed batch:** none yet
-- **Next exact batch:** Batch 1 (FAMD port)
+- **Last updated:** 2026-05-29 (Batch 1 complete)
+- **Current phase:** In progress
+- **Active batch:** Batch 2/5 (GPA port) — next
+- **Last completed batch:** Batch 1 (FAMD port)
+- **Next exact batch:** Batch 2 (GPA port)
 - **Active PR:** [#3](https://github.com/aigorahub/FactoMinePy/pull/3)
 - **Docs promoted this run:** none yet
 - **Latest Elves Report:** not generated yet
@@ -67,3 +67,46 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## 2026-05-29 — Batch 1: FAMD port
+
+**Batch:** 1/5: FAMD port
+**Contract status:** all criteria met.
+
+**Timing:** Implement ~50m (incl. research workflow) / Validate ~25m (2 CI cycles) / Review inline. Session elapsed ~1h20m.
+
+**What changed:**
+- `factominer/famd.py` (new): FAMD as an unscaled weighted PCA on the mixed `[standardized-quanti | centered/sqrt(prop)-scaled indicator]` matrix; post-processes quanti.var, quali.var, var summary, eta². Delegates the decomposition to `PCA(scale_unit=False)` (matches FAMD.R:124).
+- `factominer/_result.py`: added `quanti_var` / `quali_var` Block fields.
+- `factominer/__init__.py` + `_deferred.py`: FAMD imported from new module; removed from deferred stubs; fixed stale `docs/plans/factominer-python-port.md §2` ref → ROADMAP.md.
+- `tools/refresh_r_fixtures.R`: `dump_famd` helper + FAMD(poison) stanza reading the committed CSV (row.names=1, stringsAsFactors=TRUE) for byte-identical input.
+- `tests/conftest.py`: `r_famd_poison` fixture.
+- `tests/test_famd.py` (new, 18 tests): column-by-column parity; ind block compared positionally (jsonlite drops poison's auto-rownames).
+- `tests/test_smoke.py`: FAMD off the deferred-raises parametrize.
+- `tests/fixtures/r_outputs/famd/poison.json`: committed fixture from live R FactoMineR 2.14.
+- README + CHANGELOG: FAMD → ✅; active-vars-only caveat; parity count 83 → 100.
+
+**Commands run:**
+- `gh workflow run ci.yml --ref feat/elves-run-1` (run 26653687097) → fixture generation success, pytest 97 passed / 3 failed (label lookups only) → fixed → run 26653954372 (zero-drift confirm).
+- `.venv/bin/pytest -q` → 100 passed, 2 skipped.
+- `.venv/bin/ruff check factominer tests` → clean.
+- `.venv/bin/python -m sphinx -W -b html docs docs/_build/html` → clean.
+
+**Test results:** Lint PASS / Tests PASS (100 passed, 2 skipped) / Sphinx PASS / rpy2-parity confirm run 26653954372 GREEN. Fixture drift vs committed = a single residual singular value `svd/vs[15]` at 1.4e-16 (max rel diff on real values: 0.0). vs[15] is the first spurious dummy-coding axis (poison has 2+26−13 = 15 meaningful axes) ≈ 0; this is the documented machine-epsilon LAPACK noise on residual eigenvalues (same as the prior round's CA `svd/vs[4]`), below every tolerance and ignored by `test_famd_svd_vs` (which compares only `|vs|>1e-12`). Not re-committed — chasing a 1e-16 wiggle is pointless.
+
+**Review findings:**
+- The two FAMD traps (eig truncation to ncp; quali.var principal-coord transform) were caught pre-implementation via the research workflow + direct source read, so no numeric rework was needed.
+- _No blocking findings._
+
+**Decisions made:**
+- Used the already-bundled `poison` dataset (2 quanti + 13 quali, 26 globally-unique category labels) as the FAMD fixture instead of bundling R's `wine` — avoids adding a new GPL-tabulated dataset and sidesteps label collisions.
+- Scoped Batch 1 to active-variable FAMD. Supplementary vars (`sup.var`/`ind.sup`) raise nothing yet (the param isn't exposed); documented as a known limitation. Rationale: keeps the parity claim honest (active FAMD is fully verified) and the batch tight. Logged as a scout follow-up.
+- R fixture reads the committed CSV rather than `data(poison)` to guarantee identical input without a local R to verify against.
+
+**Regression attestation:**
+- Cumulative diff vs main: new `factominer/famd.py`, `tests/test_famd.py`, fixture; additive fields on Result; FAMD moved out of stubs. No changes to PCA/CA/MCA/HCPC/desc source.
+- Shared surfaces: `_result.Result` gained two optional fields (default None) — purely additive, existing constructors unaffected. `__init__.py` export list unchanged in shape (FAMD still exported, now from a real module).
+- Test baseline: 83 → 100 passing (+17 FAMD; +1 net from smoke reparametrize −1 FAMD-deferred +18 FAMD... net new = 17), 2 skipped unchanged. Count only went up.
+- Confidence: HIGH. Every FAMD numeric channel matched R at 1e-9/1e-10 on the first CI generation; the only failures were label-lookup artifacts, now fixed.
+
+**Next steps:** confirm zero-drift run green, then Batch 2 (GPA).
