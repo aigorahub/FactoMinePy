@@ -51,10 +51,10 @@ All committed fixtures must remain byte-identical to live R FactoMineR
 
 ## Stop Gate
 
-- **Planned batches remaining:** 4 (PD, PL, GPA, POLISH)
+- **Planned batches remaining:** 3 (PL, GPA, POLISH)
 - **Stop allowed right now:** no
-- **Why:** GPA hard stop RESOLVED. User decision: do it all — GPA included with a two-tier parity story (Tier 1 exact RV/RVs/simi; Tier 2 rotation-invariant consensus/Xfin), and reorder so clean-bar batches (plot-data, plotly) land first. Revised order + per-batch workflow shapes are in `docs/plans/elves-run-1.md` ("Revised orchestration"). Tolerance is NOT loosened for the deterministic methods; GPA's weaker parity is inherent to the method and will be documented as such.
-- **Next required action:** Batch PD (plot-data layer + parity). Create rollback tag `elves/pre-batch-pd`, launch the plot-data research workflow (3 readers), then implement `factominer/plot/_data.py`.
+- **Why:** Batch PD complete (plot-data layer + coord.ellipse vertex-parity, 103 passed). PL, GPA, POLISH remain.
+- **Next required action:** Batch PL (plotly backend). Create rollback tag `elves/pre-batch-pl`, add the remaining extractors to `factominer/plot/_data.py`, build `factominer/plot/plotly_backend.py` on them, add a `backend=` arg to the `plot()` dispatcher, structural tests in `test_plots.py`. No R needed (structural parity).
 
 ---
 

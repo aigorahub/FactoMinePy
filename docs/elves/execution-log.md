@@ -11,11 +11,11 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-29 (Batch 1 complete)
+- **Last updated:** 2026-05-29 (Batch PD complete)
 - **Current phase:** In progress
-- **Active batch:** Batch 2/5 (GPA port) — next
-- **Last completed batch:** Batch 1 (FAMD port)
-- **Next exact batch:** Batch 2 (GPA port)
+- **Active batch:** Batch PL (plotly backend) — next
+- **Last completed batch:** Batch PD (plot-data layer + coord.ellipse parity)
+- **Next exact batch:** Batch PL (plotly backend)
 - **Active PR:** [#3](https://github.com/aigorahub/FactoMinePy/pull/3)
 - **Docs promoted this run:** none yet
 - **Latest Elves Report:** not generated yet
@@ -68,7 +68,30 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
-## 2026-05-29 — Batch 2 (GPA): HARD STOP, decision needed
+## 2026-05-29 — Batch PD: plot-data layer + coord.ellipse parity
+
+**Batch:** PD: plot-data layer + parity. **Contract status:** met (focused scope).
+
+**What changed:**
+- `factominer/plot/_data.py` (new): backend-agnostic layer; R-exact `coord_ellipse` port.
+- `factominer/plot/matplotlib_backend.py`: `_draw_confidence_ellipses` now draws from `coord_ellipse` (vertex-identical to R); dropped unused `Ellipse` + `stats` imports.
+- `tools/refresh_r_fixtures.R`: `coord.ellipse` stanza on PCA(decathlon) individuals by Competition (bary False+True) + the exact input coords.
+- `tests/test_plot_parity.py` (new, 3 tests): pure-formula parity both bary modes (1e-9) + end-to-end PCA→ellipse with sign alignment (1e-8).
+- `tests/conftest.py`: `r_plot_ellipse_decathlon`.
+- `tests/fixtures/r_outputs/plot/ellipse_decathlon.json`: committed fixture.
+- README plot row → "structural + ellipse"; CHANGELOG entry.
+
+**Decisions made:**
+- Honest scope (from the 3-agent research): R `plot.*` return no data slot and raw plotted coords are already parity-tested, so the only genuine new parity target is `coord.ellipse`. Everything else stays structural. The `_data.py` layer is the shared base Batch PL's plotly backend will consume.
+- Found + fixed a real divergence: the mpl backend computed ellipses via eigendecomposition + matplotlib `Ellipse` (geometrically equivalent but NOT vertex-identical to R). Now matches R's parametric form exactly.
+
+**Test results:** rpy2-parity run 26662893820 GREEN first try (3 plot-parity tests passed against fresh R coord.ellipse). Local: ruff clean, 103 passed / 2 skipped. Zero-drift confirm run 26663034823 in flight.
+
+**Regression attestation:** purely additive — new `_data.py`, new test file, new fixture; the only edit to existing code is `_draw_confidence_ellipses` (an internal helper, no public-signature change) now delegating to `coord_ellipse`. Existing `test_plots.py` structural tests still pass (the refactor didn't change the rendered API). Test count 100 → 103. Confidence: HIGH (ellipse values are deterministic functions of stable PCA coords; first-try parity).
+
+**Next steps:** Batch PL (plotly backend on the shared `_data.py`).
+
+## 2026-05-29 — Batch 2 (GPA): HARD STOP, decision needed [SUPERSEDED by the do-it-all decision; GPA now scheduled after PL]
 
 **Status:** HALTED pending a user decision. Rollback tag `elves/pre-batch-2`
 created; no GPA source code written. Branch is clean at Batch 1's state
