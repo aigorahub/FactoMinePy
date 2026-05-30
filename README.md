@@ -13,7 +13,11 @@ This package is **not** a wrapper around R; every method is reimplemented from t
 
 ## Status
 
-**Early-alpha.** The supported-methods table is the source of truth for what works.
+**Early-alpha (`0.2.0.dev0`).** Live and parity-verified against R FactoMineR 2.14:
+PCA, CA, MCA, FAMD, HCPC, GPA, and the `dimdesc` / `catdes` / `condes`
+descriptors, plus matplotlib and plotly plotting backends. Still stubbed:
+MFA, HMFA, DMFA. The supported-methods table below is the source of truth for
+exactly what works and at what parity bar.
 
 | FactoMineR method | Python equivalent | Live | R-parity verified | Notes |
 | --- | --- | --- | --- | --- |

@@ -7,6 +7,12 @@ out of pre-release.
 
 ## [Unreleased]
 
+## [0.2.0.dev0] — 2026-05-30
+
+This release adds three FactoMineR methods (FAMD, GPA) and a plotly plotting
+backend, tightens every parity tolerance, and verifies all fixtures
+byte-for-byte against live R FactoMineR 2.14.
+
 ### Added
 
 - **`GPA` (Generalized Procrustes Analysis)** is now implemented
@@ -102,5 +108,6 @@ Initial port: PCA, CA, MCA, HCPC, dimdesc / catdes / condes with R-parity
 tests. FAMD / MFA / HMFA / DMFA / GPA importable as `NotImplementedError`
 stubs.
 
-[Unreleased]: https://github.com/aigorahub/FactoMinePy/compare/v0.1.0.dev0...HEAD
+[Unreleased]: https://github.com/aigorahub/FactoMinePy/compare/v0.2.0.dev0...HEAD
+[0.2.0.dev0]: https://github.com/aigorahub/FactoMinePy/compare/v0.1.0.dev0...v0.2.0.dev0
 [0.1.0.dev0]: https://github.com/aigorahub/FactoMinePy/releases/tag/v0.1.0.dev0
