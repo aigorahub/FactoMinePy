@@ -11,11 +11,11 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-29 (Batch PL complete)
+- **Last updated:** 2026-05-30 (Batch GPA complete)
 - **Current phase:** In progress
-- **Active batch:** Batch GPA (two-tier parity) — next
-- **Last completed batch:** Batch PL (plotly backend)
-- **Next exact batch:** Batch GPA (two-tier parity port)
+- **Active batch:** Batch POLISH (v0.2.0.dev0 release) — next
+- **Last completed batch:** Batch GPA (two-tier parity port)
+- **Next exact batch:** Batch POLISH (v0.2.0.dev0 release)
 - **Active PR:** [#3](https://github.com/aigorahub/FactoMinePy/pull/3)
 - **Docs promoted this run:** none yet
 - **Latest Elves Report:** not generated yet
@@ -67,6 +67,28 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## 2026-05-30 — Batch GPA: two-tier parity port
+
+**Batch:** GPA. **Contract status:** met (two-tier: RV/RVs/simi exact, consensus/Xfin rotation-invariant).
+
+**What changed:**
+- `factominer/gpa.py` (new): deterministic single-start `algogpa` core (per-config PCA calibration, global SS normalization, iterative leave-one-out Procrustes rotations + the W12 scaling eigen-step, final consensus eigen-rotation, trailing-zero-dim trim) + `GPAResult` dataclass. `coeffRV` (Escoufier RV + Kazi-Aoual standardized RVstd) and `similarite` ported per FactoMineR source.
+- `factominer/__init__.py` + `_deferred.py`: GPA real, off the stubs.
+- `factominer/datasets`: `load_gpa_synth` + committed reproducible synthetic K=3 dataset (no third-party data; provenance documented).
+- `tools/refresh_r_fixtures.R`: GPA(gpa_synth, group=c(2,2,2)) under set.seed(42); 3D Xfin serialized as a list.
+- `tests/test_gpa.py` (new, 7 tests): Tier-1 RV/RVs/simi (1e-6) + Tier-2 consensus/Xfin distance-matrix parity + scaling + structure.
+
+**Decisions made:**
+- R's GPA is stochastic (f1ter random multi-start + rnorm basis completion); ported the deterministic core and skipped the multi-start. Two-tier parity: RV/RVs/simi exact (raw-config, rotation-invariant); consensus/Xfin via inter-object distances. Documented in the README as `⚠️ rotation-invariant`.
+- For the no-missing equal-width case the general GPA reduces cleanly (centering operator C shared, invgC = C/K) — implemented that path.
+- Scoped to no-missing, equal-width configs (the VMQTE + unequal-width branches raise NotImplementedError).
+
+**Test results:** First CI run 26674100207: 120/1 — only test_gpa_rvs failed (RVstd was the wrong formula). RV, simi, consensus distances, Xfin distances, AND scaling all matched R on the first try (the deterministic core reached R's optimum). Fix: ported coeffRV's Kazi-Aoual n>=6 moment standardization exactly, and the RV-matrix diagonal fill (RVs[i,i] = standardized self-RV ≈ 5.0, not 1). After fix: local 121 passed / 2 skipped; confirm run 26674183625 in flight.
+
+**Regression attestation:** additive — new module, dataclass, dataset, test file. No edits to existing analysis code. GPA moved out of `_deferred`. Test count 115 → 121. Confidence: HIGH (RV/RVs/simi exact to 1e-6; consensus/Xfin rotation-invariant-exact; scaling exact).
+
+**Next steps:** Batch POLISH (v0.2.0.dev0 release).
 
 ## 2026-05-29 — Batch PL: plotly backend
 

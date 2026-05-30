@@ -51,10 +51,10 @@ All committed fixtures must remain byte-identical to live R FactoMineR
 
 ## Stop Gate
 
-- **Planned batches remaining:** 2 (GPA, POLISH)
+- **Planned batches remaining:** 1 (POLISH)
 - **Stop allowed right now:** no
-- **Why:** Batches PD + PL complete (plot-data ellipse parity; plotly backend, 115 passed). GPA + POLISH remain.
-- **Next required action:** Batch GPA (two-tier parity). Create rollback tag `elves/pre-batch-gpa`. Research is done (`docs/plans/gpa-research-findings.json`). Implement deterministic `algogpa` core + `GPAResult` dataclass + a synthetic K-config dataset; Tier 1 exact RV/RVs/simi (1e-7), Tier 2 rotation-invariant consensus/Xfin (inter-point distances / Procrustes alignment). Run an adversarial-verify workflow per component, then the rpy2-parity loop (R fixture must use `set.seed`).
+- **Why:** FAMD, PD, PL, GPA all complete and parity-verified (121 passed). Only POLISH (v0.2.0.dev0 release) remains.
+- **Next required action:** Batch POLISH. Create rollback tag `elves/pre-batch-polish`. Update README status header (all live except MFA/HMFA/DMFA), soften the experimental warning to "pre-1.0", bump `pyproject.toml` 0.1.0.dev0 → 0.2.0.dev0, date the CHANGELOG `[0.2.0.dev0]` section, run a final review workflow, then `git tag v0.2.0.dev0 && git push origin v0.2.0.dev0` (release.yml auto-publishes to PyPI). NEVER merge — the user merges PR #3.
 
 ---
 
