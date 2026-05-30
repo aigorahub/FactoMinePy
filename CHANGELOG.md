@@ -9,6 +9,16 @@ out of pre-release.
 
 ### Added
 
+- **`GPA` (Generalized Procrustes Analysis)** is now implemented
+  (`factominer/gpa.py` + a `GPAResult` dataclass). R's GPA is stochastic
+  (random multi-start + `rnorm` rank-deficient basis completion), so the
+  port implements the deterministic single-start core and validates in two
+  tiers: `RV` / `RVs` / `simi` (from the raw configurations, including the
+  Kazi-Aoual standardized `RVstd`) match R **exactly**; `consensus` / `Xfin`
+  match R **up to a global rotation/reflection** (verified via inter-object
+  distance matrices). Currently limited to no-missing, equal-width
+  configurations. Ships a fully-reproducible synthetic GPA dataset
+  (`load_gpa_synth`).
 - **Plotly plotting backend** (`factominer/plot/plotly_backend.py`),
   selected via `plot(res, ..., backend="plotly")`, returning
   `plotly.graph_objects.Figure`. Mirrors the full matplotlib surface

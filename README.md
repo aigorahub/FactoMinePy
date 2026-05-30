@@ -29,7 +29,7 @@ This package is **not** a wrapper around R; every method is reimplemented from t
 | `MFA` | `factominer.MFA` | 🚧 stub | — | Round 2 |
 | `HMFA` | `factominer.HMFA` | 🚧 stub | — | Round 2 |
 | `DMFA` | `factominer.DMFA` | 🚧 stub | — | Round 2 |
-| `GPA` | `factominer.GPA` | 🚧 stub | — | Round 2 |
+| `GPA` | `factominer.GPA` | ✅ | ⚠️ rotation-invariant | Generalized Procrustes Analysis. `RV` / `RVs` / `simi` are parity-verified exactly; `consensus` / `Xfin` match R up to a global rotation/reflection (R's GPA is stochastic). No missing values / equal-width configs |
 | Plotly backend | `factominer.plot.plot(..., backend="plotly")` | ✅ | structural | mirrors the matplotlib surface (ind/var/biplot/scree/contrib, CA/MCA maps, HCPC factor map + dendrogram); shares the `_data` geometry layer. Needs `pip install 'factominer[plotly]'` |
 
 Methods marked 🚧 are importable but raise `NotImplementedError("deferred — see docs/plans/factominer-python-port.md §2")` when called. This is by design so downstream code can `from factominer import HMFA` without an `ImportError`.
@@ -111,8 +111,9 @@ pytest -q
 
 This port targets the most common FactoMineR API surface and is rigorously validated on the bundled datasets, but the following caveats apply:
 
-- **Several methods are stubs.** `MFA`, `HMFA`, `DMFA`, `GPA` are importable but raise `NotImplementedError` when called.
+- **Several methods are stubs.** `MFA`, `HMFA`, `DMFA` are importable but raise `NotImplementedError` when called.
 - **FAMD covers active variables only.** Supplementary variables/individuals (`sup.var` / `ind.sup` in R) are not yet implemented; pass only active data.
+- **GPA parity is rotation-invariant, and the port is deterministic.** R's GPA is stochastic (random multi-start + random rank-deficient basis completion), so its `consensus` / `Xfin` are reproducible only up to a global rotation/reflection — an inherent gauge freedom of Procrustes analysis. The port implements the deterministic single-start core; `RV` / `RVs` / `simi` (computed from the raw configurations) match R exactly, and `consensus` / `Xfin` match R's inter-object distances. Currently limited to no-missing, equal-width configurations.
 - **Parity is empirical, not exhaustive.** The 100 parity tests cover the active + supplementary blocks for PCA / CA / MCA / HCPC, active-variable FAMD, and the full output schemas of dimdesc / catdes / condes on standard fixtures (`decathlon`, `children`, `tea`, `poison`). Behavior with row weights, missing values, very small samples, or `method="burt"` MCA has not been independently verified.
 - **Sign of axes is arbitrary.** SVD is sign-ambiguous; we apply a deterministic rule that may give the opposite sign from R on a given axis. Distances, clusters, contributions, and cos² are sign-invariant; coordinates may need a flip to align visually with R output.
 - **HCPC partitions can differ by one or two individuals.** K-means consolidation is sensitive to initialization; the adjusted Rand index against R is ≥ 0.999 on the decathlon test fixture but not exactly 1.0.

@@ -174,12 +174,14 @@ def GPA(  # noqa: N802 — mirrors R's function name
     consensus = consensus[:, :fina]
     Xfin = [xf[:, :fina] for xf in Xfin]
 
-    # RV / RVs / simi on the RAW configurations.
-    RV = np.eye(K)
-    RVs = np.eye(K)
-    sim = np.eye(K)
+    # RV / RVs / simi on the RAW configurations. R fills the diagonal too
+    # (loop j in i:K): RV[i,i]=1 and simi[i,i]=1, but RVs[i,i] is the
+    # standardized self-RV (coeffRV(Xi,Xi)$rvstd), not 1.
+    RV = np.zeros((K, K))
+    RVs = np.zeros((K, K))
+    sim = np.zeros((K, K))
     for i in range(K):
-        for j in range(i + 1, K):
+        for j in range(i, K):
             rv, rvs = _coeff_rv(raw[i], raw[j])
             RV[i, j] = RV[j, i] = rv
             RVs[i, j] = RVs[j, i] = rvs
@@ -233,16 +235,35 @@ def _procrustes_H(X1: np.ndarray, X2: np.ndarray) -> np.ndarray:
 
 
 def _coeff_rv(X: np.ndarray, Y: np.ndarray) -> tuple[float, float]:
-    """FactoMineR coeffRV: Escoufier RV and the standardized (diagonal-removed)
-    RVstd between two centered configurations."""
+    """FactoMineR ``coeffRV``: Escoufier RV and the standardized RVstd.
+
+    RVstd is the Kazi-Aoual / Josse moment standardization
+    ``(rv − E[rv]) / sqrt(Var[rv])`` under the row-permutation null, using the
+    analytic moment formulas (FactoMineR's ``n >= 6`` branch). Requires n >= 6
+    (smaller n uses exact permutation enumeration, not yet ported)."""
     Xc = X - X.mean(axis=0)
     Yc = Y - Y.mean(axis=0)
     W1 = Xc @ Xc.T
     W2 = Yc @ Yc.T
     rv = np.trace(W1 @ W2) / np.sqrt(np.trace(W1 @ W1) * np.trace(W2 @ W2))
-    W1t = W1 - np.diag(np.diag(W1))
-    W2t = W2 - np.diag(np.diag(W2))
-    rvs = np.trace(W1t @ W2t) / np.sqrt(np.trace(W1t @ W1t) * np.trace(W2t @ W2t))
+
+    n = X.shape[0]
+    if n < 6:
+        raise NotImplementedError("coeffRV RVstd needs n >= 6 (permutation path not ported)")
+    tt, te = np.trace(W1), np.trace(W2)
+    t2, t2e = np.trace(W1 @ W1), np.trace(W2 @ W2)
+    s2, s2e = float(np.sum(np.diag(W1) ** 2)), float(np.sum(np.diag(W2) ** 2))
+    betax, betay = tt**2 / t2, te**2 / t2e
+    alphax, alphay = n - 1 - betax, n - 1 - betay
+    deltax, deltay = s2 / t2, s2e / t2e
+    gammax = (n - 1) * (n * (n + 1) * deltax - (n - 1) * (betax + 2)) / ((n - 3) * (n - 1 - betax))
+    gammay = (n - 1) * (n * (n + 1) * deltay - (n - 1) * (betay + 2)) / ((n - 3) * (n - 1 - betay))
+    esperance = np.sqrt(betax) * np.sqrt(betay) / (n - 1)
+    variance = (
+        2 * alphay * alphax / ((n + 1) * (n - 1) ** 2 * (n - 2))
+        * (1 + (n - 3) * gammax * gammay / (2 * n * (n - 1)))
+    )
+    rvs = (rv - esperance) / np.sqrt(variance)
     return float(rv), float(rvs)
 
 
