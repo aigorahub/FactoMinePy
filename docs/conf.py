@@ -5,7 +5,7 @@ from __future__ import annotations
 project = "factominer"
 author = "Aigora"
 copyright = "2026, Aigora"
-release = "0.1.0.dev0"
+release = "0.2.0.dev0"
 
 extensions = [
     "sphinx.ext.autodoc",

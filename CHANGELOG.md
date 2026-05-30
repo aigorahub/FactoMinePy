@@ -9,7 +9,7 @@ out of pre-release.
 
 ## [0.2.0.dev0] — 2026-05-30
 
-This release adds three FactoMineR methods (FAMD, GPA) and a plotly plotting
+This release adds two FactoMineR methods (FAMD, GPA) and a plotly plotting
 backend, tightens every parity tolerance, and verifies all fixtures
 byte-for-byte against live R FactoMineR 2.14.
 
