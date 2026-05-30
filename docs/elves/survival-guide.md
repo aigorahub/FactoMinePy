@@ -51,10 +51,10 @@ All committed fixtures must remain byte-identical to live R FactoMineR
 
 ## Stop Gate
 
-- **Planned batches remaining:** 1 (POLISH)
-- **Stop allowed right now:** no
-- **Why:** FAMD, PD, PL, GPA all complete and parity-verified (121 passed). Only POLISH (v0.2.0.dev0 release) remains.
-- **Next required action:** Batch POLISH. Create rollback tag `elves/pre-batch-polish`. Update README status header (all live except MFA/HMFA/DMFA), soften the experimental warning to "pre-1.0", bump `pyproject.toml` 0.1.0.dev0 → 0.2.0.dev0, date the CHANGELOG `[0.2.0.dev0]` section, run a final review workflow, then `git tag v0.2.0.dev0 && git push origin v0.2.0.dev0` (release.yml auto-publishes to PyPI). NEVER merge — the user merges PR #3.
+- **Planned batches remaining:** 0 — RUN COMPLETE
+- **Stop allowed right now:** yes — all 5 batches done, v0.2.0.dev0 tagged + published, PR #3 ready for the user to merge.
+- **Why:** FAMD, PD, PL, GPA, POLISH all complete and verified (123 passed; final readiness rpy2-parity run 26674373775 green). The final-review workflow's findings were all fixed before tagging.
+- **Next required action:** none for the night shift. The user reviews + merges PR #3. (Do NOT merge — that's the user's call.)
 
 ---
 

@@ -22,6 +22,28 @@
 
 ---
 
+## Session Summary: 2026-05-18 → 2026-05-30
+
+**Batches completed:** 5 of 5 (FAMD, PD plot-data/ellipse, PL plotly, GPA, POLISH) + the GPA hard-stop resolution.
+**Status:** All planned work complete; v0.2.0.dev0 tagged and (auto-)published to PyPI. PR #3 ready for the user to merge.
+
+**What shipped:**
+- **FAMD** — exact 1e-9 parity (poison fixture), `quanti_var`/`quali_var` blocks.
+- **GPA** — deterministic core, two-tier parity (RV/RVs/simi exact incl. the Kazi-Aoual RVstd; consensus/Xfin rotation-invariant). New `GPAResult` + reproducible synthetic dataset.
+- **Plotly backend** — full mirror of the matplotlib surface on a shared `factominer/plot/_data.py` layer.
+- **Plot-data / ellipses** — R-exact `coord.ellipse` vertex parity (1e-9), shared by both backends.
+- **v0.2.0.dev0** — version bump, CHANGELOG, README refresh; published via the trusted-publisher release workflow.
+
+**Parity bar held:** no deterministic-method tolerance was loosened. The GPA hard stop (R's GPA is stochastic) was resolved by the user as "do it all" with an honest two-tier parity story, documented as such in the README.
+
+**Workflows used (per the user's request):** research fan-outs for FAMD, GPA, and plot-data (3 agents each); a 4-reviewer final readiness review that caught a missed `docs/conf.py` version bump and several README overclaims — all fixed before tagging.
+
+**Suite:** 123 passed / 2 skipped (the 2 are R fixtures with legitimately empty condes quali/category). Every fixture byte-identical to live R FactoMineR 2.14 (only residual ~1e-16 singular-value noise).
+
+**Human next steps:** review + merge PR #3; confirm v0.2.0.dev0 landed on PyPI.
+
+---
+
 ## Session Setup: 2026-05-18 (staging)
 
 **Phase:** Staging complete
