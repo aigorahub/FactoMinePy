@@ -36,7 +36,3 @@ DMFA = _deferred(
     "DMFA",
     "Dual Multiple Factor Analysis is planned for the next iteration.",
 )
-GPA = _deferred(
-    "GPA",
-    "Generalized Procrustes Analysis is planned for the next iteration.",
-)

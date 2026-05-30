@@ -52,3 +52,15 @@ def load_poison() -> pd.DataFrame:
     Mixed categorical + quantitative. Used in MCA / FAMD examples.
     """
     return _load_csv("poison.csv")
+
+
+def load_gpa_synth() -> pd.DataFrame:
+    """8 × 6 deterministic synthetic dataset for GPA.
+
+    Three configurations (``g1_d1``, ``g1_d2``, ``g2_*``, ``g3_*``) of the same
+    8 objects in 2D: a common base shape rotated, scaled, and perturbed per
+    configuration. Generated once from a fixed seed and frozen to CSV, so it is
+    fully reproducible and carries no third-party licensing. Used as the GPA
+    parity fixture (``group=[2, 2, 2]``).
+    """
+    return _load_csv("gpa_synth.csv")

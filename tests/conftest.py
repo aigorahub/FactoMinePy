@@ -71,6 +71,11 @@ def r_plot_ellipse_decathlon() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_gpa_synth() -> dict:
+    return _load_r_fixture("gpa", "synth")
+
+
+@pytest.fixture(scope="session")
 def r_hcpc_decathlon() -> dict:
     return _load_r_fixture("hcpc", "decathlon_plain_k4")
 

@@ -128,6 +128,31 @@ res_famd <- FAMD(poison, ncp = 5, graph = FALSE)
 write_json(dump_famd(res_famd), file.path(out_dir("famd"), "poison.json"))
 cat("[fixtures] famd/poison.json\n")
 
+# ---- GPA on the synthetic K=3 configuration dataset ------------------------
+# R's GPA is stochastic (random multi-start + rnorm basis completion), so we
+# set.seed for reproducibility of R's side. RV / RVs / simi are computed from
+# the raw configs and are deterministic regardless. Reads the committed CSV for
+# byte-identical input.
+gpa_csv <- file.path(root, "factominer", "datasets", "data", "gpa_synth.csv")
+gpa_df <- read.csv(gpa_csv, row.names = 1, check.names = FALSE)
+set.seed(42)
+res_gpa <- GPA(gpa_df, group = c(2, 2, 2), scale = TRUE, graph = FALSE)
+xfin_list <- lapply(seq_len(dim(res_gpa$Xfin)[3]),
+                    function(k) as.data.frame(res_gpa$Xfin[, , k]))
+write_json(
+  list(
+    RV        = as.data.frame(res_gpa$RV),
+    RVs       = as.data.frame(res_gpa$RVs),
+    simi      = as.data.frame(res_gpa$simi),
+    scaling   = as.numeric(res_gpa$scaling),
+    consensus = as.data.frame(res_gpa$consensus),
+    Xfin      = xfin_list,
+    group     = c(2L, 2L, 2L)
+  ),
+  file.path(out_dir("gpa"), "synth.json")
+)
+cat("[fixtures] gpa/synth.json\n")
+
 # ---- plot data: coord.ellipse on PCA(decathlon) individuals ----------------
 # The only genuinely-derived plot quantity not already covered by the analysis
 # fixtures is the confidence/concentration ellipse. Dump the EXACT input coords

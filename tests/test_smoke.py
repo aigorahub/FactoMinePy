@@ -67,7 +67,7 @@ def test_condes_runs():
     assert "quanti" in res or "quali" in res
 
 
-@pytest.mark.parametrize("name", ["MFA", "HMFA", "DMFA", "GPA"])
+@pytest.mark.parametrize("name", ["MFA", "HMFA", "DMFA"])
 def test_deferred_methods_raise(name):
     fn = getattr(factominer, name)
     with pytest.raises(NotImplementedError):
