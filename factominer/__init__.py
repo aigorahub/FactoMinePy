@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from ._result import Result
 from .ca import CA
-from .desc import catdes, condes, dimdesc
+from .desc import catdes, condes, descfreq, dimdesc
 from .dmfa import DMFA
 from .famd import FAMD
 from .gpa import GPA
@@ -34,6 +34,7 @@ __all__ = [
     "dimdesc",
     "catdes",
     "condes",
+    "descfreq",
     "predict",
     "reconst",
     "estim_ncp",

@@ -188,3 +188,8 @@ def r_estim_ncp_decathlon_gcv() -> dict:
 @pytest.fixture(scope="session")
 def r_estim_ncp_decathlon_smooth() -> dict:
     return _load_r_fixture("estim_ncp", "decathlon_smooth")
+
+
+@pytest.fixture(scope="session")
+def r_descfreq_children() -> dict:
+    return _load_r_fixture("descfreq", "children")

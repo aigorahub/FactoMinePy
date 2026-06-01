@@ -173,6 +173,17 @@ dump_reconst <- function(m) as.data.frame(m)
 # estim_ncp() returns list(ncp, criterion).
 dump_estim_ncp <- function(e) list(ncp = e$ncp, criterion = as.numeric(e$criterion))
 
+# descfreq() returns a per-row named list of matrices (significant columns x 6
+# stats), or NULL for rows with no significant column. Dump each non-NULL row as
+# a data.frame (row names = the significant column names, kept by toJSON).
+dump_descfreq <- function(res) {
+  out <- list()
+  for (nm in names(res)) {
+    if (!is.null(res[[nm]])) out[[nm]] <- as.data.frame(res[[nm]])
+  }
+  out
+}
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -516,5 +527,11 @@ estncp_smooth <- estim_ncp(decathlon[, 1:10], ncp.min = 0, ncp.max = 6,
                            scale = TRUE, method = "Smooth")
 write_json(dump_estim_ncp(estncp_smooth), file.path(out_dir("estim_ncp"), "decathlon_smooth.json"))
 cat("[fixtures] estim_ncp/decathlon_smooth.json\n")
+
+# ---- descfreq (describe frequency-table rows by their columns) --------------
+# Use the active children contingency table (14 reasons x 5 age/education cols).
+descf <- descfreq(children[1:14, 1:5], proba = 0.05)
+write_json(dump_descfreq(descf), file.path(out_dir("descfreq"), "children.json"))
+cat("[fixtures] descfreq/children.json\n")
 
 cat("\ndone.\n")
