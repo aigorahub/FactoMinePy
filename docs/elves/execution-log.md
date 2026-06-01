@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-31 (A3 complete, parity-verified)
-- **Current phase:** Batch A3 (HMFA) complete; Batch A4 (DMFA) next — last Phase-A method
-- **Active batch:** A3 → done; next A4 (DMFA)
-- **Last completed batch:** A3 (HMFA) — 14/14 parity tests green vs live R (first pass)
-- **Next exact batch:** A4 (DMFA — dual MFA; per-group standardized PCA + group trace)
+- **Last updated:** 2026-05-31 (A4 complete — PHASE A done, parity-verified)
+- **Current phase:** Phase A (MFA family) COMPLETE; entropy check, then Phase B (B1) next
+- **Active batch:** A4 → done; next: entropy check → B1 (FAMD sup vars)
+- **Last completed batch:** A4 (DMFA) — 15/15 parity tests green vs live R
+- **Next exact batch:** entropy check (consolidate correlation helpers), then B1 (FAMD sup vars)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `d0cf12d` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→164 passed, 2 skipped (the +41 are MFA/HMFA parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `5066e0e` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→179 passed, 2 skipped (+56 MFA-family parity tests; skips unchanged)
 
 ---
 
@@ -67,37 +67,32 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
-## Batch A4 — DMFA — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+## Batch A4 — DMFA — 2026-05-31 (COMPLETE — 15/15 parity vs live R; PHASE A DONE)
 
-**Phase:** Implement complete; local green; rpy2-parity CI loop pending. **Last Phase-A method.**
+**Phase:** Implement → Validate → Review → Document, done. Parity-verified. **MFA family complete.**
 **Rollback tag:** `elves/pre-batch-a4` (pushed).
+**Commits:** `9b68da1` (impl + harness), `5066e0e` (R fixture + named-list test fix).
 
-**Contract:** `factominer/dmfa.py` implements Dual MFA. `DMFA(don, num_fact, scale_unit, ncp,
-quanti_sup)`. Per-group standardize each level's sub-table (its own mean/sd), form `Cov[j]`
-(cor/cov), stack + prepend the factor, run `PCA(quali_sup=[factor], quanti_sup=...)`, reorder ind
-to input order, then the DMFA group block `group.coord[j,s] = v_sᵀ Cov_active_j v_s / λ_s`,
-`coord.n` (÷ group λ₁), `cos2` (÷ Σλ²·100), plus `var.partiel` / `cor.dim.gr` / `Cov` / `Xc`.
+**Validation (final):** ruff clean; sphinx -W; pytest **179 passed / 2 skipped** (back to the 2-skip
+baseline). CI: all DMFA channels matched live R FactoMineR 2.14 — eig, svd, ind (reordered), var
+(10 events), quanti.sup (Rank/Points), group (coord/coord.n/cos2 — the trace block), cor.dim.gr,
+var.partiel. First CI round: 13/15 passed; the 2 failures were a TEST bug (R's named-list
+`cor.dim.gr`/`var.partiel` serialize as objects keyed by level, not arrays — accessed by integer
+index). Every DMFA *computation* matched R first time. No tolerance loosened; no fixture hand-edited.
 
-**Build on:** PCA wholesale (eig/ind/var/quanti.sup/svd) via `quali_sup=[0]` + `quanti_sup`. New
-`DMFAResult` container. ~110 lines total. NOT MFA's `1/λ₁` weighting — per-group standardization.
+**Regression attestation:** new `factominer/dmfa.py`, `tests/test_dmfa.py`, `dmfa/decathlon.json`;
+`__init__.py` swaps the DMFA stub import for the real module; additive `refresh_r_fixtures.R` /
+`conftest.py` / `test_smoke.py`. No existing method changed. Test baseline 164→179 passed, skips 2→2.
+**Confidence: HIGH** — DMFA reuses the parity-verified PCA engine; only the per-group trace block is
+new, and it matched R immediately.
 
-**Source-verified (DMFA.R):** column reorder L13; per-group `scale()`+`cor`/`cov` L31-38; stacked
-PCA L40-41; ind reorder L49-52; group trace L65-82 (`V` = `var.coord` loadings, `Cov` sliced to
-active by dropping the `quanti.sup` rows/cols, three normalizers). Decathlon path drops `quali.sup`.
+**Docs updated:** README (DMFA ✅/✅, status prose, stub note removed — no methods remain stubbed),
+ROADMAP, CHANGELOG.
 
-**Local checks (pre-CI):** ruff clean; sphinx -W; pytest 165 passed / 16 skipped (14 DMFA tests
-await the fixture). Smoke: ind in original order (SEBRLE, CLAY...), var = 10 events, quanti.sup =
-Rank/Points, group levels Decastar/OlympicG, group.cos2 row sums ≤ 100.
-
-**Fixture (license-clean):** `DMFA(decathlon, num.fact=13, scale.unit=TRUE, quanti.sup=c(11,12))`
-(Competition factor; 10 events active, Rank/Points sup) — already-bundled decathlon. New `dump_dmfa`.
-
-**Deferred (recorded):** supplementary qualitatives (`quali_sup`, the interaction-factor branch),
-the `Cov`/`Xc` dumps (diagnostic; validated indirectly via group.coord/var.partiel).
-
-**Next:** push → trigger CI (dump_dmfa generates dmfa/decathlon.json) → verify the 14 DMFA tests vs
-fresh R → commit fixture → confirm zero drift. After A4, **Phase A (MFA family) is complete** and an
-entropy check is due (3 batches since the last one — A2/A3/A4).
+**Next:** confirm zero-drift CI, run the **entropy check** (Phase A done — consolidate the three
+correlation helpers across mfa/hmfa/dmfa), then Phase B / B1 (FAMD supplementary variables — research
+spec captured: route through PCA's quanti_sup/quali_sup/ind_sup; compute active scaling from active
+rows only; fixture `FAMD(poison, sup.var=c("Time","Sex"), ind.sup=c(1,2))`).
 
 ---
 

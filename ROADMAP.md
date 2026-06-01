@@ -21,7 +21,7 @@ For status of an *individual* method, the source of truth is the table in
 | `plot.*` matplotlib + plotly | ✅ | structural + ellipse | both backends on a shared `_data` layer; `coord.ellipse` vertex-exact |
 | `MFA` | ✅ | ✅ | active groups (types `s`/`c`/`n`); eig/ind/quanti.var/quali.var + group Lg/RV/correlation + coord.partiel + partial.axes + inertia.ratio exact; sup groups, `f`/`m` groups pending |
 | `HMFA` | ✅ | ✅ | hierarchical MFA via `H` (per-level group counts); eig/ind/quanti.var/quali.var + group.coord (per level) + canonical exact; types `s`/`c`/`n` |
-| `DMFA` | 🚧 | — | importable `NotImplementedError` stub (builds on MFA) |
+| `DMFA` | ✅ | ✅ | dual MFA over a grouping factor; eig/ind/var/quanti.sup + group(coord/coord.n/cos2) + cor.dim.gr/var.partiel exact; sup qualitatives pending |
 
 Run #1 (FAMD, GPA, plotly, plot-data/ellipse parity, v0.2.0.dev0) is complete.
 

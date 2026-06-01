@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 19 (A1+A2+A3 complete + parity-verified)
+- **Planned batches remaining:** 18 (Phase A complete: A1–A4 parity-verified)
 - **Stop allowed right now:** no
-- **Why:** A1–A3 done; 19 batches remain (A4, B1–B5, C1–C3, D1–D4, E1–E3, F1).
-- **Next required action:** confirm A3 zero-drift CI green, then start A4 (DMFA, last Phase-A
-  method). Entropy check due after A4 (3 batches since last).
+- **Why:** Phase A (MFA family) done; 18 batches remain (B1–B5, C1–C3, D1–D4, E1–E3, F1).
+- **Next required action:** run the entropy check (consolidate correlation helpers), then start B1
+  (FAMD sup vars). All A1–A4 CI runs are green + zero-drift.
 
 ---
 
@@ -119,54 +119,54 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Batches A1+A2+A3 COMPLETE — MFA + HMFA parity-verified (41 channels vs live R). A4 next.
+**Status:** PHASE A (MFA family) COMPLETE — MFA + HMFA + DMFA all parity-verified, CI-green, zero-drift.
 
-**Active batch:** A3 done → A4 (DMFA), the last Phase-A method.
+**Active batch:** A4 done → entropy check → B1 (FAMD supplementary variables).
 
-**What was just finished:** A1 (MFA core), A2 (MFA completeness), A3 (HMFA — 14/14 first-pass parity;
-extended `mfa.py` with `weight_col_mfa` + call exposure, built `hmfa.py` on the MFA/PCA engines).
-164 passed / 2 skipped; ruff + sphinx clean. Commits through `d0cf12d`. Docs updated
-(README/ROADMAP/CHANGELOG/learnings L16–L17). DMFA (A4) research spec captured.
+**What was just finished:** the whole MFA family. A1 (MFA core 21/21), A2 (MFA completeness 27/27),
+A3 (HMFA 14/14), A4 (DMFA 15/15) — all vs live R FactoMineR 2.14. 179 passed / 2 skipped; ruff +
+sphinx clean. Commits through `5066e0e`. README/ROADMAP/CHANGELOG: all three MFA-family methods ✅,
+no methods remain stubbed. Learnings L12–L17. B1 research spec captured.
 
-**Single next action:** confirm A3 zero-drift CI green, then start A4 (DMFA). DMFA =
-per-group-standardized stacked data → `PCA(quali_sup=grouping factor)` → DMFA-specific group block
-`group$coord[j,s] = v_sᵀ Cov_j v_s / λ_s`, `coord.n` (÷ group's λ₁), `cos2`, plus `var.partiel` /
-`cor.dim.gr` / `Cov`. Reuses PCA wholesale (~50-60 new lines). NOT MFA's `1/λ₁` weighting.
-Fixture: `DMFA(decathlon, num.fact=13, quanti.sup=c(11,12))` (Competition factor) — license-clean.
+**Single next action:** confirm A4 zero-drift CI green (done — both jobs success), run the entropy
+check (consolidate the 3 correlation helpers in mfa/hmfa/dmfa into a shared `_corr.py`), then start
+B1 (FAMD sup vars).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** A4 — DMFA (Dual MFA)
+**Batch:** B1 — FAMD supplementary variables (after the entropy check)
 
-**Scope:** `factominer/dmfa.py`. `DMFA(don, num_fact, scale_unit=True, ncp=5, quanti_sup, quali_sup)`.
-`num_fact` = column index of the grouping factor; it splits individuals into `ng` groups. Algorithm
-(DMFA.R): (1) per-group center+scale each level's sub-table with that group's own mean/sd
-(`scale()`), build `Cov[[j]]` = `cor`(scale_unit) or `cov` of the per-group sub-table; (2) vertically
-stack the per-group-centered data, prepend the factor; (3) `res.pca = PCA(stacked, quali_sup=[factor],
-quanti_sup=...)` — a plain unweighted PCA (PCA's own `scale_unit` stays True, decoupled from DMFA's);
-(4) **reorder `ind` back to original row order** (DMFA.R L49-52); (5) DMFA group block:
-`group$coord[j,s] = v_sᵀ Cov_j v_s / λ_s` where `v_s` = `res.pca.var.coord[:,s]` (the LOADINGS, not
-V_tilde) and `λ_s` = global eig; `group$coord.n[j,s] = coord/λ₁(Cov_j)`; `group$cos2 = coord²/Σλ(Cov_j)²·100`;
-plus `var.partiel[[j]]=cor(Xc_j, FS_j)`, `cor.dim.gr[[j]]=cor(FS_j)`, `Cov`, `Xc`. Remove the DMFA stub.
+**Scope:** add `sup_var` / `ind_sup` to `factominer/famd.py`. R FAMD routes sup vars through PCA's
+own machinery — it does NOT reimplement them. Route through the existing `PCA(quanti_sup=,
+quali_sup=, ind_sup=)`:
+- **sup-quanti:** pre-scale (center + population sd, active row weights) like active quanti, append,
+  pass as PCA `quanti_sup` → correlation with axes. Identical to PCA quanti.sup; no FAMD transform.
+- **sup-quali:** append the RAW factor column, pass as PCA `quali_sup` → PCA's barycenter form
+  (coord/cos2/v.test/eta2). **Do NOT apply the active-quali `coord/√prop·√eig` transform to sup
+  categories** (standard path returns `pca$quali.sup` verbatim). This is the trap.
+- **sup-ind:** pass `ind_sup` to PCA. **Key change:** compute the active scaling (q_center/q_sd/prop)
+  from ACTIVE rows only (exclude ind_sup rows), then apply to the full matrix incl. sup rows.
+- **`var$coord.sup`/`cos2.sup`** combined summary (FAMD.R:176-184): sq loadings for sup-quanti, eta²
+  for sup-quali. Add `coord_sup`/`cos2_sup` optional fields to `Block` (like `coord_partiel`).
 
-**Reuse:** PCA wholesale for eig/ind/var/quanti.sup/svd; ~50-60 new lines for the per-group
-centering + the group trace block. New `DMFAResult` (or extend) with `group.coord/coord_n/cos2`,
-`var_partiel`, `cor_dim_gr`, `Cov`, `Xc`.
+Build `Xdf` as a MIXED DataFrame (scaled active floats + pre-scaled sup-quanti floats + raw sup-quali
+object cols); PCA coerces only the active columns to numeric, so a mixed frame is safe.
 
-**Hardest parity point:** `group$coord` trace `v_sᵀ Cov_j v_s / λ_s` — `V` is `var.coord` (loadings),
-`Cov_j` uses n−1 (`scale()`/`cor`/`cov`), and three different normalizers (global λ_s, group λ₁,
-Σλ²). DMFA does NOT use MFA's `1/λ₁` group weighting — per-group standardization instead ([[L16]]).
+**Fixture (license-clean):** `FAMD(poison, sup.var=c("Time","Sex"), ind.sup=c(1,2))` — already-bundled
+poison; exercises sup-quanti (Time) + sup-quali (Sex) + sup-ind (rows 1-2) in one. Keep the existing
+active-only `famd/poison.json` untouched; add a SECOND fixture `famd/poison_sup.json`. Extend
+`dump_famd` with ind.sup/quanti.sup/quali.sup/var.coord.sup/var.cos2.sup.
 
-**Fixture (license-clean):** `DMFA(decathlon, num.fact=13, scale.unit=TRUE, quanti.sup=c(11,12))`
-(Competition factor: Decastar n=13 / OlympicG n=28; 10 events active, Rank/Points sup). Optional
-active-only sanity: `DMFA(decathlon[,c(1:10,13)], num.fact=11)`. New `dump_dmfa`.
+**Hardest parity point:** sup-quali `v.test` (PCA's `sqrt(nA·(N-1)/(N-nA))` multiplier vs FAMD's
+raw-coord form — algebraically equal, verify numerically) and that PCA's barycenter coord == the
+FactoMineR transition formula. Full B1 research spec is in the agent summary / will re-derive.
 
-**Acceptance:** eig/ind/var/group(coord/coord.n/cos2)/cor.dim.gr to the deterministic bar; ruff
-clean; rpy2-parity green.
+**Acceptance:** eig + ind.sup/quanti.sup/quali.sup (coord/cos2/v.test/eta2) + var.coord.sup to the
+bar; existing active FAMD parity unchanged; ruff clean; rpy2-parity green.
 
-**Rollback tag:** `elves/pre-batch-a4` (create before starting).
+**Rollback tag:** `elves/pre-batch-b1` (create before starting).
 
 ---
 

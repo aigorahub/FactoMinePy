@@ -14,13 +14,13 @@ This package is **not** a wrapper around R; every method is reimplemented from t
 ## Status
 
 **Early-alpha (`0.2.0.dev0`).** Live against R FactoMineR 2.14: PCA, CA, MCA,
-FAMD, MFA, HMFA, HCPC, GPA, the `dimdesc` / `catdes` / `condes` descriptors, and
-matplotlib + plotly plotting backends. PCA / CA / MCA / FAMD / MFA / HMFA / HCPC
-and the descriptors are numerically parity-verified; GPA is
-rotation-invariant-verified (R's GPA is stochastic); the plotting backends are
-structurally verified (plus vertex-exact ellipses). Still stubbed: DMFA.
-The supported-methods table below is the source of truth for exactly what works
-and at what parity bar.
+FAMD, MFA, HMFA, DMFA, HCPC, GPA, the `dimdesc` / `catdes` / `condes`
+descriptors, and matplotlib + plotly plotting backends. PCA / CA / MCA / FAMD /
+MFA / HMFA / DMFA / HCPC and the descriptors are numerically parity-verified;
+GPA is rotation-invariant-verified (R's GPA is stochastic); the plotting
+backends are structurally verified (plus vertex-exact ellipses). The full MFA
+family (MFA, HMFA, DMFA) is now live. The supported-methods table below is the
+source of truth for exactly what works and at what parity bar.
 
 | FactoMineR method | Python equivalent | Live | R-parity verified | Notes |
 | --- | --- | --- | --- | --- |
@@ -35,11 +35,11 @@ and at what parity bar.
 | `FAMD` | `factominer.FAMD` | ✅ | ✅ | mixed quantitative + qualitative data; active variables (supplementary vars not yet supported) |
 | `MFA` | `factominer.MFA` | ✅ | ✅ | Multiple Factor Analysis: groups of variables (types `s`/`c`/`n`), each normalized by its first eigenvalue. Parity-verified: `eig`, `ind` (incl. partial coords `coord.partiel`), `quanti.var`, `quali.var`, the `group` block (coord/contrib/cos2/dist2/correlation + `Lg`/`RV`), `partial.axes`, and `inertia.ratio`. Active groups, uniform row weights; supplementary groups and frequency/mixed (`f`/`m`) groups are not yet supported |
 | `HMFA` | `factominer.HMFA` | ✅ | ✅ | Hierarchical MFA: nested groups via `H` (per-level group counts), each level adding a `1/λ₁` normalization. Parity-verified: `eig`, `ind`, `quanti.var`, `quali.var`, `group.coord` (one matrix per hierarchy level), and `group.canonical`. Active groups (types `s`/`c`/`n`), uniform row weights |
-| `DMFA` | `factominer.DMFA` | 🚧 stub | — | Round 2 (builds on MFA) |
+| `DMFA` | `factominer.DMFA` | ✅ | ✅ | Dual MFA: studies how the variable cloud varies across the levels of a grouping factor (`num_fact`). Parity-verified: `eig`, `ind`, `var`, `quanti.sup`, the `group` block (`coord`/`coord.n`/`cos2` — the `v_sᵀ Cov_j v_s / λ_s` trace), and the per-group `cor.dim.gr` / `var.partiel` diagnostics. Supplementary qualitatives not yet supported |
 | `GPA` | `factominer.GPA` | ✅ | ⚠️ rotation-invariant | Generalized Procrustes Analysis. `RV` / `RVs` / `simi` are parity-verified exactly; `consensus` / `Xfin` match R up to a global rotation/reflection (R's GPA is stochastic). No missing values / equal-width configs |
 | Plotly backend | `factominer.plot.plot(..., backend="plotly")` | ✅ | structural | mirrors the matplotlib surface (ind/var/biplot/scree/contrib, CA/MCA maps, HCPC factor map + dendrogram); shares the `_data` geometry layer. Needs `pip install 'factominer[plotly]'` |
 
-Methods marked 🚧 are importable but raise `NotImplementedError` (pointing at [ROADMAP.md](ROADMAP.md) and the supported-methods table) when called. This is by design so downstream code can `from factominer import DMFA` without an `ImportError`.
+Every analytic FactoMineR method in scope is now live and parity-verified; no methods remain stubbed. Remaining gaps are at the option level (noted per row above) rather than whole methods — see [ROADMAP.md](ROADMAP.md).
 
 ## Install
 

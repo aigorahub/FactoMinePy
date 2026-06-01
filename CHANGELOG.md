@@ -9,6 +9,18 @@ out of pre-release.
 
 ### Added
 
+- **`DMFA` (Dual Multiple Factor Analysis)** is now implemented
+  (`factominer/dmfa.py` + a `DMFAResult` container), completing the MFA family
+  (MFA, HMFA, DMFA all live). DMFA studies how the cloud of variables varies
+  across the levels of a grouping factor: each group's sub-table is standardized
+  by its own mean/sd, the per-group-centered sub-tables are stacked, a plain PCA
+  (the factor as supplementary qualitative) is run, and each group is placed by
+  the trace `group.coord[j,s] = v_sᵀ Cov_j v_s / λ_s`. Outputs `eig`, `ind`
+  (reordered to input order), `var`, `quanti.sup`, the group block
+  (`coord`/`coord.n`/`cos2`), and the per-group `cor.dim.gr` / `var.partiel`
+  diagnostics. Parity-verified against live R FactoMineR 2.14 on
+  `DMFA(decathlon, num.fact="Competition", quanti.sup=Rank/Points)`.
+  Supplementary qualitatives are not yet supported.
 - **`HMFA` (Hierarchical Multiple Factor Analysis)** is now implemented
   (`factominer/hmfa.py` + an `HMFAResult` container). HMFA generalizes MFA to a
   hierarchy of groups (`H`, a list of per-level group counts): each hierarchy
