@@ -19,6 +19,7 @@ from .mca import MCA
 from .mfa import MFA
 from .pca import PCA
 from .predict import predict
+from .reconst import estim_ncp, reconst
 
 __all__ = [
     "PCA",
@@ -34,6 +35,8 @@ __all__ = [
     "catdes",
     "condes",
     "predict",
+    "reconst",
+    "estim_ncp",
     "Result",
 ]
 

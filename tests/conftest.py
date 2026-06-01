@@ -168,3 +168,23 @@ def r_predict_famd_poison() -> dict:
 @pytest.fixture(scope="session")
 def r_predict_mfa_poison() -> dict:
     return _load_r_fixture("predict_mfa", "poison")
+
+
+@pytest.fixture(scope="session")
+def r_reconst_pca_decathlon() -> dict:
+    return _load_r_fixture("reconst", "pca_decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_reconst_ca_children() -> dict:
+    return _load_r_fixture("reconst", "ca_children")
+
+
+@pytest.fixture(scope="session")
+def r_estim_ncp_decathlon_gcv() -> dict:
+    return _load_r_fixture("estim_ncp", "decathlon_gcv")
+
+
+@pytest.fixture(scope="session")
+def r_estim_ncp_decathlon_smooth() -> dict:
+    return _load_r_fixture("estim_ncp", "decathlon_smooth")

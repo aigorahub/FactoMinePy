@@ -166,6 +166,13 @@ dump_predict <- function(p) {
   out
 }
 
+# reconst() returns a reconstructed table (matrix); dump as a data.frame (row
+# names dropped by toJSON, so the test aligns positionally in active-row order).
+dump_reconst <- function(m) as.data.frame(m)
+
+# estim_ncp() returns list(ncp, criterion).
+dump_estim_ncp <- function(e) list(ncp = e$ncp, criterion = as.numeric(e$criterion))
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -487,5 +494,27 @@ res_pred_mfa <- MFA(poison[6:55, ],
 pred_mfa <- predict(res_pred_mfa, poison[1:5, ])
 write_json(dump_predict(pred_mfa), file.path(out_dir("predict_mfa"), "poison.json"))
 cat("[fixtures] predict_mfa/poison.json\n")
+
+# ---- reconst (low-rank reconstruction of the original table) ---------------
+# PCA: reconstruct decathlon's 10 active events from the first 2 axes.
+recon_pca <- reconst(res_pca_plain, ncp = 2)
+write_json(dump_reconst(recon_pca), file.path(out_dir("reconst"), "pca_decathlon.json"))
+cat("[fixtures] reconst/pca_decathlon.json\n")
+
+# CA: reconstruct the active children contingency table from the first 2 axes.
+recon_ca <- reconst(res_ca, ncp = 2)
+write_json(dump_reconst(recon_ca), file.path(out_dir("reconst"), "ca_children.json"))
+cat("[fixtures] reconst/ca_children.json\n")
+
+# ---- estim_ncp (estimate the number of PCA components) ---------------------
+estncp_gcv <- estim_ncp(decathlon[, 1:10], ncp.min = 0, ncp.max = 6,
+                        scale = TRUE, method = "GCV")
+write_json(dump_estim_ncp(estncp_gcv), file.path(out_dir("estim_ncp"), "decathlon_gcv.json"))
+cat("[fixtures] estim_ncp/decathlon_gcv.json\n")
+
+estncp_smooth <- estim_ncp(decathlon[, 1:10], ncp.min = 0, ncp.max = 6,
+                           scale = TRUE, method = "Smooth")
+write_json(dump_estim_ncp(estncp_smooth), file.path(out_dir("estim_ncp"), "decathlon_smooth.json"))
+cat("[fixtures] estim_ncp/decathlon_smooth.json\n")
 
 cat("\ndone.\n")
