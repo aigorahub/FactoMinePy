@@ -310,6 +310,28 @@ margins (`marge_row`/`marge_col`) and grand total (`N`) plus the coords/eig — 
 original table is never needed (`hatX = N·(√Rr·S·√Rc + Rr·Rcᵀ)`). Full-rank
 reconstruction reproduces the active table to ~1e-14, a strong self-check.
 
+### L22 — R's GPA is not reproducible across CI runs even with `set.seed`; PANOVA is stochastic-tier
+
+R FactoMineR's `GPA` uses a random multi-start + `rnorm` basis completion, and
+`set.seed(42)` does NOT fully pin it across separate R sessions/runners. The live
+`r-fixture-drift` artifact for `gpa/synth_uneven.json` shows the consensus/Xfin
+**reflection sign flipping** and the PANOVA sum-of-squares entries drifting by
+**~2e-4** run-to-run (e.g. an objet SSfit of 32.7235 vs 32.7234) — while
+`RV`/`RVs`/`simi` (computed from the raw configs) stay byte-identical. Implication:
+the committed GPA fixture is just *one* sample of a stochastic process, so CI
+regenerates a slightly different one each run.
+
+Consequences for the test design (two-tier, [[gpa]]):
+- `RV`/`RVs`/`simi`: exact (1e-6) — raw-config quantities, deterministic.
+- `consensus`/`Xfin`: compare via `pdist` (rotation/reflection-invariant).
+- **`PANOVA` objet/config: stochastic tier — `atol=1e-3, rtol=1e-3`**, not 1e-4.
+  They're gauge-invariant (sum over dimensions) but depend on *which* optimum R
+  converged to, which varies ~2e-4. A 1e-4 tolerance flakes ~half the CI runs;
+  this is NOT a forbidden "loosen a deterministic tolerance" — PANOVA was
+  mis-tiered, the correction puts it where GPA's stochasticity requires.
+- Don't bother re-committing the GPA fixture to chase "zero drift" — the drift is
+  intrinsic; the rotation-invariant / stochastic-tier comparisons absorb it.
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch
