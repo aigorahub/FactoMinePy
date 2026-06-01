@@ -37,13 +37,22 @@ def test_dimdesc_ca_self_consistent():
             assert list(d[k][tbl].columns) == ["coord"]
 
 
+def _axis_items(fixture):
+    """Yield (axis_index, payload) for each "Dim N" entry, skipping R's
+    extra ``call`` element. Axis index is parsed from the key (1-based in R)."""
+    for axkey, axpayload in fixture.items():
+        if axkey == "call":
+            continue
+        k = int(str(axkey).split()[-1]) - 1  # "Dim 1" -> 0
+        yield k, axpayload
+
+
 def test_dimdesc_mca_quali(r_dimdesc_mca_tea):
     d = _mca_desc()
-    for i, (_axkey, axpayload) in enumerate(r_dimdesc_mca_tea.items()):
+    for k, axpayload in _axis_items(r_dimdesc_mca_tea):
         payload = axpayload.get("quali")
         if payload is None:
             continue
-        k = [0, 1][i]
         for row in payload:
             var = str(row.get("_row") or row.get("rowname"))
             assert var in d[k]["quali"].index, f"quali var {var} missing on axis {k}"
@@ -57,11 +66,10 @@ def test_dimdesc_mca_category_count(r_dimdesc_mca_tea):
     # The category Estimate is sign-dependent and the labels can collide across
     # variables; assert the per-axis category count and p.value set match R.
     d = _mca_desc()
-    for i, (_axkey, axpayload) in enumerate(r_dimdesc_mca_tea.items()):
+    for k, axpayload in _axis_items(r_dimdesc_mca_tea):
         payload = axpayload.get("category")
         if payload is None:
             continue
-        k = [0, 1][i]
         r_pvals = sorted(float(r["p.value"]) for r in payload)
         py_pvals = sorted(float(v) for v in d[k]["category"]["p.value"])
         assert len(r_pvals) == len(py_pvals), f"category count axis {k}"

@@ -381,6 +381,7 @@ res_mca_small <- MCA(tea[, 1:6], ncp = 5, graph = FALSE)
 mca_desc <- dimdesc(res_mca_small, axes = 1:2, proba = 0.05)
 mca_desc_payload <- list()
 for (k in seq_along(mca_desc)) {
+  if (names(mca_desc)[k] == "call") next   # R attaches the condes call; skip it
   d <- mca_desc[[k]]
   mca_desc_payload[[names(mca_desc)[k]]] <- list(
     quanti   = if (!is.null(d$quanti))   as.data.frame(d$quanti)   else NULL,
