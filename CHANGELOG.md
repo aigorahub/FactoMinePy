@@ -18,6 +18,14 @@ out of pre-release.
 
 ### Added
 
+- **`dimdesc` CA and MCA branches.** `dimdesc` now describes the axes of `CA`
+  and `MCA` results, not only `PCA`. MCA routes through the same `condes` path as
+  PCA (per-axis `quali` eta²/p.value and `category` Estimate/p.value) and is
+  parity-verified against live R FactoMineR 2.14. CA describes each axis by its
+  row and column coordinates sorted ascending (active + supplementary); it is
+  verified for self-consistency against the (R-parity-verified) CA coordinates
+  because R 2.14's own `dimdesc(CA)` errors on R 4.x (`order()` on a one-column
+  data frame). Passing a CA/MCA result to `dimdesc` previously raised.
 - **`GPA` unequal-width configurations + `correlations` / `PANOVA`.** GPA now
   handles configurations of different column counts (the equal-width restriction
   is lifted): each calibrated configuration is padded to `max(group)` and the

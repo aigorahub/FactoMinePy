@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-31 (B4 complete, parity-verified)
-- **Current phase:** Phase A + B1 + B2 + B3 + B4 done; B5 (dimdesc CA/MCA) next
-- **Active batch:** B4 → done; next B5 (dimdesc CA/MCA). B4b (missing values + FAMD ind_sup) deferred.
-- **Last completed batch:** B4 (PCA row.w) — 24/24 PCA parity tests green vs live R
-- **Next exact batch:** B5 (wire dimdesc CA/MCA branches; fixtures for dimdesc(CA)/dimdesc(MCA))
+- **Last updated:** 2026-06-01 (B5 complete, parity-verified — PHASE B DONE)
+- **Current phase:** Phase A + Phase B (B1–B5) done; Phase C (C1 predict.*) next
+- **Active batch:** B5 → done; next C1 (predict.PCA/MCA/FAMD/MFA). B4b (missing values + FAMD ind_sup) deferred.
+- **Last completed batch:** B5 (dimdesc CA/MCA) — MCA parity vs live R; CA self-consistent (R's dimdesc(CA) broken on R 4.x)
+- **Next exact batch:** C1 (predict.* family — project held-out individuals onto a fitted model)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `88786d9` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→209 passed, 2 skipped (+86 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `06e3559` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→212 passed, 2 skipped (+89 parity tests; skips unchanged)
 
 ---
 
@@ -67,9 +67,9 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
-## Batch B5 — dimdesc CA/MCA — 2026-06-01 (IN PROGRESS: code done, awaiting CI fixture)
+## Batch B5 — dimdesc CA/MCA — 2026-06-01 (COMPLETE — MCA parity vs live R; CA self-consistent)
 
-**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Phase:** Complete. rpy2-parity CI green (run 26734779119, both jobs success); zero drift confirmed.
 **Rollback tag:** `elves/pre-batch-b5` (pushed).
 
 **Contract:** wire `dimdesc` for CA and MCA results (previously only PCA; CA/MCA raised). Per R
@@ -80,14 +80,40 @@ axis, the sorted row + column coordinates (active + supplementary), each a one-c
 **Build on:** added `active_frame` to MCA's call dict → dimdesc(MCA) routes through the existing
 parity-verified condes path. New `_dimdesc_ca` helper for the CA branch. No change to the PCA path.
 
-**Local checks (pre-CI):** ruff clean; pytest 209 passed / 5 skipped. Smoke: dimdesc(CA) → sorted
-row(18 incl. sup)/col(8) tables; dimdesc(MCA) → quali (eta²) + category (the condes output).
+**Two R 2.14 quirks surfaced and handled (both faithfully, no test/fixture fudging):**
+1. **`dimdesc(CA)` is broken on R 4.x.** FactoMineR 2.14's CA branch does
+   `order(tableau[, k, drop=FALSE])` on a 1-col data.frame → "cannot xtfrm data frames". So R
+   produces NO usable CA fixture. The CA branch is a pure re-sort of the (already R-parity-verified)
+   CA coordinates, so `test_dimdesc_ca_self_consistent` verifies it directly against
+   `res.row.coord`/`res.col.coord` sorted ascending (active + sup), not against an R dump. The R dump
+   for CA dimdesc was removed from `refresh_r_fixtures.R`.
+2. **`dimdesc(MCA)` attaches a `call` element.** R's `else` branch sets `result$call <- result[[1]]$call`,
+   so `names(dimdesc(MCA))` = `["Dim 1", "Dim 2", "call"]`. The test's per-axis loop now parses the axis
+   index from the `"Dim N"` key and skips `call`; the R dump skips the `call` element too so regenerated
+   fixtures stay clean (`["Dim 1", "Dim 2"]`).
 
-**Fixtures (license-clean):** `dimdesc(CA(children, row.sup, col.sup))` → `dimdesc/ca_children.json`;
-`dimdesc(MCA(tea[,1:6]))` → `dimdesc/mca_tea.json`. CA coords sign-aligned; MCA quali R²/p.value
-sign-invariant (category Estimate sign-dependent → assert p.value set + count).
+**Result schema (MCA, per axis):** `quali` (R² + p.value, sign-invariant) and `category` (Estimate
+sign-dependent + p.value). Test asserts quali R²/p.value to 1e-7/1e-6; category count + sorted
+p.value set (Estimate signs ambiguous across colliding category labels → count+pvalue match).
 
-**Next:** push → trigger CI → verify the dimdesc CA/MCA tests vs fresh R → commit fixtures.
+**Fixtures (license-clean):** `dimdesc(MCA(tea[,1:6], ncp=5))` → `dimdesc/mca_tea.json` (CA fixture
+intentionally absent — see quirk 1). Generated + zero-drift confirmed via the CI loop.
+
+**Local + CI checks:** ruff clean; pytest **212 passed / 2 skipped** locally; rpy2-parity job green
+against fresh live-R fixtures; fresh-vs-committed diff = only the expected `call`-removal on
+`mca_tea.json`, every other committed fixture byte-identical.
+
+**Regression attestation:** additive — new `_dimdesc_ca` branch in `desc/dimdesc.py`, MCA `call` now
+carries `active_frame` (`mca.py`), new `tests/test_dimdesc_camca.py`. PCA dimdesc path untouched and
+still green. No product code deleted; no test weakened. **Confidence: HIGH.**
+
+**Docs updated:** ROADMAP (dimdesc CA/MCA ✅), CHANGELOG [Unreleased], learnings (L16–L18 + the two
+R-2.14 dimdesc quirks), survival guide + `.elves-session.json` advanced to C1.
+
+**Deferred (recorded, not dropped):** B4b = missing-value handling (PCA/CA/MCA/GPA) + FAMD `ind_sup`;
+Burt + `quali_sup` combination. Slot into the long tail.
+
+**Commits:** `06e3559` (test/dump fix + fixture), + this close-out commit.
 
 ---
 

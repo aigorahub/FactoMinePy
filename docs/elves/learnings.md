@@ -249,6 +249,27 @@ post-transform of the indicator decomposition: `eig = λ_ind²`, category coord
 `ind`/`contrib`/`eta²` unchanged. Strong checks: `eig_burt == eig_indicator²`
 exactly; Burt var coord / indicator var coord `= √λ_ind` per axis.
 
+### L19 — Two R-2.14 `dimdesc` quirks: broken CA branch, and an extra `call` element
+
+**`dimdesc(MCA)` uses the same condes path as PCA** (`condes(cbind(axis_coord, X), num.var=1)`
+per axis), so it comes for free once the MCA result's `call` carries the original active
+frame (`active_frame`). The MCA `var$coord` standard-vs-principal subtlety [[L1]] does NOT
+matter here — dimdesc describes the *individual* axis coordinate against the raw variables.
+
+Two traps when generating/consuming the R fixture:
+1. **R 2.14's `dimdesc(CA)` is broken on R 4.x.** Its CA branch calls
+   `order(tableau[, k, drop=FALSE])` on a one-column data.frame → `"cannot xtfrm data frames"`.
+   So live R produces NO usable CA dimdesc fixture. The CA branch is a deterministic re-sort of
+   the (already parity-verified) CA row/col coords, so verify it **self-consistently** against
+   `res.row.coord`/`res.col.coord` sorted ascending (active + sup), not against an R dump. When
+   R itself is buggy for a deterministic transform, implement the *intended* behavior and pin it
+   to an independently-verified quantity rather than chasing the broken R output.
+2. **`dimdesc(MCA)` (the condes/`else` branch) attaches a `call` element.** R does
+   `result$call <- result[[1]]$call`, so `names(dimdesc(res))` = `["Dim 1", "Dim 2", "call"]`,
+   not just the axes. When dumping, skip the `call` element; when consuming, parse the axis index
+   from the `"Dim N"` key and skip non-axis keys — never index axes positionally (`[0,1][i]`).
+   Same lesson applies to any R list that mixes per-axis payloads with bookkeeping entries.
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch

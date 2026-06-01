@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 11 (8 of 20 enumerated batches done; + B4b deferred work)
+- **Planned batches remaining:** 10 (9 of 20 enumerated batches done; + B4b deferred work)
 - **Stop allowed right now:** no
-- **Why:** 8 done (A1–A4, B1–B4); 11 remain (B5, C1–C3, D1–D4, E1–E3, F1) + B4b (missing values).
-- **Next required action:** confirm B4 zero-drift CI green, then start B5 (dimdesc CA/MCA). Deferred:
-  B4b (missing values + FAMD ind_sup), Burt+quali_sup. Entropy check due ~after B5/C1.
+- **Why:** 9 done (A1–A4, B1–B5 = Phase A+B complete); 10 remain (C1–C3, D1–D4, E1–E3, F1) + B4b.
+- **Next required action:** start C1 (predict.* family). Deferred: B4b (missing values + FAMD
+  ind_sup), Burt+quali_sup. **Entropy check due now** — run at the C1 boundary.
 
 ---
 
@@ -119,101 +119,87 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Phase A + entropy + B1 + B2 + B3 + B4 done. 8 of 20 batches; everything parity-verified.
+**Status:** Phase A + entropy + B1–B5 done. **Phase A + B complete.** 9 of 20 batches; everything
+parity-verified at the deterministic bar.
 
-**Active batch:** B4 done → B5 (dimdesc CA/MCA). B4b (missing values + FAMD ind_sup) deferred.
+**Active batch:** B5 done → C1 (predict.* family). B4b (missing values + FAMD ind_sup) deferred.
 
-**What was just finished:** B4 — fixed PCA's `row_w` normalization bug + parity-verified the row.w
-path; 24/24 PCA parity vs live R. Existing PCA fixtures unchanged. 209 passed / 2 skipped. Commits
-through `88786d9`. CHANGELOG/ROADMAP updated. Earlier: Phase A, entropy, B1 (FAMD sup), B2 (MCA
-sup/Burt), B3 (GPA unequal-width). B4 split — missing-value handling is B4b (deferred, recorded).
+**What was just finished:** B5 — wired `dimdesc` CA + MCA branches. MCA routes through the existing
+condes path (added `active_frame` to MCA's call); CA is a self-consistency test (R 2.14's
+`dimdesc(CA)` is broken on R 4.x). Handled R's extra `call` element in the MCA dimdesc result. 212
+passed / 2 skipped; rpy2-parity green (run 26734779119), zero drift. Commits through `06e3559` +
+close-out. Earlier: Phase A (MFA/HMFA/DMFA), entropy, B1 (FAMD sup), B2 (MCA sup/Burt), B3 (GPA
+unequal-width), B4 (PCA row.w).
 
-**Single next action:** confirm B4 zero-drift CI green, then start B5 (dimdesc CA/MCA branches).
+**Single next action:** tag `elves/pre-batch-c1`, then start C1 (predict.PCA/MCA/FAMD/MFA).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** B5 — dimdesc on CA / MCA
+**Batch:** C1 — `predict.*` family (project held-out individuals onto a fitted model)
 
-**Scope (from the plan):** wire the **CA and MCA branches** of R's `dimdesc`. Run #1's `dimdesc`
-(`factominer/desc/`) leans on PCA's stashed `call` payload; CA and MCA need their own paths —
-`dimdesc.R` has a dedicated CA branch (describe each CA axis by the rows/cols via their coords /
-correlations) and an MCA branch (describe each MCA axis by the categorical variables via eta² and the
-categories via v.test, like `condes`/`catdes` per axis). Read `R/dimdesc.R` for the exact CA/MCA
-output schemas. Add fixtures `dimdesc(CA_res)` and `dimdesc(MCA_res)` and the column-by-column tests.
+**Scope (from the plan):** implement `predict_pca`, `predict_mca`, `predict_famd`, `predict_mfa` —
+each projects NEW individuals (rows not used to fit) onto an existing model's axes, returning
+`coord`, `cos2`, and (PCA/MCA/MFA) `dist` / (FAMD) `dist2`. One batch covers all four. Fixtures:
+fit on a train slice, predict a held-out slice, compare to R.
 
-**Build on:** the existing `dimdesc` PCA path + `catdes`/`condes` machinery (the MCA dimdesc describes
-each axis much like condes on the axis coordinate). Check what `dimdesc` currently does when handed a
-CA/MCA result (it may only handle PCA via the stashed call).
+**IMPORTANT — the C1 research subagent read the WRONG checkout** (main, not this worktree) and
+falsely claimed FAMD/MFA "don't exist." They DO exist here (`factominer/famd.py`, `mfa.py` — built
+in A1/B1). The R-algorithm half of its report (below) is fetched from GitHub and is reliable; its
+Python-machinery / file:line claims are stale — re-verify against THIS worktree before coding.
 
-**Risk:** R `dimdesc` output schemas differ by method (PCA: quanti/quali per axis; CA: a different
-structure; MCA: quali eta² + category v.test). Match R's exact column names (learnings on the
-`P-value`/`p.value` naming quirk [[L6]]).
+**R projection recipe (verbatim from `husson/FactoMineR` master, the reliable part):**
+- **predict.PCA:** `nd <- (newdata - centre)/ecart.type; coord <- (t(t(nd)*col.w)) %*% svd$V;
+  dist2 <- rowSums(t(t(nd^2)*col.w)); cos2 <- coord^2/dist2`. `centre/ecart.type/col.w/svd$V` are
+  the TRAINING values. Output `coord, cos2, dist=sqrt(dist2)`. **This is the SAME math as the
+  existing PCA `ind_sup` projection — reuse/extract a shared helper, don't duplicate.**
+- **predict.MCA:** build `tab.disjonctif(newdata)` forced to TRAINING column set+order (absent
+  categories → zero columns); `somme.row = rowSums = #active vars`; `tab <- tab/somme.row`;
+  `coord <- tab %*% svd$V`; `dist2 <- rowSums(t((t(tab)-marge.col)^2/marge.col))`;
+  `cos2 <- coord^2/dist2`. Output `coord, cos2` (**no dist**). `coord` is the **PRINCIPAL** coord
+  (same scale as `ind$coord`), NOT the standard `var$coord`. Needs `marge.col` (CA col margin) +
+  the active categorical frame stashed on the MCA result. Does NOT require the deferred MCA
+  `ind_sup` — predict IS that projection.
+- **predict.FAMD:** quanti block `(x-centre)/ecart.type`; quali block `(disjonctif - prop)/sqrt(prop)`
+  (prop = training category proportions); `cbind`, `coord <- tab %*% svd$V`;
+  `dist2 <- rowSums(tab^2)` (UNWEIGHTED); `cos2 <- coord^2/dist2`. Output `coord, cos2, dist2`
+  (element literally named `dist2` but holds `sqrt(dist2)`).
+- **predict.MFA:** per group, process by its method using that group's separate-analysis training
+  centre/scale (quanti) or training marge.col (quali), then `sweep(tab,2,sqrt(col.w),"*")` and
+  `coord <- tab %*% (global.pca$svd$V * sqrt(col.w))`; `dist2 <- rowSums(tab^2)`. Output
+  `coord, cos2, dist=sqrt(dist2)`.
 
-**Rollback tag:** `elves/pre-batch-b5` (create before starting).
+**Column-name quirk:** PCA/MFA use `"Dim.1"` (dot); **MCA/FAMD use `"Dim 1"` (space)** — the
+`_as_df` conftest loader already tolerates both, but assert against the right one per method.
 
-**Note:** B4b (deferred) = missing-value handling for PCA/CA/MCA/GPA + FAMD `ind_sup`. Slot it in
-after B5 or fold into the long-tail phase; specs are in the B1/B3 research summaries + the B4 log.
+**Build on (re-verify in THIS worktree):** the PCA `ind_sup` block (extract a shared
+`_project_individuals` helper used by both sup-ind and predict); the MCA→CA `svd.V` + `marge_col`;
+FAMD's stashed active scaling (means/sds/category proportions); MFA's per-group `col_w` + global
+`svd.V`. Check what each result's `call` dict already carries; add only what's missing.
 
-**Scope (from the plan + deferrals):** audit PCA/CA/MCA for R's missing-value handling and `row.w`
-support; add the paths R supports + fixtures that exercise them. R FactoMineR has documented NA
-handling (iterative imputation `imputePCA`-style, or the simpler complete-case/row-weight paths) and
-`row.w` in several methods; today the port assumes complete data + uniform weights. **Folds in the
-deferred items:** GPA missing values (the VMQTE path — `M`/`Cj` 0/1-diagonal metrics, `invgC=pinv(Cc)`,
-pairwise-deleted RV/simi; spec captured in the B3 GPA research) and FAMD `ind_sup` (supplementary
-individuals — compute the active scaling from active rows only, then project sup rows; spec in the B1
-FAMD research).
+**Sign convention:** projected `coord` inherits `svd.V` signs → compare to R with
+`align_to_reference` per axis (as every coord test does). `cos2`/`dist` are sign-invariant. Parity
+bar for projected quantities: **1e-7** (sup tier).
 
-**Suggested order (independent sub-tasks; can split if too large):** (1) PCA `row.w` (R's PCA takes
-`row.w`; the port's PCA already accepts `row_w` — assert it against an R fixture with non-uniform
-weights). (2) FAMD `ind_sup` (B1 deferral — the cleanest add). (3) PCA/MCA missing-value handling
-(the largest — R's `MCA` NA→`.NA` category vs `imputeMCA`; PCA NA handling). (4) GPA missing values.
+**Fixture plan (license-clean, already-bundled datasets):** PCA on `decathlon[1:20,1:10]` predict
+`[21:23]`; MCA on `tea[1:250,1:18]` predict `[251:255]` (verify no unseen category in test rows —
+widen train slice if so); FAMD on `poison` train/test; MFA on `poison` canonical grouping
+train/test. Append a `dump_predict` helper to `tools/refresh_r_fixtures.R`.
 
-**Risk:** R's missing-value handling differs by method (NA-as-category in MCA vs iterative imputation
-in PCA). Verify R's EXACT NA semantics per method before implementing; don't assume one approach.
-This batch may be large — split into B4a/B4b if needed and record in the log.
+**Risk:** the disjunctive-table rebuild forcing training column order (MCA/FAMD) is the most
+error-prone step — use the training categorical dtype's category list so absent categories still
+emit zero columns in the right positions. MCA principal-vs-standard coord (don't ×√eig). FAMD's
+`dist2`-named-but-sqrt output. Full C1 research report is in this turn's transcript.
 
-**Rollback tag:** `elves/pre-batch-b4` (create before starting).
+**Rollback tag:** `elves/pre-batch-c1` (create before starting).
 
-**Scope (from the plan):** in `factominer/gpa.py`, handle the two
-`NotImplementedError` branches — (1) **missing values** (the VMQTE path), (2)
-**unequal-width configurations** (groups of different column counts). Plus
-**assert `correlations` and `PANOVA`** against R (currently computed/loosely
-checked but not fully parity-asserted). Lift the GPA "no-missing, equal-width"
-caveat from the README once verified. R's GPA is stochastic — keep the
-established two-tier parity (RV/RVs/simi exact; consensus/Xfin rotation-invariant,
-see test_gpa.py / learnings on GPA). Fixture: extend `tools/refresh_r_fixtures.R`
-GPA dump (maybe a second synthetic dataset with unequal widths and/or an NA).
+**Entropy check:** due now (~C1 boundary). At the C1 start: stop idle jobs, rotate oversized logs,
+archive completed execution-log entries if the file is long, confirm learnings/.ai-docs current.
 
-**Risk:** the multi-config Procrustes with unequal widths needs the general
-centering/projection (not the equal-width shortcut `invgC = C/K`); R's GPA
-stochastic multi-start means consensus/Xfin stay rotation-invariant-tier. PANOVA
-is the Procrustes ANOVA table — verify its exact schema against R.
-
-**Rollback tag:** `elves/pre-batch-b3` (create before starting).
-
-**Scope (from the run-2 plan):**
-1. **Assert MCA's sup blocks.** Run #1 shipped MCA `quanti.sup` / `quali.sup` code (`factominer/mca.py`
-   routes through CA; PCA-style sup handling) but the final review flagged that the tea MCA fixture /
-   tests never asserted those blocks. Add `tools/refresh_r_fixtures.R` dumps for MCA `quanti.sup` and
-   `quali.sup` (the tea fixture already uses `MCA(tea, quanti.sup=19, quali.sup=c(20:36))`), and add the
-   column-by-column assertions in `tests/test_mca.py`. NOTE: verify `mca.py` actually *populates*
-   quanti_sup/quali_sup — it may only accept the args without computing the blocks; if so, implement
-   them (route through the CA sup machinery / barycenters, mirroring PCA's quali.sup).
-2. **Burt.** Verify `method="burt"` against R `MCA(..., method="Burt")` — either confirm parity or
-   document the divergence. Update the README MCA row honestly (currently "Burt option exists but is
-   not parity-verified").
-
-**Fixture (license-clean):** extend the existing `mca/tea.json` dump (or add a sup-focused one) with
-`quanti.sup`/`quali.sup`; add a Burt fixture `MCA(tea, method="Burt")` if pursuing Burt parity. All on
-the already-bundled tea dataset.
-
-**Risk:** MCA's `var$coord` is the STANDARD category coordinate (learnings [[L1]]) — the sup-category
-barycenters and v.test follow the MCA conventions, not PCA's. Check whether mca.py's sup path uses the
-right convention before asserting.
-
-**Rollback tag:** `elves/pre-batch-b2` (create before starting).
+**Deferred (carry forward):** B4b = missing-value handling (PCA/CA/MCA/GPA) + FAMD `ind_sup`;
+Burt + `quali_sup` combination. Slot into the long tail (Phase D) or fold into C1 if the predict
+work naturally surfaces the FAMD/MCA sup-projection machinery.
 
 ---
 
