@@ -9,6 +9,13 @@ out of pre-release.
 
 ### Added
 
+- **`FAMD` supplementary variables** (`sup_var`): FAMD now projects
+  supplementary quantitative variables (correlations with the axes) and
+  supplementary qualitative variables (category barycenters with cos²/v.test/
+  eta²), routed through the inner PCA's sup machinery, plus the combined
+  `var.coord_sup` / `var.cos2_sup` summary. Parity-verified against live R
+  FactoMineR 2.14 on `FAMD(poison, sup.var=c("Time","Sex"))`. Supplementary
+  individuals (`ind_sup`) are not yet supported.
 - **`DMFA` (Dual Multiple Factor Analysis)** is now implemented
   (`factominer/dmfa.py` + a `DMFAResult` container), completing the MFA family
   (MFA, HMFA, DMFA all live). DMFA studies how the cloud of variables varies

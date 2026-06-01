@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-31 (A4 complete — PHASE A done, parity-verified)
-- **Current phase:** Phase A (MFA family) COMPLETE; entropy check, then Phase B (B1) next
-- **Active batch:** A4 → done; next: entropy check → B1 (FAMD sup vars)
-- **Last completed batch:** A4 (DMFA) — 15/15 parity tests green vs live R
-- **Next exact batch:** entropy check (consolidate correlation helpers), then B1 (FAMD sup vars)
+- **Last updated:** 2026-05-31 (B1 complete, parity-verified)
+- **Current phase:** Phase A done + entropy check done; Phase B underway (B1 done, B2 next)
+- **Active batch:** B1 → done; next B2 (MCA sup-block parity + Burt)
+- **Last completed batch:** B1 (FAMD sup vars) — 26/26 parity tests green vs live R
+- **Next exact batch:** B2 (MCA supplementary-block parity + Burt)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `5066e0e` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→179 passed, 2 skipped (+56 MFA-family parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `d00e6cd` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→187 passed, 2 skipped (+64 parity tests; skips unchanged)
 
 ---
 
@@ -67,10 +67,28 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
-## Batch B1 — FAMD supplementary variables — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+## Batch B1 — FAMD supplementary variables — 2026-05-31 (COMPLETE — 26/26 parity vs live R)
 
-**Phase:** Implement complete; local green; rpy2-parity CI loop pending. First Phase-B batch.
+**Phase:** Implement → Validate → Review → Document, done. Parity-verified, first pass.
 **Rollback tag:** `elves/pre-batch-b1` (pushed).
+**Commits:** `f4dce2e` (impl + harness), `d00e6cd` (R fixtures + refreshed poison.json).
+
+**Validation (final):** ruff clean; sphinx -W; pytest **187 passed / 2 skipped** (back to the 2-skip
+baseline). CI green on both jobs, first attempt: the 18 active FAMD channels + 8 sup channels
+(quanti.sup coord/cos2, quali.sup coord/v.test/eta2, var.coord.sup) all match live R. The sup-quali
+barycenter routing (the flagged trap) and v.test matched R immediately.
+
+**Regression attestation:** `famd.py` sup handling is gated on `sup_var` (None path = prior code,
+active FAMD parity preserved — 18/18). `_result.py` adds two optional `Block` fields
+(coord_sup/cos2_sup, default None). The refreshed `poison.json` gained four empty `{}` sup keys but
+the active numeric data is byte-identical (eig diff 0.0). Test baseline 179→187 passed, skips 2→2.
+**Confidence: HIGH** — sup vars reuse the parity-verified PCA sup blocks; active path untouched.
+ind_sup deferred to B4 (recorded; raises NotImplementedError).
+
+**Docs updated:** README (FAMD sup vars ✅), ROADMAP, CHANGELOG.
+
+**Next:** confirm zero-drift CI, then B2 (MCA supplementary-block parity + Burt — assert MCA's
+quanti.sup/quali.sup blocks that run #1 shipped but never asserted; verify method="burt").
 
 **Contract:** add `sup_var` to `factominer/famd.py` — supplementary quantitative + qualitative
 variables, routed through the inner PCA's `quanti_sup` / `quali_sup` (R FAMD does the same). sup-quanti

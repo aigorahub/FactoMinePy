@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 18 (Phase A complete: A1–A4 parity-verified)
+- **Planned batches remaining:** 17 (Phase A + B1 done, parity-verified)
 - **Stop allowed right now:** no
-- **Why:** Phase A (MFA family) done; 18 batches remain (B1–B5, C1–C3, D1–D4, E1–E3, F1).
-- **Next required action:** run the entropy check (consolidate correlation helpers), then start B1
-  (FAMD sup vars). All A1–A4 CI runs are green + zero-drift.
+- **Why:** A1–A4 + B1 done; 17 batches remain (B2–B5, C1–C3, D1–D4, E1–E3, F1).
+- **Next required action:** confirm B1 zero-drift CI green, then start B2 (MCA sup-block parity +
+  Burt). Note: B4 will pick up FAMD `ind_sup` (deferred from B1). Entropy check next due after ~B4.
 
 ---
 
@@ -119,54 +119,45 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** PHASE A (MFA family) COMPLETE — MFA + HMFA + DMFA all parity-verified, CI-green, zero-drift.
+**Status:** Phase A complete + entropy check done; Phase B underway — B1 (FAMD sup vars) parity-verified.
 
-**Active batch:** A4 done → entropy check → B1 (FAMD supplementary variables).
+**Active batch:** B1 done → B2 (MCA supplementary-block parity + Burt).
 
-**What was just finished:** the whole MFA family. A1 (MFA core 21/21), A2 (MFA completeness 27/27),
-A3 (HMFA 14/14), A4 (DMFA 15/15) — all vs live R FactoMineR 2.14. 179 passed / 2 skipped; ruff +
-sphinx clean. Commits through `5066e0e`. README/ROADMAP/CHANGELOG: all three MFA-family methods ✅,
-no methods remain stubbed. Learnings L12–L17. B1 research spec captured.
+**What was just finished:** B1 — FAMD supplementary variables (`sup_var`), routed through PCA's
+quanti_sup/quali_sup; 26/26 parity (18 active + 8 sup) vs live R. Active FAMD path untouched. 187
+passed / 2 skipped. Commits through `d00e6cd`. README/ROADMAP/CHANGELOG updated. `ind_sup` deferred to
+B4. Phase A (MFA family) + entropy check (shared `_corr.py`) done earlier.
 
-**Single next action:** confirm A4 zero-drift CI green (done — both jobs success), run the entropy
-check (consolidate the 3 correlation helpers in mfa/hmfa/dmfa into a shared `_corr.py`), then start
-B1 (FAMD sup vars).
+**Single next action:** confirm B1 zero-drift CI green (both jobs success), then start B2 (MCA
+sup-block parity + Burt).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** B1 — FAMD supplementary variables (after the entropy check)
+**Batch:** B2 — MCA supplementary-block parity + Burt
 
-**Scope:** add `sup_var` / `ind_sup` to `factominer/famd.py`. R FAMD routes sup vars through PCA's
-own machinery — it does NOT reimplement them. Route through the existing `PCA(quanti_sup=,
-quali_sup=, ind_sup=)`:
-- **sup-quanti:** pre-scale (center + population sd, active row weights) like active quanti, append,
-  pass as PCA `quanti_sup` → correlation with axes. Identical to PCA quanti.sup; no FAMD transform.
-- **sup-quali:** append the RAW factor column, pass as PCA `quali_sup` → PCA's barycenter form
-  (coord/cos2/v.test/eta2). **Do NOT apply the active-quali `coord/√prop·√eig` transform to sup
-  categories** (standard path returns `pca$quali.sup` verbatim). This is the trap.
-- **sup-ind:** pass `ind_sup` to PCA. **Key change:** compute the active scaling (q_center/q_sd/prop)
-  from ACTIVE rows only (exclude ind_sup rows), then apply to the full matrix incl. sup rows.
-- **`var$coord.sup`/`cos2.sup`** combined summary (FAMD.R:176-184): sq loadings for sup-quanti, eta²
-  for sup-quali. Add `coord_sup`/`cos2_sup` optional fields to `Block` (like `coord_partiel`).
+**Scope (from the run-2 plan):**
+1. **Assert MCA's sup blocks.** Run #1 shipped MCA `quanti.sup` / `quali.sup` code (`factominer/mca.py`
+   routes through CA; PCA-style sup handling) but the final review flagged that the tea MCA fixture /
+   tests never asserted those blocks. Add `tools/refresh_r_fixtures.R` dumps for MCA `quanti.sup` and
+   `quali.sup` (the tea fixture already uses `MCA(tea, quanti.sup=19, quali.sup=c(20:36))`), and add the
+   column-by-column assertions in `tests/test_mca.py`. NOTE: verify `mca.py` actually *populates*
+   quanti_sup/quali_sup — it may only accept the args without computing the blocks; if so, implement
+   them (route through the CA sup machinery / barycenters, mirroring PCA's quali.sup).
+2. **Burt.** Verify `method="burt"` against R `MCA(..., method="Burt")` — either confirm parity or
+   document the divergence. Update the README MCA row honestly (currently "Burt option exists but is
+   not parity-verified").
 
-Build `Xdf` as a MIXED DataFrame (scaled active floats + pre-scaled sup-quanti floats + raw sup-quali
-object cols); PCA coerces only the active columns to numeric, so a mixed frame is safe.
+**Fixture (license-clean):** extend the existing `mca/tea.json` dump (or add a sup-focused one) with
+`quanti.sup`/`quali.sup`; add a Burt fixture `MCA(tea, method="Burt")` if pursuing Burt parity. All on
+the already-bundled tea dataset.
 
-**Fixture (license-clean):** `FAMD(poison, sup.var=c("Time","Sex"), ind.sup=c(1,2))` — already-bundled
-poison; exercises sup-quanti (Time) + sup-quali (Sex) + sup-ind (rows 1-2) in one. Keep the existing
-active-only `famd/poison.json` untouched; add a SECOND fixture `famd/poison_sup.json`. Extend
-`dump_famd` with ind.sup/quanti.sup/quali.sup/var.coord.sup/var.cos2.sup.
+**Risk:** MCA's `var$coord` is the STANDARD category coordinate (learnings [[L1]]) — the sup-category
+barycenters and v.test follow the MCA conventions, not PCA's. Check whether mca.py's sup path uses the
+right convention before asserting.
 
-**Hardest parity point:** sup-quali `v.test` (PCA's `sqrt(nA·(N-1)/(N-nA))` multiplier vs FAMD's
-raw-coord form — algebraically equal, verify numerically) and that PCA's barycenter coord == the
-FactoMineR transition formula. Full B1 research spec is in the agent summary / will re-derive.
-
-**Acceptance:** eig + ind.sup/quanti.sup/quali.sup (coord/cos2/v.test/eta2) + var.coord.sup to the
-bar; existing active FAMD parity unchanged; ruff clean; rpy2-parity green.
-
-**Rollback tag:** `elves/pre-batch-b1` (create before starting).
+**Rollback tag:** `elves/pre-batch-b2` (create before starting).
 
 ---
 
