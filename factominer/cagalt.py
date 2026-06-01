@@ -1,6 +1,6 @@
 """``CaGalt`` — Correspondence Analysis on Generalized Aggregated Lumped Tables.
 
-Ported from R FactoMineR 2.14 ``R/CaGalt.r``. CaGalt relates a frequency /
+Ported from R FactoMineR 2.14 ``R/CaGalt.R``. CaGalt relates a frequency /
 lexical table ``Y`` (n individuals × p frequency columns) to a set of contextual
 covariates ``X`` (n × k). It is a thin orchestrator over :func:`factominer.PCA`:
 
@@ -131,11 +131,21 @@ def CaGalt(  # noqa: N802 — mirrors R's function name
         cos2=inner.ind.cos2,
         contrib=inner.ind.contrib,
     )
-    # quanti.var = the inner PCA's supplementary-variable block (coord/cor/cos2).
+
+    # quanti.var = the inner PCA's supplementary-variable block for the W columns.
+    # The port's PCA quanti_sup conflates coord/cor when scale_unit=False, so
+    # compute R's quanti.sup directly: coord = the PJ-weighted projection of the
+    # (PJ-centred) W columns onto the standardized inner scores ``u_inner``; cor
+    # = coord / the PJ-weighted sd of each column; cos2 = cor².
+    Wc = W - (pj[:, None] * W).sum(axis=0)
+    coord_v = (Wc * pj[:, None]).T @ u_inner                # k × n_pc
+    sd_w = np.sqrt((pj[:, None] * Wc**2).sum(axis=0))       # k
+    with np.errstate(divide="ignore", invalid="ignore"):
+        cor_v = np.where(sd_w[:, None] > 0, coord_v / sd_w[:, None], 0.0)
     quanti_var = Block(
-        coord=inner.quanti_sup.coord,
-        cor=inner.quanti_sup.cor,
-        cos2=inner.quanti_sup.cos2,
+        coord=pd.DataFrame(coord_v, index=var_labels, columns=dim_names),
+        cor=pd.DataFrame(cor_v, index=var_labels, columns=dim_names),
+        cos2=pd.DataFrame(cor_v**2, index=var_labels, columns=dim_names),
     )
 
     return Result(
