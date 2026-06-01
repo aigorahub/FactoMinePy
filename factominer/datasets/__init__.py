@@ -75,3 +75,18 @@ def load_gpa_synth_uneven() -> pd.DataFrame:
     no third-party licensing.
     """
     return _load_csv("gpa_synth_uneven.csv")
+
+
+def load_cagalt_synth() -> pd.DataFrame:
+    """12 × 9 deterministic synthetic dataset for CaGalt.
+
+    Columns ``freq1``–``freq6`` are a frequency / lexical table ``Y`` (equal row
+    totals of 50, with a clear first-axis gradient); columns ``cov1``–``cov3``
+    are contextual covariates ``X`` (three linearly-independent patterns —
+    linear, alternating, quadratic — that also round to clean 2-/3-level factors
+    for the ``type="n"`` path). Generated once from fixed structure and frozen to
+    CSV, so it is fully reproducible and carries no third-party licensing (MIT).
+    FactoMineR's own CaGalt example (``health``) is GPL and 115 columns wide, so
+    this small license-clean table is used as the parity fixture instead.
+    """
+    return _load_csv("cagalt_synth.csv")

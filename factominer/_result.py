@@ -95,6 +95,9 @@ class Result:
     # the combined summary (squared loadings for quanti, eta² for quali).
     quanti_var: Block | None = None
     quali_var: Block | None = None
+    # CaGalt's frequency block (``res$freq`` — coord/cos2/contrib of the
+    # frequency columns of Y, the rows of the inner generalized analysis).
+    freq: Block | None = None
     # MFA's groups-of-variables block (coord/contrib/cos2/dist2/correlation/Lg/RV).
     group: MFAGroup | None = None
     # MFA's ``res$partial.axes`` — correlations/coords/contribs of each group's

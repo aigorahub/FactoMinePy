@@ -184,6 +184,22 @@ dump_descfreq <- function(res) {
   out
 }
 
+# CaGalt: dump the deterministic blocks (eig + ind/freq/quanti.var coords/cos2/
+# contrib/cor). The bootstrap ellipses (res$ellip) are stochastic — not dumped.
+dump_cagalt <- function(res) {
+  list(
+    eig  = as.data.frame(res$eig),
+    ind  = list(coord = as.data.frame(res$ind$coord),
+                cos2  = as.data.frame(res$ind$cos2)),
+    freq = list(coord   = as.data.frame(res$freq$coord),
+                cos2    = as.data.frame(res$freq$cos2),
+                contrib = as.data.frame(res$freq$contrib)),
+    quanti.var = list(coord = as.data.frame(res$quanti.var$coord),
+                      cor   = as.data.frame(res$quanti.var$cor),
+                      cos2  = as.data.frame(res$quanti.var$cos2))
+  )
+}
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -533,5 +549,15 @@ cat("[fixtures] estim_ncp/decathlon_smooth.json\n")
 descf <- descfreq(children[1:14, 1:5], proba = 0.05)
 write_json(dump_descfreq(descf), file.path(out_dir("descfreq"), "children.json"))
 cat("[fixtures] descfreq/children.json\n")
+
+# ---- CaGalt on the synthetic frequency/covariate table ---------------------
+# Y = 6 frequency columns, X = 3 quantitative covariates. type="s" (scaled),
+# ellipses OFF (deterministic). Reads the committed license-clean synthetic CSV.
+cagalt_csv <- file.path(root, "factominer", "datasets", "data", "cagalt_synth.csv")
+cagalt_df  <- read.csv(cagalt_csv, row.names = 1, check.names = FALSE)
+res_cagalt_s <- CaGalt(Y = cagalt_df[, 1:6], X = cagalt_df[, 7:9],
+                       type = "s", conf.ellip = FALSE, graph = FALSE)
+write_json(dump_cagalt(res_cagalt_s), file.path(out_dir("cagalt"), "synth_s.json"))
+cat("[fixtures] cagalt/synth_s.json\n")
 
 cat("\ndone.\n")

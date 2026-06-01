@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from ._result import Result
 from .ca import CA
+from .cagalt import CaGalt
 from .desc import catdes, condes, descfreq, dimdesc
 from .dmfa import DMFA
 from .famd import FAMD
@@ -31,6 +32,7 @@ __all__ = [
     "DMFA",
     "GPA",
     "HCPC",
+    "CaGalt",
     "dimdesc",
     "catdes",
     "condes",

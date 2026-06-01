@@ -193,3 +193,8 @@ def r_estim_ncp_decathlon_smooth() -> dict:
 @pytest.fixture(scope="session")
 def r_descfreq_children() -> dict:
     return _load_r_fixture("descfreq", "children")
+
+
+@pytest.fixture(scope="session")
+def r_cagalt_synth_s() -> dict:
+    return _load_r_fixture("cagalt", "synth_s")
