@@ -9,43 +9,32 @@
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 
 from factominer import CA, MCA, dimdesc
 from factominer.datasets import load_children, load_tea
-
-
-def _ca_desc():
-    res = CA(load_children(), row_sup=list(range(14, 18)), col_sup=list(range(5, 8)), ncp=5)
-    return dimdesc(res, axes=[0, 1])
 
 
 def _mca_desc():
     return dimdesc(MCA(load_tea().iloc[:, :6], ncp=5), axes=[0, 1])
 
 
-def _label_coord(payload) -> dict[str, float]:
-    return {str(r.get("_row") or r.get("rowname")): float(r["coord"]) for r in payload}
-
-
-def _sign_aligned_match(my_map: dict[str, float], r_map: dict[str, float], atol: float) -> bool:
-    labels = list(r_map)
-    my = np.array([my_map[lbl] for lbl in labels])
-    r = np.array([r_map[lbl] for lbl in labels])
-    if float(my @ r) < 0:
-        my = -my
-    return bool(np.allclose(my, r, atol=atol, rtol=0))
-
-
-def test_dimdesc_ca_row_and_col(r_dimdesc_ca_children):
-    d = _ca_desc()
-    for i, (_axkey, axpayload) in enumerate(r_dimdesc_ca_children.items()):
-        k = [0, 1][i]
-        for which in ("row", "col"):
-            r_map = _label_coord(axpayload[which])
-            my_df = d[k][which]
-            my_map = {str(idx): float(v) for idx, v in zip(my_df.index, my_df["coord"], strict=True)}
-            assert set(r_map) == set(my_map), f"{which} axis {k}: label set mismatch"
-            assert _sign_aligned_match(my_map, r_map, atol=1e-7), f"{which} axis {k}"
+def test_dimdesc_ca_self_consistent():
+    # R FactoMineR 2.14's dimdesc(CA) errors on R 4.x (order on a 1-col data
+    # frame), so there is no R fixture. The CA branch is a pure re-sort of the
+    # (R-parity-verified) CA coordinates, so verify it against those directly:
+    # each axis's row/col table = the active+supplementary coords sorted ascending.
+    res = CA(load_children(), row_sup=list(range(14, 18)), col_sup=list(range(5, 8)), ncp=5)
+    d = dimdesc(res, axes=[0, 1])
+    full_row = pd.concat([res.row.coord, res.row_sup.coord])
+    full_col = pd.concat([res.col.coord, res.col_sup.coord])
+    for k in (0, 1):
+        for tbl, full in (("row", full_row), ("col", full_col)):
+            expected = full.iloc[:, k].sort_values()
+            got = d[k][tbl]["coord"]
+            assert list(got.index) == list(expected.index), f"{tbl} axis {k} order"
+            assert np.allclose(got.to_numpy(), expected.to_numpy(), atol=1e-12), f"{tbl} axis {k}"
+            assert list(d[k][tbl].columns) == ["coord"]
 
 
 def test_dimdesc_mca_quali(r_dimdesc_mca_tea):

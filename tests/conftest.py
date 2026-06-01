@@ -126,11 +126,6 @@ def r_dimdesc_pca_decathlon() -> dict:
 
 
 @pytest.fixture(scope="session")
-def r_dimdesc_ca_children() -> dict:
-    return _load_r_fixture("dimdesc", "ca_children")
-
-
-@pytest.fixture(scope="session")
 def r_dimdesc_mca_tea() -> dict:
     return _load_r_fixture("dimdesc", "mca_tea")
 

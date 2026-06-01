@@ -370,18 +370,10 @@ for (k in seq_along(desc)) {
 write_json(desc_payload, file.path(out_dir("dimdesc"), "pca_decathlon.json"))
 cat("[fixtures] dimdesc/pca_decathlon.json\n")
 
-# dimdesc on CA(children) — the CA branch returns sorted row/col coords per axis.
-ca_desc <- dimdesc(res_ca, axes = 1:2, proba = 0.05)
-ca_desc_payload <- list()
-for (k in seq_along(ca_desc)) {
-  d <- ca_desc[[k]]
-  ca_desc_payload[[names(ca_desc)[k]]] <- list(
-    row = if (!is.null(d$row)) as.data.frame(d$row) else NULL,
-    col = if (!is.null(d$col)) as.data.frame(d$col) else NULL
-  )
-}
-write_json(ca_desc_payload, file.path(out_dir("dimdesc"), "ca_children.json"))
-cat("[fixtures] dimdesc/ca_children.json\n")
+# NOTE: dimdesc(CA) is NOT dumped — R FactoMineR 2.14's CA branch errors on R 4.x
+# (`order(tableau[,k,drop=FALSE])` -> "cannot xtfrm data frames"). The Python port
+# implements the intended behaviour (sorted row/col coords); it is verified by
+# self-consistency against the (R-parity-verified) CA coordinates instead.
 
 # dimdesc on a small MCA(tea[,1:6]) — routes through the condes branch
 # (quali eta2 + category estimates per axis).
