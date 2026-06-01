@@ -71,6 +71,16 @@ def r_mfa_poison() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_hmfa_poison() -> dict:
+    return _load_r_fixture("hmfa", "poison")
+
+
+@pytest.fixture(scope="session")
+def r_hmfa_decathlon() -> dict:
+    return _load_r_fixture("hmfa", "decathlon")
+
+
+@pytest.fixture(scope="session")
 def r_plot_ellipse_decathlon() -> dict:
     return _load_r_fixture("plot", "ellipse_decathlon")
 

@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 import factominer
-from factominer import CA, HCPC, MCA, MFA, PCA, catdes, condes, dimdesc
+from factominer import CA, HCPC, HMFA, MCA, MFA, PCA, catdes, condes, dimdesc
 from factominer.datasets import load_children, load_decathlon, load_poison, load_tea
 
 
@@ -82,7 +82,16 @@ def test_mfa_runs():
     assert res.group.Lg.shape == (5, 5)  # K groups + the global "MFA" row/col
 
 
-@pytest.mark.parametrize("name", ["HMFA", "DMFA"])
+def test_hmfa_runs():
+    poison = load_poison()
+    res = HMFA(poison, H=[[2, 2, 5, 6], [2, 2]], type=["s", "n", "n", "n"])
+    assert res.method == "HMFA"
+    assert res.ind.coord.shape[0] == poison.shape[0]
+    assert len(res.group_coord) == 2  # two hierarchy levels
+    assert list(res.quanti_var.coord.index) == ["Age", "Time"]
+
+
+@pytest.mark.parametrize("name", ["DMFA"])
 def test_deferred_methods_raise(name):
     fn = getattr(factominer, name)
     with pytest.raises(NotImplementedError):

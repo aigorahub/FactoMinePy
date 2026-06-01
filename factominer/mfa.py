@@ -85,6 +85,7 @@ def MFA(  # noqa: N802 — mirrors R's function name
     ncp: int = 5,
     name_group: list[str] | None = None,
     num_group_sup: list[int] | None = None,
+    weight_col_mfa: list[float] | np.ndarray | None = None,
     graph: bool = False,  # noqa: ARG001 — accepted for FactoMineR compatibility
 ) -> Result:
     """Run Multiple Factor Analysis on a table partitioned into groups.
@@ -124,6 +125,9 @@ def MFA(  # noqa: N802 — mirrors R's function name
     if n < 3:
         raise ValueError("MFA needs at least 3 rows")
     rw = np.full(n, 1.0 / n)  # uniform row weights (R's row.w, normalized)
+    # weight.col.mfa: per-(expanded-)column pre-weight applied to the separate
+    # quantitative analyses (HMFA threads accumulated weights through here).
+    wcm = None if weight_col_mfa is None else np.asarray(weight_col_mfa, dtype=np.float64)
 
     # Column slice [start, end) of each group within X.
     col_ranges: list[tuple[int, int]] = []
@@ -160,7 +164,8 @@ def MFA(  # noqa: N802 — mirrors R's function name
             if not all(is_numeric_dtype(block[c].dtype) for c in cols):
                 raise ValueError(f"group {g + 1} is type {t!r} but has non-numeric columns")
             Q = block.to_numpy(dtype=np.float64)
-            sep = PCA(block, scale_unit=(t == "s"))
+            wcm_slice = None if wcm is None else wcm[col_cursor : col_cursor + len(cols)]
+            sep = PCA(block, scale_unit=(t == "s"), col_w=wcm_slice)
             separate.append(sep)
             sep_eig = sep.eig["eigenvalue"].to_numpy()
             lam1.append(float(sep_eig[0]))
@@ -429,6 +434,12 @@ def MFA(  # noqa: N802 — mirrors R's function name
             "quali_modality_labels": list(quali_modality_labels),
             "row_w": rw.copy(),
             "active_frame": X.copy(),
+            # HMFA reuse: the standardized data matrix (R's XTDC), the per-column
+            # weights (R's call$col.w / ponderation), and the expanded column
+            # count of each group (R's call$group.mod).
+            "XTDC": pd.DataFrame(data, index=X.index, columns=col_labels),
+            "col_w": ponderation_arr.copy(),
+            "group_mod": [len(c) for c in data_cols_of_group],
         },
         ind=ind_block,
         quanti_var=quanti_var,

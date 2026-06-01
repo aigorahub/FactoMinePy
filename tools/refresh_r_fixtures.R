@@ -116,6 +116,20 @@ dump_mfa <- function(res) {
   )
 }
 
+dump_hmfa <- function(res) {
+  grp <- res$group
+  list(
+    eig        = as.data.frame(res$eig),
+    ind        = dump_block(res$ind),
+    quanti.var = dump_block(res$quanti.var),
+    quali.var  = dump_block(res$quali.var),
+    group = list(
+      coord     = lapply(grp$coord, as.data.frame),  # one data.frame per hierarchy level
+      canonical = as.data.frame(grp$canonical)
+    )
+  )
+}
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -170,6 +184,27 @@ res_mfa <- MFA(poison,
                graph      = FALSE)
 write_json(dump_mfa(res_mfa), file.path(out_dir("mfa"), "poison.json"))
 cat("[fixtures] mfa/poison.json\n")
+
+# ---- HMFA on poison (2-level hierarchy) ------------------------------------
+# Reuses the byte-identical poison read. Level 1 = the canonical MFA grouping
+# (desc/desc2/symptom/eat); level 2 = description={desc,desc2}, signs={symptom,eat}.
+res_hmfa <- HMFA(poison,
+                 H    = list(c(2L, 2L, 5L, 6L), c(2L, 2L)),
+                 type = c("s", "n", "n", "n"),
+                 graph = FALSE)
+write_json(dump_hmfa(res_hmfa), file.path(out_dir("hmfa"), "poison.json"))
+cat("[fixtures] hmfa/poison.json\n")
+
+# ---- HMFA on decathlon events (pure-quanti sanity) -------------------------
+# 10 numeric event columns, 3 elementary groups of sizes 4/3/3, 2 super-groups
+# {group1} and {group2, group3}. All type "s"; no categorical path.
+deca10 <- decathlon[, 1:10]
+res_hmfa_d <- HMFA(deca10,
+                   H    = list(c(4L, 3L, 3L), c(1L, 2L)),
+                   type = rep("s", 3),
+                   graph = FALSE)
+write_json(dump_hmfa(res_hmfa_d), file.path(out_dir("hmfa"), "decathlon.json"))
+cat("[fixtures] hmfa/decathlon.json\n")
 
 # ---- GPA on the synthetic K=3 configuration dataset ------------------------
 # R's GPA is stochastic (random multi-start + rnorm basis completion), so we

@@ -67,6 +67,43 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
+## Batch A3 — HMFA — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+
+**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Rollback tag:** `elves/pre-batch-a3` (pushed).
+
+**Contract:** `factominer/hmfa.py` implements Hierarchical MFA on the MFA primitives. `H` =
+list of per-level group counts (`H[0]` elementary sizes, `H[h≥1]` #prev-level groups per node);
+types `s`/`c`/`n`. Outputs: `eig`, `ind` (coord/cos2/contrib/dist), `quanti.var`
+(coord/cor/cos2/contrib), `quali.var` (coord/contrib), `group.coord` (LIST per hierarchy level),
+`group.canonical`, `partial` (per-level arrays, plotting-tier).
+
+**Build on / prerequisite (DONE):** extended `mfa.py` to accept `weight_col_mfa` (threaded into the
+separate quantitative analyses) and to expose `call["XTDC"]` / `["col_w"]` / `["group_mod"]`. MFA
+regression green (27/27). HMFA's `hweight` re-enters MFA per level passing `weight.col.mfa` and
+multiplies in one `1/λ₁` per level (HMFA.R L41-56). New helpers `_htabdes`/`_hdil`/`_hweight`;
+new `HMFAResult` container (group$coord is a list-per-level, so it can't reuse MFAGroup).
+
+**Source-verified (HMFA.R):** hweight L41-56 (keystone accumulation `cw = niv2.col_w * cw`); the
+final `PCA(XTDC, col.w=poids[top], scale_unit=False)` L101; group$coord L104-124 (`Σ var.coord²·
+poids[h]` per node, level-h weights); partial coords L130-148; canonical L160-172 (unweighted
+`diag(cor(ind, partial))`); quali.var barycenter L188-197.
+
+**Local checks (pre-CI):** ruff clean; sphinx -W builds; pytest 151 passed / 15 skipped (13 HMFA
+parity tests await the fixture). **Top-level group$coord sums to the eigenvalue per axis**
+(L2 Dim.1 = 1.8799 = eig₁) — the HMFA analogue of MFA's group invariant.
+
+**Fixtures (license-clean):** poison `H=[[2,2,5,6],[2,2]]` type `[s,n,n,n]` (categorical-heavy) +
+decathlon[:,1:10] `H=[[4,3,3],[1,2]]` all `s` (pure-quanti sanity). New `dump_hmfa`.
+
+**Deferred (recorded):** `quali.var$partial`, `ind$within.inertia`, the full `partial`-array dump
+(validated indirectly via `canonical`), DMFA stays stubbed.
+
+**Next:** push → trigger CI (dump_hmfa generates hmfa/poison.json + hmfa/decathlon.json) → verify
+the 13 HMFA tests vs fresh R → commit fixtures → confirm zero drift.
+
+---
+
 ## Batch A2 — MFA completeness — 2026-05-31 (COMPLETE — 27/27 parity vs live R)
 
 **Phase:** Implement → Validate → Review → Document, done. Parity-verified.

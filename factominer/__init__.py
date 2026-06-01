@@ -7,15 +7,16 @@ stubs that raise ``NotImplementedError``.
 
 from __future__ import annotations
 
-# Deferred methods. Imported so ``from factominer import HMFA`` works,
-# but the implementations raise NotImplementedError when called.
-from ._deferred import DMFA, HMFA
+# Deferred methods. Imported so ``from factominer import DMFA`` works,
+# but the implementation raises NotImplementedError when called.
+from ._deferred import DMFA
 from ._result import Result
 from .ca import CA
 from .desc import catdes, condes, dimdesc
 from .famd import FAMD
 from .gpa import GPA
 from .hcpc import HCPC
+from .hmfa import HMFA
 from .mca import MCA
 from .mfa import MFA
 from .pca import PCA
