@@ -18,6 +18,14 @@ out of pre-release.
 
 ### Added
 
+- **`CaGalt` — Correspondence Analysis on Generalized Aggregated Lumped
+  Tables.** New `factominer.CaGalt(Y, X, type, ...)` relates a frequency /
+  lexical table `Y` to contextual covariates `X` via a generalized SVD built on
+  PCA. Parity-verified against live R FactoMineR 2.14 for `type="s"`/`"c"`
+  (quantitative covariates): `eig`, individual coords/cos2, the `freq` block
+  (coord/cos2/contrib), and `quanti.var` (coord/cor/cos2). Ships a small
+  license-clean synthetic fixture dataset (`load_cagalt_synth`). `type="n"`
+  (qualitative covariates) and the bootstrap confidence ellipses are deferred.
 - **`descfreq` — describe frequency-table rows by their columns.** New
   `factominer.descfreq(donnee, by_quali, proba)`, the CA analogue of `catdes`:
   for each row of a contingency / frequency table it reports the columns whose

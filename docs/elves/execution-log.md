@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-06-01 (C3 complete — PHASE C DONE, parity-verified)
-- **Current phase:** Phase A + B + C done; Phase D (D1 CaGalt) next
-- **Active batch:** C3 → done; next D1 (CaGalt). B4b (missing values + FAMD ind_sup) deferred.
-- **Last completed batch:** C3 (descfreq) — frequency-table row description, hypergeometric, parity vs live R
-- **Next exact batch:** D1 (CaGalt — Correspondence Analysis on Generalized Aggregated Lumped Tables)
+- **Last updated:** 2026-06-01 (D1 CaGalt complete, parity-verified)
+- **Current phase:** Phase A + B + C done; Phase D started — D1 (CaGalt) done, D2 (regression family) next
+- **Active batch:** D1 → done; next D2 (LinearModel/AovSum + RegBest; meansComp deferred). B4b deferred.
+- **Last completed batch:** D1 (CaGalt type s/c) — eig/ind/freq/quanti.var parity vs live R
+- **Next exact batch:** D2 (regression family — D2a LinearModel+AovSum, D2b RegBest; defer meansComp)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `0b51a00` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→221 passed, 2 skipped (+98 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `46faab4` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→225 passed, 2 skipped (+102 parity tests; skips unchanged)
 
 ---
 
@@ -66,6 +66,53 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch D1 — CaGalt (type s/c) — 2026-06-01 (COMPLETE — parity vs live R)
+
+**Phase:** Complete. rpy2-parity CI green (run 26737273383); cagalt fixture + zero drift.
+**Rollback tag:** `elves/pre-batch-d1` (pushed).
+
+**Contract:** `CaGalt(Y, X, type, conf_ellip, nb_ellip, level_ventil, sx, ...)` — Correspondence
+Analysis on Generalized Aggregated Lumped Tables; relates a frequency table `Y` to covariates `X`.
+New `factominer/cagalt.py`; new `freq` Block slot on `Result`.
+
+**Implementation (verbatim from R `CaGalt.R`, a thin orchestrator over PCA):** `P=Y/sum`,
+`PI=rowSums`, `PJ=colSums`. `phi.stand` = PI-orthonormal covariate PC scores (direct PI-weighted SVD,
+matching R's `svd.triplet` U). `L=(P'phi.stand)/PJ`, `T=P'Xc`, `C=Xc'diag(PI)Xc`, `W=(T pinv(C))/PJ`.
+Inner `PCA(cbind(L,W), W sup, scale_unit=F, row_w=PJ)` → eig, freq (=inner ind), and the individual
+coords by transition `coord.ind=(P@svd.U_unwhitened)/PI`, `cos2=coord/rowSS`.
+
+**Two parity bugs found + fixed (first CI run; eig/ind/freq-coord matched immediately so the
+whitening conversions were right):**
+1. **Degenerate fixture data** — the old synthetic `Y` was linear in z, so the quadratic covariate's
+   regression coefficient `W[:,cov3]` was exactly 0 → its `quanti.var` cor/cos2 was the correlation of
+   `pinv` noise (R `ginv` vs numpy `pinv` diverge), and the inner 3rd eigenvalue was ~0 (freq.contrib
+   Dim3 = 0/0). Redesigned `Y` to depend on all three latent factors → `W` well-conditioned, all
+   inner eigenvalues non-zero ([[L23]]).
+2. **`quanti.var$coord`** — the port's PCA `quanti_sup` conflates coord/cor when `scale_unit=False`
+   (both = the correlation); R's coord is the covariance-projection. Computed `quanti.var` directly in
+   `cagalt.py` (`coord = <Wc, U>_PJ`, `cor = coord/sd_PJ`, `cos2 = cor²`) — leaves FAMD's tested
+   quanti_sup path untouched.
+
+**Fixture (license-clean):** synthetic `cagalt_synth.csv` (12×[6 freq Y | 3 quanti X], MIT;
+FactoMineR's `health` is GPL + 115 cols) + `load_cagalt_synth()` + PROVENANCE. `CaGalt(Y, X,
+type="s")` → `cagalt/synth_s.json`.
+
+**Checks:** ruff clean; **225 passed / 2 skipped**; rpy2-parity green; eig 1e-10, coord/cos2/cor 1e-9,
+contrib 1e-8, all sign-aligned where needed.
+
+**Regression attestation:** additive — new `cagalt.py`, new `freq` Result slot, new synthetic
+dataset + loader. No existing engine touched. **Confidence: HIGH.**
+
+**Docs updated:** README (CaGalt row), ROADMAP, CHANGELOG, learnings L23, survival guide +
+`.elves-session.json` advanced to D2.
+
+**Deferred (recorded):** CaGalt `type="n"` (qualitative covariates — needs a row-weighted MCA) and
+`conf_ellip` bootstrap ellipses (stochastic); both raise `NotImplementedError`.
+
+**Commits:** `1adc61b` (impl), `46faab4` (data + quanti.var fix), + this close-out.
+
+---
 
 ## Batch C3 — descfreq — 2026-06-01 (COMPLETE — parity vs live R; PHASE C DONE)
 

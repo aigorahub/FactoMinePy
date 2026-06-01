@@ -332,6 +332,38 @@ Consequences for the test design (two-tier, [[gpa]]):
 - Don't bother re-committing the GPA fixture to chase "zero drift" — the drift is
   intrinsic; the rotation-invariant / stochastic-tier comparisons absorb it.
 
+### L23 — R's `svd.triplet` un-whitening, the unscaled `quanti.sup` coord/cor split, and degenerate fixtures
+
+Three reusable traps surfaced porting `CaGalt` (a thin orchestrator over `PCA`):
+
+1. **`svd.triplet` un-whitening.** R's `svd.triplet` returns `svd$U =
+   U_weighted/√row.w` and `svd$V = V_weighted/√col.w` (un-whitened), whereas the
+   port's `Result.svd.U`/`.V` store the **whitened** `U_tilde`/`V_tilde`. Any
+   port code that mimics an R formula referencing `res$svd$U` (transition
+   formulas, standardized scores) must convert: `svd_U_R = port.svd.U / √row.w`.
+   In CaGalt this appears twice — `phi.stand` (the PI-orthonormal covariate
+   scores) and `coord.ind = (P @ svd$U_inner)/PI` — both verified against R once
+   the `/√PJ` conversion was applied. (`phi.stand` is cleanest computed directly
+   as `standard_svd(√PI · Xc).U / √PI`.)
+
+2. **`PCA` `quanti_sup` conflates coord/cor when `scale_unit=False`.** The port's
+   PCA sets `quanti_sup.coord == quanti_sup.cor == the correlation`, which is fine
+   for callers whose sup vars are pre-standardized (FAMD's sup-quanti). But R's
+   `quanti.sup$coord` for an *unscaled* PCA is the covariance-**projection**
+   (`coord = <Wc, U>_w`), distinct from `$cor` (the correlation `= coord/sd_w`).
+   CaGalt's `W` columns are unscaled, so `quanti.var` is computed **directly** in
+   `cagalt.py` (not via `inner.quanti_sup`) to get R's coord. Don't "fix" the PCA
+   quanti_sup globally — FAMD relies on the current behavior; compute per-caller.
+
+3. **Degenerate synthetic fixtures hide behind `pinv`.** A covariate orthogonal
+   to the response gives a regression coefficient of *exactly* 0, so its derived
+   correlation is the correlation of floating-point `pinv`/`ginv` residual noise —
+   which diverges between R's `MASS::ginv` and `numpy.linalg.pinv` and never
+   matches at 1e-9. Design synthetic CaGalt/regression fixtures so EVERY covariate
+   non-trivially drives the response (here: make Y depend on all latent factors),
+   so the pseudo-inverse has no near-zero columns. The tell: a near-zero inner
+   eigenvalue and out-of-[0,1] sup cos2 in the smoke test.
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch

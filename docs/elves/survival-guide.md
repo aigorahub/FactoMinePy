@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 7 (12 of 20 enumerated batches done; + B4b deferred work)
+- **Planned batches remaining:** 6 (13 of 20 enumerated batches done; + B4b deferred work)
 - **Stop allowed right now:** no
-- **Why:** 12 done (A1–A4, B1–B5, C1–C3 = Phase A+B+C complete); 7 remain (D1–D4, E1–E3, F1) + B4b.
-- **Next required action:** start D1 (CaGalt). Deferred: B4b (missing values + FAMD ind_sup),
-  Burt+quali_sup, MFA reconst (all-quanti only). Entropy check due ~D-phase boundary (archive log).
+- **Why:** 13 done (A1–A4, B1–B5, C1–C3, D1); 6 remain (D2–D4, E1–E3, F1) + B4b.
+- **Next required action:** start D2 (regression family — D2a LinearModel+AovSum, D2b RegBest;
+  defer meansComp). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses.
 
 ---
 
@@ -119,77 +119,77 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** **Phase A + B + C complete.** 12 of 20 batches; everything parity-verified at the
-deterministic / supplementary bar.
+**Status:** Phase A + B + C done; Phase D started. **D1 (CaGalt) complete.** 13 of 20 batches;
+everything parity-verified at the deterministic / supplementary bar.
 
-**Active batch:** C3 done → D1 (CaGalt). B4b (missing values + FAMD ind_sup) deferred.
+**Active batch:** D1 done → D2 (regression family). B4b (missing values + FAMD ind_sup) deferred.
 
-**What was just finished:** C3 — `descfreq` (hypergeometric description of frequency-table rows),
-new `factominer/desc/descfreq.py`, verbatim from R; parity-verified. Also corrected a flaky GPA
-PANOVA test to its stochastic tier ([[L22]] — R's GPA isn't reproducible across CI runs even with
-set.seed). 221 passed / 2 skipped; rpy2-parity green. Commits `6c77eeb`, `0b51a00` + close-out.
-Earlier: Phase A, B1–B5, C1 (predict.*), C2 (reconst + estim_ncp).
+**What was just finished:** D1 — `CaGalt` (type s/c), new `factominer/cagalt.py` + `freq` Result
+slot. Thin orchestrator over PCA; required R's `svd.triplet` un-whitening for phi.stand/coord.ind,
+a direct `quanti.var` (port PCA conflates coord/cor when unscaled), and a non-degenerate synthetic
+fixture ([[L23]]). 225 passed / 2 skipped; rpy2-parity green (run 26737273383). Commits `1adc61b`,
+`46faab4` + close-out. Earlier: Phase A, B1–B5, C1–C3.
 
-**Single next action:** tag `elves/pre-batch-d1`, then start D1 (CaGalt) — full spec in the Next
-Exact Batch section below (from the D1 research subagent).
+**Single next action:** tag `elves/pre-batch-d2`, then start D2 — full spec (from the D2 research
+subagent) in the Next Exact Batch section below.
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** D1 — `CaGalt` (Correspondence Analysis on Generalized Aggregated Lumped Tables)
+**Batch:** D2 — regression family. **D2a = `LinearModel` + `AovSum`; D2b = `RegBest`; DEFER
+`meansComp`.** numpy/scipy only — **do NOT add statsmodels** (heavyweight; its ANOVA/contrast
+defaults don't match R's `contr.sum` Type-III layout anyway). Full D2 research report is in this
+turn's transcript. R's `car`/`leaps` are FactoMineR `Imports`, so fixtures generate fine in CI.
 
-**Scope:** `CaGalt(Y, X, type="s", conf_ellip=False, nb_ellip=100, level_ventil=0, sx=None,
-graph=False, axes=(0,1))`. Y = n×p frequency/lexical table; X = n×k covariates. `type`: `"s"`
-(quanti scaled, default), `"c"` (quanti centred), `"n"` (qualitative → indicator). Full research
-report is in this turn's transcript (D1 subagent). **NOTE the real R args are `nb.ellip` +
-`level.ventil`, NOT nperm/level.conf.**
+**D2a — `LinearModel(formula, data, type="III", selection="none")` + `AovSum`:**
+- R forces `options(contrasts=c("contr.sum","contr.sum"))` — **every coefficient/SS depends on
+  sum-to-zero contrasts.** Coerce non-numeric cols to factors + droplevels. Fit OLS via
+  `np.linalg.lstsq` on the contr.sum design matrix (reuse `predict.py:_build_indicator` for the
+  one-hot, then map to sum contrasts; `condes.py:91-117` has the contr.sum Estimate idea).
+- **Ftest table** (`car::Anova(model, type)`), cols `SS, df, MS, F value, Pr(>F)`; Type-III drops the
+  intercept row. Type-III SS for a term = RSS increase when that term's columns are removed while all
+  others stay. (Type-II + `selection="aic"/"bic"` step() = documented stretch/gap, not blocking.)
+- **Ttest table** = `summary.lm$coef` (Estimate/Std.Error/t value/Pr(>|t|)) **rebuilt per level**: a
+  k-level factor appends the omitted last level as `-sum(estimates)`, SE `sqrt(sum(cov[idx,idx]))`
+  from `vcov = σ²(XᵀX)⁻¹`, p via `pt(.., resid_df)*2`; rownames `"<factor> - <level>"`, interactions
+  ` : `-joined. **Fixture MUST include a 2+level factor AND an interaction** to exercise this.
+- `lmResult` scalars: `r.squared`, `sigma`, `fstatistic` (value/numdf/dendf), and `aic`/`bic` via
+  R's `extractAIC` = `n·log(RSS/n) + k·edf` (NOT the Gaussian-loglik AIC — match exactly).
+- `AovSum(formula, data)` ≡ `LinearModel(type="III", selection="none")` returning only
+  `{Ftest, Ttest}` — implement as a thin wrapper over the shared core, don't duplicate the loop.
+- Output classes/names: `LinearModel` → `Ftest`, `Ttest`, `call`, `lmResult` (+`*Comp` when
+  selection used); `AovSum` → `Ftest`, `Ttest`.
 
-**Algorithm (CaGalt = a thin orchestrator over PCA, verbatim from R `CaGalt.R`):**
-- `P = Y/sum(Y)`; `PI. = rowSums(P)` (individual masses), `P.J = colSums(P)` (frequency masses).
-- Covariate analysis weighted by `PI.`: for `type≠"n"`, standardize `X` with `PI.`-weighted
-  mean/sd (`_scaling.center_scale(X, scale_unit=type=="s", row_w=PI.)`), and `phi.stand =
-  diag.X$svd$U` where `diag.X = PCA(X, scale_unit=type=="s", ncp, row_w=PI.)`. For `type="n"`,
-  `phi.stand` = whitened left vectors of the `PI.`-weighted centred indicator (build via `_svd.py`
-  primitives — DON'T need MCA row_w, which the port lacks).
-- Build: `L = sweep(P' @ phi.stand, 1, P.J, "/")` (p×ncp), `T = P' @ X`, `C = (X·√PI.)'(X·√PI.)`
-  (Gram), `W = sweep(T @ pinv(C), 1, P.J, "/")` (`ginv` = `np.linalg.pinv`).
-- **Inner decomposition:** `diag.L = PCA(cbind(L, W), quanti_sup=W cols, scale_unit=False, ncp,
-  row_w=P.J)`. Everything re-projects off this:
-  - `eig ← diag.L.eig`; `freq` (coord/cos2/contrib) ← `diag.L.ind`; `quanti.var ←
-    diag.L.quanti_sup` (already has coord/**cor**/cos2 in the port); `quali.var ←
-    diag.L.quanti_sup` coord+cos2 (type="n").
-  - `ind` by transition: `coord.ind = (P' @ diag.L.svd.U) / PI.[:,None]`; `cos2.ind =
-    coord²/rowSum(coord²)`.
+**D2b — `RegBest(y, x, int=TRUE, method="r2"|"Cp"|"adjr2", nbest=1)`:** all-numeric x (no contrasts).
+R uses `leaps` (branch-and-bound best subset) but the observable output = best subset of each size by
+RSS → reproduce with **exhaustive `itertools.combinations` + `lstsq`** (guard large p; fine for
+decathlon's 10). Per size: refit, record `r.squared` + overall-F p-value `pf(F, numdf, dendf,
+lower=F)`. Best-model choice: `r2`→min overall-F p; `Cp`→`argmin(Cp)` (Mallows, full-model MSE as
+σ̂²); `adjr2`→`argmax(adjr2)`; ties → first index. Output `all` (per-size summary.lm), `summary`
+matrix (`R2`,`Pvalue`, rows "Model with k variable(s)"), `best`.
 
-**Build on (reuse, verified worktree paths):** `pca.py` `PCA` already takes `row_w`, `scale_unit`,
-`ncp`, `quanti_sup` (quanti_sup returns coord/cor/cos2 — exactly what quanti.var needs) and exposes
-`res.svd.U`. `_scaling.center_scale` = R's `mean.p`/`sd.p`. `np.linalg.pinv` = R `ginv`.
+**DEFER `meansComp`** — needs `emmeans` (estimated marginal means) + `multcompView` (compact-letter
+display) + studentized-range Tukey; out of proportion to an EDA port. Record as its own future batch.
 
-**Gaps (additive):** (1) add `freq: Block | None = None` to `Result` (`_result.py`). (2) new
-`factominer/cagalt.py` + export. (3) a shared `_tab_disjonctif` helper with R's column naming (for
-type="n"). (4) **Defer** `level_ventil>0` and `conf_ellip=True` (the ellipses are a **stochastic
-bootstrap** — exclude, like GPA; raise/no-op). Implement `type="s"/"c"` first, then `type="n"`.
+**Fixtures (license-clean, bundled):** `LinearModel`/`AovSum` on `poison` (numeric Age/Time + 2-level
+factors Sick/Sex/Nausea): `LinearModel(Time~Sick+Sex+Nausea, type="III")` AND
+`LinearModel(Time~Sick*Sex, type="III")` (interaction path) + `AovSum(Time~Sick+Sex+Nausea)`.
+`RegBest` on `decathlon`: `x=decathlon[,1:10]`, `y=Points`, methods r2/Cp/adjr2. Dump Ftest/Ttest
+(incl. reconstructed last-level rows)/lmResult scalars, and RegBest summary + best$r.squared/coef +
+the chosen index. New `factominer/linear_model.py` (+ `AovSum`) and `factominer/reg_best.py`; export.
 
-**Fixture (license-clean — NO bundled dataset exists; `health` is GPL + 115 cols):** build a small
-synthetic `datasets/data/cagalt_synth.csv` (n≈12 × [6 freq cols Y | 3 quanti cols X], fixed numpy
-seed, MIT — mirror `gpa_synth` + PROVENANCE). Add `load_cagalt_synth()`. Two R calls:
-`CaGalt(Y, Xs, type="s")` and `CaGalt(Y, factor(round(Xn)), type="n", level.ventil=0)`, both
-`conf.ellip=FALSE`. Dump eig/ind/freq/quanti.var (s) or quali.var (n). **Do NOT dump `ellip`.**
+**Parity bar:** SS/F/coefficients/SE/t/R²/AIC/BIC at 1e-6 relative; p-values 1e-5 rel; df exact.
 
-**Parity bar:** deterministic blocks (eig/ind/freq/quanti.var/quali.var coord·cor·cos2·contrib) at
-the strict tier (eig 1e-10; coord/cos2/cor 1e-9; contrib 1e-8); coord sign-aligned per axis.
+**Sharp edges:** contr.sum vs contr.treatment (use sum); Type-III SS term-drop mapping (test vs a
+2-factor+interaction fixture); `extractAIC` formula (not loglik AIC); RegBest best-index tie-break
+(first); singular designs. Reuse `predict.py:_build_indicator`, `condes.py` contr.sum idea.
 
-**Sharp edges:** two weight vectors — `PI.` weights the covariate analysis, `P.J` weights the main
-analysis AND row-divides L/W (the double `sweep(…,P.J,"/")` then `row_w=P.J` is intentional). `pinv(C)`
-is load-bearing (C is deliberately rank-deficient). `ind` cos2 = `coord²/rowSum(coord²)` over kept
-axes (NOT a chi-square distance). quali.var labels follow `tab.disjonctif` naming. Signs inherited
-from the inner PCA (already FactoMineR-aligned).
-
-**Rollback tag:** `elves/pre-batch-d1` (create before starting).
+**Rollback tag:** `elves/pre-batch-d2` (create before starting).
 
 **Deferred (carry forward):** B4b = missing values (PCA/CA/MCA/GPA) + FAMD `ind_sup`; Burt +
-`quali_sup`; MFA `reconst` (all-quanti); CaGalt `level_ventil`>0 + `conf_ellip` bootstrap ellipses.
+`quali_sup`; MFA `reconst` (all-quanti); CaGalt `type="n"` + `conf_ellip`; D2 `meansComp` +
+LinearModel Type-II/AIC-BIC selection.
 
 ---
 

@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 7,
+    "remaining_batches": 6,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "A1-A4 + B1-B5 + C1-C3 done (Phase A+B+C complete, all CI-green). Start D1 (CaGalt). Deferred: B4b (missing values + FAMD ind_sup), Burt+quali_sup, MFA reconst, CaGalt ellipses/ventilation."
+    "next_required_action": "A1-A4 + B1-B5 + C1-C3 + D1 done (all CI-green). Start D2 (regression: D2a LinearModel+AovSum, D2b RegBest; defer meansComp; no statsmodels). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,8 +29,8 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "D1",
-    "name": "CaGalt",
+    "id": "D2",
+    "name": "regression family (LinearModel/AovSum/RegBest)",
     "status": "not_started"
   },
   "phases": [
@@ -211,6 +211,16 @@
       "started_at": "2026-06-01",
       "completed_at": "2026-06-01",
       "parity": "descfreq parity vs live R (children); p.value 1e-5 rel, v.test 1e-6. Also fixed flaky GPA PANOVA to stochastic tier (0b51a00)."
+    },
+    {
+      "id": "D1",
+      "name": "CaGalt (type s/c)",
+      "status": "complete",
+      "rollback_tag": "elves/pre-batch-d1",
+      "commit": "46faab4",
+      "started_at": "2026-06-01",
+      "completed_at": "2026-06-01",
+      "parity": "CaGalt type s eig/ind/freq/quanti.var parity vs live R (run 26737273383, zero drift). type=n + ellipses deferred."
     }
   ],
   "review_comments": [
