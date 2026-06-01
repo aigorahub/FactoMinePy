@@ -16,6 +16,7 @@ from .famd import FAMD
 from .gpa import GPA
 from .hcpc import HCPC
 from .hmfa import HMFA
+from .linear_model import AovSum, LinearModel
 from .mca import MCA
 from .mfa import MFA
 from .pca import PCA
@@ -42,6 +43,8 @@ __all__ = [
     "reconst",
     "estim_ncp",
     "RegBest",
+    "LinearModel",
+    "AovSum",
     "Result",
 ]
 

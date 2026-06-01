@@ -200,6 +200,23 @@ dump_cagalt <- function(res) {
   )
 }
 
+# LinearModel / AovSum: the Ftest (SS/df/MS/F/Pr) and Ttest (Estimate/SE/t/Pr)
+# tables, plus the lmResult scalars for LinearModel.
+dump_linearmodel <- function(res) {
+  out <- list(
+    Ftest = as.data.frame(res$Ftest),
+    Ttest = as.data.frame(res$Ttest)
+  )
+  if (!is.null(res$lmResult)) {
+    out$r.squared  <- as.numeric(res$lmResult$r.squared)
+    out$sigma      <- as.numeric(res$lmResult$sigma)
+    out$fstatistic <- as.numeric(res$lmResult$fstatistic)  # value, numdf, dendf
+    out$aic        <- as.numeric(res$lmResult$aic)
+    out$bic        <- as.numeric(res$lmResult$bic)
+  }
+  out
+}
+
 # RegBest: the per-size R2/Pvalue summary, plus the chosen best model's R2 +
 # coefficient table (Estimate/Std. Error/t value/Pr(>|t|)).
 dump_regbest <- function(res) {
@@ -573,10 +590,29 @@ cat("[fixtures] cagalt/synth_s.json\n")
 # ---- RegBest on decathlon (predict Rank from the 10 events) -----------------
 # Rank ~ events is non-degenerate (R^2 0.36->0.73) and the three criteria pick
 # different best sizes (r2/Cp -> 6 vars, adjr2 -> 7), exercising each rule.
+# R's RegBest builds formulas from the column names without backticking, so the
+# event names must be syntactic (e.g. "100m" -> "X100m"); make.names() does that.
+xreg <- decathlon[, 1:10]
+colnames(xreg) <- make.names(colnames(xreg))
 for (meth in c("r2", "Cp", "adjr2")) {
-  rb <- RegBest(y = decathlon[, "Rank"], x = decathlon[, 1:10], method = meth)
+  rb <- RegBest(y = decathlon[, "Rank"], x = xreg, method = meth)
   write_json(dump_regbest(rb), file.path(out_dir("regbest"), paste0("decathlon_", tolower(meth), ".json")))
   cat(sprintf("[fixtures] regbest/decathlon_%s.json\n", tolower(meth)))
 }
+
+# ---- LinearModel / AovSum on poison (contr.sum Type-III ANOVA) --------------
+# Main effects (3 two-level factors) + an interaction; reads the byte-identical
+# poison from above (Time numeric response; Sick/Sex/Nausea factors).
+res_lm_main  <- LinearModel(Time ~ Sick + Sex + Nausea, data = poison, type = "III", selection = "none")
+write_json(dump_linearmodel(res_lm_main), file.path(out_dir("linear_model"), "poison_main.json"))
+cat("[fixtures] linear_model/poison_main.json\n")
+
+res_lm_inter <- LinearModel(Time ~ Sick * Sex, data = poison, type = "III", selection = "none")
+write_json(dump_linearmodel(res_lm_inter), file.path(out_dir("linear_model"), "poison_inter.json"))
+cat("[fixtures] linear_model/poison_inter.json\n")
+
+res_aov_main <- AovSum(Time ~ Sick + Sex + Nausea, data = poison)
+write_json(dump_linearmodel(res_aov_main), file.path(out_dir("aovsum"), "poison_main.json"))
+cat("[fixtures] aovsum/poison_main.json\n")
 
 cat("\ndone.\n")

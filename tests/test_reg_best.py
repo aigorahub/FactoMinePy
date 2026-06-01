@@ -18,9 +18,16 @@ from factominer.datasets import load_decathlon
 _COEF_COLS = ["Estimate", "Std. Error", "t value", "Pr(>|t|)"]
 
 
+def _make_names(name: str) -> str:
+    """R make.names(): prefix non-syntactic names (e.g. "100m") with 'X'."""
+    return name if (name[:1].isalpha() or name[:1] == ".") else "X" + name
+
+
 def _res(method):
     deca = load_decathlon()
-    return RegBest(deca["Rank"], deca.iloc[:, :10], method=method)
+    x = deca.iloc[:, :10].copy()
+    x.columns = [_make_names(str(c)) for c in x.columns]
+    return RegBest(deca["Rank"], x, method=method)
 
 
 def _summary(records):

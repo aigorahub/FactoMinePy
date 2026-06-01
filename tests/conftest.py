@@ -213,3 +213,18 @@ def r_regbest_decathlon_cp() -> dict:
 @pytest.fixture(scope="session")
 def r_regbest_decathlon_adjr2() -> dict:
     return _load_r_fixture("regbest", "decathlon_adjr2")
+
+
+@pytest.fixture(scope="session")
+def r_linear_model_poison_main() -> dict:
+    return _load_r_fixture("linear_model", "poison_main")
+
+
+@pytest.fixture(scope="session")
+def r_linear_model_poison_inter() -> dict:
+    return _load_r_fixture("linear_model", "poison_inter")
+
+
+@pytest.fixture(scope="session")
+def r_aovsum_poison_main() -> dict:
+    return _load_r_fixture("aovsum", "poison_main")
