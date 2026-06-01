@@ -67,6 +67,41 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
+## Batch B2 — MCA sup-block parity + Burt — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+
+**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Rollback tag:** `elves/pre-batch-b2` (pushed).
+
+**Contract:** (1) implement MCA `quanti.sup` + `quali.sup` blocks (run #1 shipped the args but never
+computed/asserted the blocks); (2) implement the `method="Burt"` transform.
+- **quanti.sup:** weighted correlation of each sup numeric var with the individual coords (R uses
+  svd$U; correlation is scale-invariant). coord only.
+- **quali.sup:** route the sup categories through CA as `col.sup` (R does `CA(Ztot, col.sup=...)`);
+  coord/cos2 = CA col.sup (principal CA col coord, **NO /√λ rescale** — the L1 trap); v.test = coord ×
+  same multiplier as active categories; eta² = per-var weighted correlation ratio of ind coords.
+- **Burt:** post-transform of the indicator decomposition — eig = λ_ind², var coord = ψ·√λ_ind, cos2
+  vs the all-axes Burt distance (auxil); ind/contrib/eta² unchanged (MCA.R:226-234,253-256,329-333).
+
+**Build on:** CA's `col_sup` block (coord/cos2) + `svd.U`; the active v.test multiplier; the shared
+`weighted_corr`/`weighted_eta2` (the latter relocated from famd.py to `_corr.py` this batch — both
+methods now share it; FAMD still 26/26). Active MCA path unchanged when no sup / indicator.
+
+**Scope:** Burt is implemented for the all-active case; `method="burt"` + `quali_sup` raises a clear
+NotImplementedError (not yet combined). quanti.sup under Burt is fine (ind unchanged).
+
+**Local checks (pre-CI):** ruff clean; sphinx -W; pytest 192 passed / 6 skipped. Smoke: MCA sup blocks
+(quanti_sup=age, quali_sup 44 cats/17 vars, eta² ∈ [0,1]); Burt eig == indicator eig² (exact), ind
+unchanged, var coords = indicator × √λ_ind (exact).
+
+**Fixtures (license-clean, tea):** extended `dump_mca` (NULL sup blocks drop out → active checks
+unchanged); regenerate `mca/tea.json` (gains quanti.sup/quali.sup) + new `mca/tea_burt.json` (8-var
+all-active Burt slice).
+
+**Next:** push → trigger CI → verify the sup + Burt tests vs fresh R → commit fixtures → confirm
+zero drift on the active tea.json data.
+
+---
+
 ## Batch B1 — FAMD supplementary variables — 2026-05-31 (COMPLETE — 26/26 parity vs live R)
 
 **Phase:** Implement → Validate → Review → Document, done. Parity-verified, first pass.

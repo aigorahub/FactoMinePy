@@ -45,3 +45,33 @@ def corr_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     sa = np.sqrt((ac**2).sum(axis=0))
     sb = np.sqrt((bc**2).sum(axis=0))
     return (ac.T @ bc) / np.outer(sa, sb)
+
+
+def weighted_eta2(ind_coord: np.ndarray, codes: np.ndarray, rw: np.ndarray) -> np.ndarray:
+    """Weighted correlation ratio (between-group SS / total SS) of a grouping
+    variable against each column of ``ind_coord``. ``codes`` are category codes
+    (``-1`` marks missing, excluded). Mirrors R FactoMineR's ``fct.eta2`` — used
+    for FAMD's variable eta² and MCA's supplementary-variable eta²."""
+    ncp = ind_coord.shape[1]
+    out = np.zeros(ncp)
+    ok = codes >= 0
+    w = rw[ok]
+    w = w / w.sum()
+    f = ind_coord[ok]
+    grp = codes[ok]
+    uniq = np.unique(grp)
+    for k in range(ncp):
+        y = f[:, k]
+        grand = float((w * y).sum())
+        d = y - grand
+        sct = float((w * d * d).sum())
+        if sct <= 0:
+            continue
+        sce = 0.0
+        for g in uniq:
+            m = grp == g
+            wg = w[m].sum()
+            mean_g = float((w[m] * y[m]).sum() / wg)
+            sce += wg * (mean_g - grand) ** 2
+        out[k] = sce / sct
+    return out

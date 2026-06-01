@@ -35,6 +35,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from ._corr import weighted_eta2
 from ._result import Block, Result
 from .pca import PCA
 
@@ -210,7 +211,7 @@ def FAMD(  # noqa: N802 — mirrors R's function name
     ind_coord = pca.ind.coord[dim_names].to_numpy()
     eta2 = np.zeros((n_fac, ncp_eff))
     for fi in range(n_fac):
-        eta2[fi] = _eta2_per_axis(ind_coord, codes_per_fac[fi], rw)
+        eta2[fi] = weighted_eta2(ind_coord, codes_per_fac[fi], rw)
 
     # --- var: combined summary (squared loadings for quanti, eta² for quali) ---
     nlev_arr = np.asarray(nlevels, dtype=np.float64)
@@ -286,32 +287,3 @@ def FAMD(  # noqa: N802 — mirrors R's function name
         quali_sup=pca.quali_sup,
         method="FAMD",
     )
-
-
-def _eta2_per_axis(ind_coord: np.ndarray, codes: np.ndarray, rw: np.ndarray) -> np.ndarray:
-    """Weighted correlation ratio (between-group SS / total SS) of a factor
-    against each column of ``ind_coord``. ``codes`` are category codes
-    (-1 for missing, excluded). Mirrors R FAMD's ``fct.eta2``."""
-    ncp = ind_coord.shape[1]
-    out = np.zeros(ncp)
-    ok = codes >= 0
-    w = rw[ok]
-    w = w / w.sum()
-    F = ind_coord[ok]
-    grp = codes[ok]
-    uniq = np.unique(grp)
-    for k in range(ncp):
-        y = F[:, k]
-        grand = float((w * y).sum())
-        d = y - grand
-        sct = float((w * d * d).sum())
-        if sct <= 0:
-            continue
-        sce = 0.0
-        for g in uniq:
-            m = grp == g
-            wg = w[m].sum()
-            mean_g = float((w[m] * y[m]).sum() / wg)
-            sce += wg * (mean_g - grand) ** 2
-        out[k] = sce / sct
-    return out

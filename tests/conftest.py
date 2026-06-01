@@ -61,6 +61,11 @@ def r_mca_tea() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_mca_tea_burt() -> dict:
+    return _load_r_fixture("mca", "tea_burt")
+
+
+@pytest.fixture(scope="session")
 def r_famd_poison() -> dict:
     return _load_r_fixture("famd", "poison")
 

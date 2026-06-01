@@ -73,6 +73,8 @@ dump_mca <- function(res) {
     eig = as.data.frame(res$eig),
     var = dump_block(res$var),
     ind = dump_block(res$ind),
+    quanti.sup = dump_block(res$quanti.sup),   # NULL (dropped) when no sup vars
+    quali.sup  = dump_block(res$quali.sup),
     svd = list(vs = as.numeric(res$svd$vs))
   )
 }
@@ -179,6 +181,13 @@ data(tea)
 res_mca <- MCA(tea, quanti.sup = 19, quali.sup = c(20:36), ncp = 5, graph = FALSE)
 write_json(dump_mca(res_mca), file.path(out_dir("mca"), "tea.json"))
 cat("[fixtures] mca/tea.json\n")
+
+# ---- MCA Burt on an 8-variable tea slice -----------------------------------
+# All-active (no sup) so the Burt eig²/coord-rescale transform is isolated.
+tea_burt <- tea[, c("breakfast","tea.time","evening","lunch","dinner","Tea","sugar","sex")]
+res_mca_burt <- MCA(tea_burt, ncp = 5, method = "Burt", graph = FALSE)
+write_json(dump_mca(res_mca_burt), file.path(out_dir("mca"), "tea_burt.json"))
+cat("[fixtures] mca/tea_burt.json\n")
 
 # ---- FAMD on poison --------------------------------------------------------
 # Read the committed CSV directly (instead of data(poison)) so the R input is
