@@ -211,3 +211,87 @@ def test_famd_summary_runs():
     res = _famd()
     s = res.summary()
     assert "FAMD" in s or "Eigenvalues" in s
+
+
+# ---------------------------------------------------------------------------
+# Supplementary variables: FAMD(poison, sup.var=c("Time","Sex"))
+# ---------------------------------------------------------------------------
+
+
+def _famd_sup():
+    return FAMD(load_poison(), ncp=5, sup_var=["Time", "Sex"])
+
+
+def test_famd_sup_eig(r_famd_poison_sup):
+    res = _famd_sup()
+    r_eig = np.array([row["eigenvalue"] for row in r_famd_poison_sup["eig"]])
+    assert np.allclose(res.eig["eigenvalue"].to_numpy(), r_eig, atol=1e-10, rtol=0)
+
+
+def test_famd_sup_active_quanti_var(r_famd_poison_sup):
+    # active quanti is just Age now (Time is supplementary)
+    res = _famd_sup()
+    r_arr, r_labels = _r_block_to_array(r_famd_poison_sup["quanti.var"]["coord"], 5)
+    py = res.quanti_var.coord.loc[r_labels].to_numpy()[:, :5]
+    assert np.allclose(align_to_reference(py, r_arr), r_arr, atol=1e-9, rtol=0)
+
+
+def test_famd_sup_quanti_sup_coord(r_famd_poison_sup):
+    res = _famd_sup()
+    r_arr, r_labels = _r_block_to_array(r_famd_poison_sup["quanti.sup"]["coord"], 5)
+    py = res.quanti_sup.coord.loc[r_labels].to_numpy()[:, :5]
+    assert np.allclose(align_to_reference(py, r_arr), r_arr, atol=1e-9, rtol=0)
+
+
+def test_famd_sup_quanti_sup_cos2(r_famd_poison_sup):
+    res = _famd_sup()
+    r_arr, r_labels = _r_block_to_array(r_famd_poison_sup["quanti.sup"]["cos2"], 5)
+    py = res.quanti_sup.cos2.loc[r_labels].to_numpy()[:, :5]
+    assert np.allclose(py, r_arr, atol=1e-9, rtol=0)
+
+
+def _map_quali_sup_rows(py_index, r_labels):
+    """Map R's quali.sup labels (bare category) to our 'var=cat' index by the
+    bare suffix (same normalization as the PCA quali.sup test)."""
+    norm = [lbl.split("=", 1)[-1] for lbl in r_labels]
+    py_norm = [s.split("=", 1)[-1] for s in py_index]
+    return [py_index[py_norm.index(nm)] for nm in norm]
+
+
+def test_famd_sup_quali_sup_coord(r_famd_poison_sup):
+    res = _famd_sup()
+    r_arr, r_labels = _r_block_to_array(r_famd_poison_sup["quali.sup"]["coord"], 5)
+    rows = _map_quali_sup_rows(list(res.quali_sup.coord.index), r_labels)
+    py = res.quali_sup.coord.loc[rows].to_numpy()[:, :5]
+    assert np.allclose(align_to_reference(py, r_arr), r_arr, atol=1e-7, rtol=0)
+
+
+def test_famd_sup_quali_sup_vtest(r_famd_poison_sup):
+    res = _famd_sup()
+    payload = r_famd_poison_sup["quali.sup"].get("v.test")
+    if payload is None:
+        return
+    r_arr, r_labels = _r_block_to_array(payload, 5)
+    rows = _map_quali_sup_rows(list(res.quali_sup.v_test.index), r_labels)
+    py = res.quali_sup.v_test.loc[rows].to_numpy()[:, :5]
+    assert np.allclose(align_to_reference(py, r_arr), r_arr, atol=1e-6, rtol=0)
+
+
+def test_famd_sup_quali_sup_eta2(r_famd_poison_sup):
+    res = _famd_sup()
+    payload = r_famd_poison_sup["quali.sup"].get("eta2")
+    if payload is None:
+        return
+    r_arr, r_labels = _r_block_to_array(payload, 5)
+    py = res.quali_sup.eta2.loc[r_labels].to_numpy()[:, :5]
+    assert np.allclose(py, r_arr, atol=1e-9, rtol=0)
+
+
+def test_famd_sup_var_coord_sup(r_famd_poison_sup):
+    payload = r_famd_poison_sup.get("var.coord.sup")
+    if payload is None:
+        return
+    res = _famd_sup()
+    r_arr, r_labels = _r_block_to_array(payload, 5)
+    py = res.var.coord_sup.loc[r_labels].to_numpy()[:, :5]
+    assert np.allclose(py, r_arr, atol=1e-8, rtol=0)

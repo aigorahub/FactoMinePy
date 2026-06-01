@@ -130,14 +130,16 @@ def plotly_pca_ind(
                 line=dict(color=DEFAULT_PALETTE[i % len(DEFAULT_PALETTE)], width=1.5),
                 name=f"ellipse: {lvl}",
             ))
-    if "ind.sup" not in invisible and res.ind_sup is not None:
-        s = res.ind_sup.coord.iloc[:, list(axes)]
+    ind_sup = getattr(res, "ind_sup", None)
+    if "ind.sup" not in invisible and ind_sup is not None:
+        s = ind_sup.coord.iloc[:, list(axes)]
         fig.add_trace(go.Scatter(x=s.iloc[:, 0], y=s.iloc[:, 1], mode="markers+text",
                                  text=[str(i) for i in s.index], textposition="top center",
                                  marker=dict(symbol="triangle-up", color="dimgray", size=9),
                                  name="ind.sup"))
-    if "quali.sup" not in invisible and res.quali_sup is not None:
-        q = res.quali_sup.coord.iloc[:, list(axes)]
+    quali_sup = getattr(res, "quali_sup", None)
+    if "quali.sup" not in invisible and quali_sup is not None:
+        q = quali_sup.coord.iloc[:, list(axes)]
         fig.add_trace(go.Scatter(x=q.iloc[:, 0], y=q.iloc[:, 1], mode="markers+text",
                                  text=[str(i) for i in q.index], textposition="top center",
                                  marker=dict(symbol="square", color="darkred", size=10),
@@ -151,10 +153,14 @@ def plotly_pca_var(res: Result, axes=(0, 1), invisible=None, title=None) -> go.F
     theta = np.linspace(0, 2 * np.pi, 256)
     fig.add_trace(go.Scatter(x=np.cos(theta), y=np.sin(theta), mode="lines",
                              line=dict(color="lightgray"), name="circle", showlegend=False))
+    var_block = res.var if getattr(res, "var", None) is not None else getattr(res, "quanti_var", None)
+    if var_block is None:
+        raise ValueError(f"{res.method} has no variable block to plot for choix='var'")
     if "var" not in invisible:
-        _add_arrows(fig, res.var.coord.iloc[:, list(axes)], "#1f77b4", "variables")
-    if "quanti.sup" not in invisible and res.quanti_sup is not None:
-        _add_arrows(fig, res.quanti_sup.coord.iloc[:, list(axes)], "darkgreen", "quanti.sup", dash="dash")
+        _add_arrows(fig, var_block.coord.iloc[:, list(axes)], "#1f77b4", "variables")
+    quanti_sup = getattr(res, "quanti_sup", None)
+    if "quanti.sup" not in invisible and quanti_sup is not None:
+        _add_arrows(fig, quanti_sup.coord.iloc[:, list(axes)], "darkgreen", "quanti.sup", dash="dash")
     fig.update_xaxes(range=[-1.1, 1.1])
     fig.update_yaxes(range=[-1.1, 1.1])
     return fig

@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import pandas as pd
-import pytest
-
 import factominer
-from factominer import CA, HCPC, MCA, PCA, catdes, condes, dimdesc
-from factominer.datasets import load_children, load_decathlon, load_tea
+from factominer import CA, DMFA, HCPC, HMFA, MCA, MFA, PCA, catdes, condes, dimdesc
+from factominer.datasets import load_children, load_decathlon, load_poison, load_tea
 
 
 def test_version_string():
@@ -67,8 +64,34 @@ def test_condes_runs():
     assert "quanti" in res or "quali" in res
 
 
-@pytest.mark.parametrize("name", ["MFA", "HMFA", "DMFA"])
-def test_deferred_methods_raise(name):
-    fn = getattr(factominer, name)
-    with pytest.raises(NotImplementedError):
-        fn(pd.DataFrame({"a": [1, 2, 3]}))
+def test_mfa_runs():
+    poison = load_poison()
+    res = MFA(
+        poison,
+        group=[2, 2, 5, 6],
+        type=["s", "n", "n", "n"],
+        name_group=["desc", "desc2", "symptom", "eat"],
+    )
+    assert res.method == "MFA"
+    assert res.ind.coord.shape == (poison.shape[0], 5)
+    assert list(res.quanti_var.coord.index) == ["Age", "Time"]
+    assert res.group.coord.shape == (4, 5)
+    assert res.group.Lg.shape == (5, 5)  # K groups + the global "MFA" row/col
+
+
+def test_hmfa_runs():
+    poison = load_poison()
+    res = HMFA(poison, H=[[2, 2, 5, 6], [2, 2]], type=["s", "n", "n", "n"])
+    assert res.method == "HMFA"
+    assert res.ind.coord.shape[0] == poison.shape[0]
+    assert len(res.group_coord) == 2  # two hierarchy levels
+    assert list(res.quanti_var.coord.index) == ["Age", "Time"]
+
+
+def test_dmfa_runs():
+    deca = load_decathlon()
+    res = DMFA(deca, num_fact="Competition", quanti_sup=["Rank", "Points"])
+    assert res.method == "DMFA"
+    assert res.ind.coord.shape[0] == deca.shape[0]
+    assert list(res.group_coord.index) == ["Decastar", "OlympicG"]
+    assert res.var.coord.shape[0] == 10  # the 10 active events

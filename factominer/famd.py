@@ -35,6 +35,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from ._corr import weighted_eta2
 from ._result import Block, Result
 from .pca import PCA
 
@@ -42,30 +43,53 @@ from .pca import PCA
 def FAMD(  # noqa: N802 — mirrors R's function name
     X: pd.DataFrame,
     ncp: int = 5,
+    sup_var: list[int] | list[str] | None = None,
+    ind_sup: list[int] | list[str] | None = None,
     graph: bool = False,  # noqa: ARG001 — accepted for FactoMineR compatibility; we never auto-plot
 ) -> Result:
     """Run Factor Analysis of Mixed Data on a table of mixed column types.
 
-    Mirrors ``FactoMineR::FAMD`` for the active-variable case. Numeric columns
-    are treated as quantitative, everything else as qualitative.
+    Mirrors ``FactoMineR::FAMD``. Numeric columns are treated as quantitative,
+    everything else as qualitative. ``sup_var`` lists supplementary variables
+    (columns): numeric ones become supplementary quantitatives (correlations
+    with the axes), categorical ones become supplementary qualitatives (category
+    barycenters with cos²/v.test/eta²). Supplementary variables are routed
+    through the inner :func:`factominer.PCA`'s sup machinery, exactly as R FAMD
+    routes them through ``FactoMineR::PCA``.
 
-    Returns a :class:`Result` with ``eig``, ``ind`` (individuals),
-    ``quanti_var`` (continuous variables), ``quali_var`` (categories),
-    ``var`` (combined squared-loading / eta² summary), and ``svd``.
+    Returns a :class:`Result` with ``eig``, ``ind``, ``quanti_var``,
+    ``quali_var``, ``var`` (combined summary, incl. ``coord_sup``/``cos2_sup``
+    when sup vars are present), the ``quanti_sup`` / ``quali_sup`` blocks, and
+    ``svd``.
     """
     if not isinstance(X, pd.DataFrame):
         raise TypeError("X must be a pandas DataFrame")
     if X.shape[0] < 3:
         raise ValueError("FAMD needs at least 3 rows")
+    if ind_sup is not None:
+        raise NotImplementedError(
+            "FAMD supplementary individuals (ind_sup) are deferred to the "
+            "missing-values / row-weights batch (they require active-only row "
+            "weighting throughout the scaling). Use sup_var for supplementary "
+            "variables."
+        )
 
     from pandas.api.types import is_numeric_dtype
 
-    num_cols = [c for c in X.columns if is_numeric_dtype(X[c].dtype)]
-    fac_cols = [c for c in X.columns if c not in num_cols]
+    from ._scaling import column_indices
+
+    sup_set = {X.columns[i] for i in column_indices(X.columns, sup_var)}
+    all_num = [c for c in X.columns if is_numeric_dtype(X[c].dtype)]
+    all_fac = [c for c in X.columns if c not in all_num]
+    # Active vs supplementary, partitioned by membership in ``sup_var``.
+    num_cols = [c for c in all_num if c not in sup_set]
+    fac_cols = [c for c in all_fac if c not in sup_set]
+    sup_num = [c for c in all_num if c in sup_set]
+    sup_fac = [c for c in all_fac if c in sup_set]
     if not num_cols:
-        raise ValueError("All variables are quantitative; use PCA instead.")
+        raise ValueError("All active variables are quantitative; use PCA instead.")
     if not fac_cols:
-        raise ValueError("All variables are qualitative; use MCA instead.")
+        raise ValueError("All active variables are qualitative; use MCA instead.")
 
     n = X.shape[0]
     rw = np.full(n, 1.0 / n)  # uniform row weights (FAMD row.w support not exposed)
@@ -112,13 +136,32 @@ def FAMD(  # noqa: N802 — mirrors R's function name
     Xcomb = np.hstack([Qs, Zs])
     Xdf = pd.DataFrame(Xcomb, index=X.index, columns=combined_labels)
 
+    # Supplementary quantitative variables: scaled exactly like the active
+    # quanti block (center + population sd), then projected by PCA's quanti.sup.
+    for c in sup_num:
+        v = X[c].to_numpy(dtype=np.float64)
+        vc = v - (v * rw).sum()
+        vsd = np.sqrt((vc**2 * rw).sum())
+        Xdf[c] = vc / (vsd if vsd > 1e-16 else 1.0)
+    # Supplementary qualitative variables: raw factor columns (PCA's quali.sup
+    # computes the category barycenters / v.test / eta², which R FAMD returns
+    # verbatim in the standard path — no active-quali transform applied).
+    for c in sup_fac:
+        Xdf[c] = X[c].astype("category")
+
     n_quanti = len(num_cols)
     n_cat = len(cat_labels)
     n_fac = len(fac_cols)
     ncp_eff = int(min(ncp, n - 1, n_quanti + n_cat - n_fac))
 
     # FAMD = unscaled PCA on the pre-scaled mixed matrix (FAMD.R:124).
-    pca = PCA(Xdf, scale_unit=False, ncp=ncp_eff)
+    pca = PCA(
+        Xdf,
+        scale_unit=False,
+        ncp=ncp_eff,
+        quanti_sup=(list(sup_num) or None),
+        quali_sup=(list(sup_fac) or None),
+    )
     dim_names = [f"Dim.{i + 1}" for i in range(ncp_eff)]
 
     eig = pca.eig.iloc[:ncp_eff].copy()  # FAMD.R:126 — truncate to ncp
@@ -168,7 +211,7 @@ def FAMD(  # noqa: N802 — mirrors R's function name
     ind_coord = pca.ind.coord[dim_names].to_numpy()
     eta2 = np.zeros((n_fac, ncp_eff))
     for fi in range(n_fac):
-        eta2[fi] = _eta2_per_axis(ind_coord, codes_per_fac[fi], rw)
+        eta2[fi] = weighted_eta2(ind_coord, codes_per_fac[fi], rw)
 
     # --- var: combined summary (squared loadings for quanti, eta² for quali) ---
     nlev_arr = np.asarray(nlevels, dtype=np.float64)
@@ -178,6 +221,31 @@ def FAMD(  # noqa: N802 — mirrors R's function name
         quali_contrib_by_fac[fi] = contrib_quali[offset : offset + nlevels[fi]].sum(axis=0)
         offset += nlevels[fi]
     var_index = list(num_cols) + list(fac_cols)
+
+    # --- var$coord.sup / cos2.sup: combined supplementary summary (FAMD.R:176-184):
+    #     squared loadings for sup-quanti, eta² for sup-quali. ---
+    coord_sup = cos2_sup = None
+    sup_rows: list[str] = []
+    coord_sup_parts: list[np.ndarray] = []
+    cos2_sup_parts: list[np.ndarray] = []
+    if sup_num and pca.quanti_sup is not None:
+        qs_coord = pca.quanti_sup.coord.loc[sup_num, dim_names].to_numpy()
+        qs_cos2 = pca.quanti_sup.cos2.loc[sup_num, dim_names].to_numpy()
+        coord_sup_parts.append(qs_coord**2)
+        cos2_sup_parts.append(qs_cos2**2)
+        sup_rows.extend(sup_num)
+    if sup_fac and pca.quali_sup is not None and pca.quali_sup.eta2 is not None:
+        eta2_sup = pca.quali_sup.eta2.loc[sup_fac, dim_names].to_numpy()
+        nlev_sup = np.array(
+            [X[c].astype("category").cat.categories.size for c in sup_fac], dtype=np.float64
+        )
+        coord_sup_parts.append(eta2_sup)
+        cos2_sup_parts.append(eta2_sup**2 / (nlev_sup[:, None] - 1))
+        sup_rows.extend(sup_fac)
+    if sup_rows:
+        coord_sup = pd.DataFrame(np.vstack(coord_sup_parts), index=sup_rows, columns=dim_names)
+        cos2_sup = pd.DataFrame(np.vstack(cos2_sup_parts), index=sup_rows, columns=dim_names)
+
     var_block = Block(
         coord=pd.DataFrame(
             np.vstack([quanti_var.coord.to_numpy() ** 2, eta2]),
@@ -194,6 +262,8 @@ def FAMD(  # noqa: N802 — mirrors R's function name
             index=var_index,
             columns=dim_names,
         ),
+        coord_sup=coord_sup,
+        cos2_sup=cos2_sup,
     )
 
     return Result(
@@ -203,7 +273,13 @@ def FAMD(  # noqa: N802 — mirrors R's function name
             "ncp": ncp_eff,
             "num_cols": list(num_cols),
             "fac_cols": list(fac_cols),
+            "sup_num": list(sup_num),
+            "sup_fac": list(sup_fac),
             "prop": prop.copy(),
+            # Training mean/sd of the active quantitative block, so predict.FAMD
+            # can standardize new individuals' numeric columns identically.
+            "q_center": q_center.copy(),
+            "q_sd": q_sd.copy(),
             "row_w": rw.copy(),
             "active_frame": X.copy(),
         },
@@ -211,34 +287,7 @@ def FAMD(  # noqa: N802 — mirrors R's function name
         var=var_block,
         quanti_var=quanti_var,
         quali_var=quali_var,
+        quanti_sup=pca.quanti_sup,
+        quali_sup=pca.quali_sup,
         method="FAMD",
     )
-
-
-def _eta2_per_axis(ind_coord: np.ndarray, codes: np.ndarray, rw: np.ndarray) -> np.ndarray:
-    """Weighted correlation ratio (between-group SS / total SS) of a factor
-    against each column of ``ind_coord``. ``codes`` are category codes
-    (-1 for missing, excluded). Mirrors R FAMD's ``fct.eta2``."""
-    ncp = ind_coord.shape[1]
-    out = np.zeros(ncp)
-    ok = codes >= 0
-    w = rw[ok]
-    w = w / w.sum()
-    F = ind_coord[ok]
-    grp = codes[ok]
-    uniq = np.unique(grp)
-    for k in range(ncp):
-        y = F[:, k]
-        grand = float((w * y).sum())
-        d = y - grand
-        sct = float((w * d * d).sum())
-        if sct <= 0:
-            continue
-        sce = 0.0
-        for g in uniq:
-            m = grp == g
-            wg = w[m].sum()
-            mean_g = float((w[m] * y[m]).sum() / wg)
-            sce += wg * (mean_g - grand) ** 2
-        out[k] = sce / sct
-    return out

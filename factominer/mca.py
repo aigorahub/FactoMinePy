@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from ._corr import weighted_corr, weighted_eta2
 from ._result import Block, Result
 from ._scaling import column_indices, row_indices
 from .ca import CA
@@ -27,8 +28,14 @@ def MCA(  # noqa: N802 — mirrors R
     """
     if not isinstance(X, pd.DataFrame):
         raise TypeError("X must be a pandas DataFrame")
+    method = method.lower()
     if method not in {"indicator", "burt"}:
         raise ValueError(f"method must be 'indicator' or 'burt', got {method!r}")
+    if method == "burt" and quali_sup is not None:
+        raise NotImplementedError(
+            "The Burt method combined with supplementary qualitative variables "
+            "is not yet supported; use method='indicator' for quali.sup."
+        )
 
     quanti_sup_idx = column_indices(X.columns, quanti_sup)
     quali_sup_idx = column_indices(X.columns, quali_sup)
@@ -68,11 +75,34 @@ def MCA(  # noqa: N802 — mirrors R
     n, total_cat = Z.shape
     q_vars = len(X_active.columns)
 
+    # Supplementary qualitative categories: build their indicator and route them
+    # through CA as supplementary columns (R MCA = CA(Ztot, col.sup=...)).
+    qs_labels: list[str] = []
+    qs_var_names: list[str] = []
+    qs_codes: list[np.ndarray] = []
+    qs_blocks: list[np.ndarray] = []
+    if quali_sup_idx:
+        X_qs = X.iloc[active_rows, quali_sup_idx].copy()
+        for c in X_qs.columns:
+            col = X_qs[c].astype("category")
+            cats = list(col.cat.categories)
+            codes = col.cat.codes.to_numpy()
+            qs_var_names.append(str(c))
+            qs_codes.append(codes)
+            Zc = np.zeros((X_active.shape[0], len(cats)), dtype=np.float64)
+            for i, code in enumerate(codes):
+                if code >= 0:
+                    Zc[i, code] = 1.0
+            qs_blocks.append(Zc)
+            qs_labels.extend(f"{c}_{cat}" for cat in cats)
+
     # FactoMineR's MCA = CA of the indicator matrix. We compute it directly via CA-style SVD
     # so that we can compute the proper v-test and eta² for the categories.
-    # Use CA on the indicator matrix.
-    Z_df = pd.DataFrame(Z, index=X_active.index, columns=cat_labels)
-    ca_res = CA(Z_df, ncp=min(ncp, total_cat - q_vars))
+    all_labels = cat_labels + qs_labels
+    Z_full = np.hstack([Z, *qs_blocks]) if qs_blocks else Z
+    Z_df = pd.DataFrame(Z_full, index=X_active.index, columns=all_labels)
+    col_sup_pos = list(range(total_cat, total_cat + len(qs_labels))) if qs_labels else None
+    ca_res = CA(Z_df, ncp=min(ncp, total_cat - q_vars), col_sup=col_sup_pos)
 
     # Per FactoMineR: eigenvalues from the indicator method need a Greenacre-style correction
     # only if method="burt" with adjustment. We expose raw indicator eigenvalues for now.
@@ -124,6 +154,34 @@ def MCA(  # noqa: N802 — mirrors R
         offset += ncat
     eta2_df = pd.DataFrame(eta2, index=var_names, columns=var_block_coord.columns)
 
+    # Burt method: a post-transform of the indicator decomposition (R MCA.R:
+    # 226-234, 253-256, 329-333). Eigenvalues are squared; the category coords
+    # are rescaled by √λ_indicator; cos2 is recomputed against the all-axes Burt
+    # distance to centroid (auxil). ind / contrib / eta2 are unchanged.
+    if method == "burt":
+        ncp_real = total_cat - q_vars
+        ca_full = CA(Z_df, ncp=ncp_real)
+        lam_full = ca_full.eig["eigenvalue"].to_numpy()[:ncp_real]
+        sqrt_lam = np.sqrt(lam_full)
+        vcols = var_block_coord.columns
+        ncp_out = var_block_coord.shape[1]
+        col_burt_full = ca_full.col.coord.to_numpy() * sqrt_lam[None, :]
+        auxil = (col_burt_full**2).sum(axis=1)  # all-axes Burt dist² to centroid
+        coord_b = var_block_coord.to_numpy() * sqrt_lam[:ncp_out][None, :]
+        var_block_coord = pd.DataFrame(coord_b, index=var_block_coord.index, columns=vcols)
+        var_block_cos2 = pd.DataFrame(coord_b**2 / auxil[:, None], index=var_block_coord.index, columns=vcols)
+        v_test_df = pd.DataFrame(coord_b * multiplier[:, None], index=var_block_coord.index, columns=vcols)
+        eig_b = lam_full**2
+        pct_b = eig_b / eig_b.sum() * 100.0
+        eig_df = pd.DataFrame(
+            {
+                "eigenvalue": eig_b,
+                "percentage of variance": pct_b,
+                "cumulative percentage of variance": np.cumsum(pct_b),
+            },
+            index=[f"dim {i + 1}" for i in range(ncp_real)],
+        )
+
     var_block = Block(
         coord=var_block_coord,
         cos2=var_block_cos2,
@@ -131,6 +189,46 @@ def MCA(  # noqa: N802 — mirrors R
         v_test=v_test_df,
         eta2=eta2_df,
     )
+
+    dim_cols = var_block_coord.columns
+    ind_coord_arr = ca_res.row.coord.to_numpy()
+    rw_unit = np.full(n, 1.0 / n)
+
+    # --- quanti.sup: weighted correlation of each sup numeric var with each axis
+    #     (R MCA correlates with svd$U; correlation is scale-invariant, so the
+    #     individual coords give the identical result). ---
+    quanti_sup_block = None
+    if quanti_sup_idx:
+        X_qn = X.iloc[active_rows, quanti_sup_idx]
+        qn_coord = np.zeros((len(quanti_sup_idx), ind_coord_arr.shape[1]))
+        for vi in range(len(quanti_sup_idx)):
+            xj = X_qn.iloc[:, vi].to_numpy(dtype=np.float64)
+            for k in range(ind_coord_arr.shape[1]):
+                qn_coord[vi, k] = weighted_corr(xj, ind_coord_arr[:, k], rw_unit)
+        quanti_sup_block = Block(
+            coord=pd.DataFrame(qn_coord, index=list(X_qn.columns), columns=dim_cols)
+        )
+
+    # --- quali.sup: CA col.sup coord/cos2 (the principal CA col coord — NO /√λ
+    #     rescale), plus the MCA v.test (same multiplier as active categories)
+    #     and the per-variable eta² (weighted correlation ratio of ind coords). ---
+    quali_sup_block = None
+    if quali_sup_idx and ca_res.col_sup is not None:
+        qs_coord = ca_res.col_sup.coord
+        qs_counts = np.hstack(qs_blocks).sum(axis=0)  # Nj over active rows
+        qs_mult = np.where(
+            (n - qs_counts) > 0, np.sqrt((qs_counts * (n - 1)) / (n - qs_counts)), 0.0
+        )
+        qs_vtest = qs_coord.to_numpy() * qs_mult[:, None]
+        qs_eta2 = np.vstack(
+            [weighted_eta2(ind_coord_arr, codes, rw_unit) for codes in qs_codes]
+        )
+        quali_sup_block = Block(
+            coord=qs_coord,
+            cos2=ca_res.col_sup.cos2,
+            v_test=pd.DataFrame(qs_vtest, index=qs_coord.index, columns=dim_cols),
+            eta2=pd.DataFrame(qs_eta2, index=qs_var_names, columns=dim_cols),
+        )
 
     return Result(
         eig=eig_df,
@@ -146,8 +244,16 @@ def MCA(  # noqa: N802 — mirrors R
             "cat_labels": cat_labels,
             "var_of_cat": var_of_cat,
             "cat_counts_per_var": cat_counts_per_var,
+            # Original active categorical data, so dimdesc(MCA) can describe each
+            # axis via condes (R dimdesc routes MCA through the condes branch).
+            "active_frame": X_active.copy(),
+            # CA column margin of the active indicator (length = total active
+            # categories), so predict.MCA can centre new row profiles on it.
+            "marge_col": np.asarray(ca_res.call["marge_col"][:total_cat], dtype=np.float64),
         },
         ind=ind_block,
         var=var_block,
+        quanti_sup=quanti_sup_block,
+        quali_sup=quali_sup_block,
         method="MCA",
     )

@@ -31,6 +31,33 @@ class Block:
     inertia: pd.Series | None = None
     v_test: pd.DataFrame | None = None
     eta2: pd.DataFrame | None = None
+    # MFA's per-group partial coordinates (``res$ind$coord.partiel``): an
+    # ``(n·K) × ncp`` frame with one row per (individual, group) pair.
+    coord_partiel: pd.DataFrame | None = None
+    # FAMD's combined supplementary-variable summary (``var$coord.sup`` /
+    # ``var$cos2.sup``): squared loadings for sup-quanti, eta² for sup-quali.
+    coord_sup: pd.DataFrame | None = None
+    cos2_sup: pd.DataFrame | None = None
+
+
+@dataclass(frozen=True)
+class MFAGroup:
+    """MFA's ``res$group`` slot — the groups-of-variables block.
+
+    ``coord``/``contrib``/``cos2`` are ``K × ncp`` (one row per active group);
+    ``dist2`` is a length-``K`` Series; ``correlation`` is ``K × ncp`` (partial
+    group axes vs the global axes, A2 scope). ``Lg`` and ``RV`` are
+    ``(K+1) × (K+1)`` matrices whose last row/column is the global ``"MFA"``
+    configuration. Mirrors FactoMineR ``MFA(...)$group``.
+    """
+
+    coord: pd.DataFrame
+    contrib: pd.DataFrame | None = None
+    cos2: pd.DataFrame | None = None
+    dist2: pd.Series | None = None
+    correlation: pd.DataFrame | None = None
+    Lg: pd.DataFrame | None = None
+    RV: pd.DataFrame | None = None
 
 
 @dataclass(frozen=True)
@@ -68,6 +95,16 @@ class Result:
     # the combined summary (squared loadings for quanti, eta² for quali).
     quanti_var: Block | None = None
     quali_var: Block | None = None
+    # CaGalt's frequency block (``res$freq`` — coord/cos2/contrib of the
+    # frequency columns of Y, the rows of the inner generalized analysis).
+    freq: Block | None = None
+    # MFA's groups-of-variables block (coord/contrib/cos2/dist2/correlation/Lg/RV).
+    group: MFAGroup | None = None
+    # MFA's ``res$partial.axes`` — correlations/coords/contribs of each group's
+    # separate principal axes with the global axes (a ``coord``/``cor``/``contrib``
+    # Block), and ``res$inertia.ratio`` — the per-axis between/total inertia ratio.
+    partial_axes: Block | None = None
+    inertia_ratio: pd.Series | None = None
     # Method tag for ``summary()``: "PCA", "CA", "MCA", ...
     method: str = ""
 

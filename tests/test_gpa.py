@@ -20,7 +20,7 @@ import numpy as np
 from scipy.spatial.distance import pdist
 
 from factominer import GPA
-from factominer.datasets import load_gpa_synth
+from factominer.datasets import load_gpa_synth, load_gpa_synth_uneven
 
 GROUP = [2, 2, 2]
 NAMES = ["group.1", "group.2", "group.3"]
@@ -28,6 +28,12 @@ NAMES = ["group.1", "group.2", "group.3"]
 
 def _gpa():
     return GPA(load_gpa_synth(), group=GROUP, scale=True)
+
+
+def _panova_arr(payload):
+    """Parse a PANOVA sub-table (list-of-row-objects) into an ordered array."""
+    cols = [k for k in payload[0] if k not in ("_row", "rowname")]
+    return np.array([[r[c] for c in cols] for r in payload], dtype=np.float64)
 
 
 def _kxk(rows, names):
@@ -106,3 +112,97 @@ def test_gpa_structure():
     assert np.allclose(np.diag(res.RV.to_numpy()), 1.0)
     assert (res.scaling > 0).all()
     assert len(res.Xfin) == 3
+
+
+# ---------------------------------------------------------------------------
+# PANOVA — the objet / config sum-of-squares tables are invariant to the global
+# rotation/reflection gauge (they sum over the consensus dimensions), but they
+# still depend on WHICH optimum R's stochastic GPA converges to. R's GPA is not
+# fully reproducible across runs even with set.seed (the rnorm basis completion
+# / convergence drifts): the live r-fixture-drift artifact shows the PANOVA SS
+# entries moving by ~2e-4 run-to-run (e.g. an SSfit of 32.7235 vs 32.7234), and
+# the consensus/Xfin reflection sign flips. So PANOVA belongs to the stochastic
+# tier: asserted at atol=1e-3 + rtol=1e-3 — comfortably above R's run-to-run
+# noise (~2e-4) yet far below any real error. The per-dimension table is more
+# gauge-dependent (Tier 2, skipped). See learnings [[L22]].
+# ---------------------------------------------------------------------------
+
+
+def test_gpa_panova_objet(r_gpa_synth):
+    payload = r_gpa_synth.get("PANOVA")
+    if payload is None or payload.get("objet") is None:
+        return
+    r = _panova_arr(payload["objet"])
+    py = _gpa().panova["objet"].to_numpy()
+    assert py.shape == r.shape
+    assert np.allclose(py, r, atol=1e-3, rtol=1e-3)
+
+
+def test_gpa_panova_config(r_gpa_synth):
+    payload = r_gpa_synth.get("PANOVA")
+    if payload is None or payload.get("config") is None:
+        return
+    r = _panova_arr(payload["config"])
+    py = _gpa().panova["config"].to_numpy()
+    assert np.allclose(py, r, atol=1e-3, rtol=1e-3)
+
+
+# ---------------------------------------------------------------------------
+# Unequal-width GPA: group = [2, 3, 2]. Same two-tier framing.
+# ---------------------------------------------------------------------------
+
+
+def _gpa_uneven():
+    return GPA(load_gpa_synth_uneven(), group=[2, 3, 2], scale=True)
+
+
+def test_gpa_uneven_rv(r_gpa_synth_uneven):
+    res = _gpa_uneven()
+    r = _kxk(r_gpa_synth_uneven["RV"], NAMES)
+    assert np.allclose(res.RV.loc[NAMES, NAMES].to_numpy(), r, atol=1e-6, rtol=0)
+
+
+def test_gpa_uneven_rvs(r_gpa_synth_uneven):
+    res = _gpa_uneven()
+    r = _kxk(r_gpa_synth_uneven["RVs"], NAMES)
+    assert np.allclose(res.RVs.loc[NAMES, NAMES].to_numpy(), r, atol=1e-6, rtol=0)
+
+
+def test_gpa_uneven_simi(r_gpa_synth_uneven):
+    res = _gpa_uneven()
+    r = _kxk(r_gpa_synth_uneven["simi"], NAMES)
+    assert np.allclose(res.simi.loc[NAMES, NAMES].to_numpy(), r, atol=1e-6, rtol=0)
+
+
+def test_gpa_uneven_consensus_distances(r_gpa_synth_uneven):
+    res = _gpa_uneven()
+    r_consensus = _coords(r_gpa_synth_uneven["consensus"])
+    py = res.consensus.to_numpy()
+    assert py.shape == r_consensus.shape, f"{py.shape} vs {r_consensus.shape}"
+    assert np.allclose(pdist(py), pdist(r_consensus), atol=1e-5, rtol=0)
+
+
+def test_gpa_uneven_xfin_distances(r_gpa_synth_uneven):
+    res = _gpa_uneven()
+    xfin = r_gpa_synth_uneven["Xfin"]
+    for k in range(3):
+        r_xf = _coords(xfin[k])
+        assert np.allclose(pdist(res.Xfin[k].to_numpy()), pdist(r_xf), atol=1e-5, rtol=0), f"cfg {k}"
+
+
+def test_gpa_uneven_panova_objet(r_gpa_synth_uneven):
+    payload = r_gpa_synth_uneven.get("PANOVA")
+    if payload is None or payload.get("objet") is None:
+        return
+    r = _panova_arr(payload["objet"])
+    py = _gpa_uneven().panova["objet"].to_numpy()
+    assert np.allclose(py, r, atol=1e-3, rtol=1e-3)
+
+
+def test_gpa_uneven_panova_config(r_gpa_synth_uneven):
+    payload = r_gpa_synth_uneven.get("PANOVA")
+    if payload is None or payload.get("config") is None:
+        return
+    r = _panova_arr(payload["config"])
+    py = _gpa_uneven().panova["config"].to_numpy()
+    assert np.allclose(py, r, atol=1e-3, rtol=1e-3)

@@ -13,13 +13,15 @@ For status of an *individual* method, the source of truth is the table in
 
 | Class | Live | Parity verified | Notes |
 | --- | --- | --- | --- |
-| `PCA`, `CA`, `MCA` | ✅ | ✅ | active + supplementary blocks (MCA sup blocks not yet asserted) |
-| `FAMD` | ✅ | ✅ | active variables; sup vars pending |
+| `PCA`, `CA`, `MCA` | ✅ | ✅ | active + supplementary blocks; PCA non-uniform `row.w` parity-verified; MCA quanti.sup/quali.sup + Burt parity-verified; missing values → B4b |
+| `FAMD` | ✅ | ✅ | active + supplementary variables (`sup_var`); sup individuals (`ind_sup`) pending → B4 |
 | `HCPC` | ✅ | ✅ | k-means consolidation, desc.var via catdes |
-| `GPA` | ✅ | ⚠️ rotation-invariant | RV/RVs/simi exact; consensus/Xfin up to rotation (R's GPA is stochastic) |
-| `dimdesc`, `catdes`, `condes` | ✅ | ✅ | full R 2.14 schemas; dimdesc CA/MCA branches pending |
+| `GPA` | ✅ | ⚠️ rotation-invariant | unequal-width configs; RV/RVs/simi + PANOVA totals exact; consensus/Xfin/correlations up to rotation. Missing values → B4 |
+| `dimdesc`, `catdes`, `condes` | ✅ | ✅ | full R 2.14 schemas incl. CA + MCA branches (MCA parity-verified; CA self-consistent — R 2.14 `dimdesc(CA)` is broken on R 4.x) |
 | `plot.*` matplotlib + plotly | ✅ | structural + ellipse | both backends on a shared `_data` layer; `coord.ellipse` vertex-exact |
-| `MFA`, `HMFA`, `DMFA` | 🚧 | — | importable `NotImplementedError` stubs |
+| `MFA` | ✅ | ✅ | active groups (types `s`/`c`/`n`); eig/ind/quanti.var/quali.var + group Lg/RV/correlation + coord.partiel + partial.axes + inertia.ratio exact; sup groups, `f`/`m` groups pending |
+| `HMFA` | ✅ | ✅ | hierarchical MFA via `H` (per-level group counts); eig/ind/quanti.var/quali.var + group.coord (per level) + canonical exact; types `s`/`c`/`n` |
+| `DMFA` | ✅ | ✅ | dual MFA over a grouping factor; eig/ind/var/quanti.sup + group(coord/coord.n/cos2) + cor.dim.gr/var.partiel exact; sup qualitatives pending |
 
 Run #1 (FAMD, GPA, plotly, plot-data/ellipse parity, v0.2.0.dev0) is complete.
 
@@ -34,9 +36,12 @@ The complete closure of feature parity is planned as a single large run:
 2. **Completeness inside shipped methods** — FAMD sup vars; MCA sup-block
    parity + Burt; GPA missing-values/unequal-width; missing-value + row-weight
    support; dimdesc CA/MCA.
-3. **Auxiliary functions** — `predict.*`, `reconst`, `estim_ncp`, `descfreq`.
-4. **Long tail** — `CaGalt`, the regression family (`LinearModel`/`AovSum`/
-   `RegBest`/`meansComp`), `textual`, utility exports.
+3. **Auxiliary functions** ✅ — `predict.*` (PCA/MCA/FAMD/MFA), `reconst`
+   (PCA/CA), `estim_ncp` (GCV/Smooth), `descfreq`, all parity-verified.
+4. **Long tail** ✅ — `CaGalt` (type s/c); regression family
+   (`LinearModel`/`AovSum`/`RegBest`); `textual`; utility exports
+   (`svd.triplet`/`tab.disjonctif`). (`meansComp`, `simule`, `write.infile` and
+   option-level gaps deferred.)
 5. **Plotting depth** — plots for the new methods, `autoLab`, `plotellipses`,
    `ellipseCA`, partial plots.
 6. **Release** — README all-✅, version cut.

@@ -215,6 +215,44 @@ def test_pca_full_quali_sup_eta2(r_pca_decathlon):
     assert np.allclose(py, r_arr, atol=1e-9, rtol=0)
 
 
+# ---------------------------------------------------------------------------
+# Non-uniform row weights: PCA(decathlon[:10], row.w = 1/2/3 repeating)
+# ---------------------------------------------------------------------------
+
+
+def _pca_roww():
+    n = load_decathlon().shape[0]
+    w = np.tile([1.0, 2.0, 3.0], (n + 2) // 3)[:n]
+    return PCA(load_decathlon().iloc[:, :10], scale_unit=True, ncp=5, row_w=w)
+
+
+def test_pca_roww_eigenvalues(r_pca_decathlon_roww):
+    res = _pca_roww()
+    r_eig = np.array([row["eigenvalue"] for row in r_pca_decathlon_roww["eig"]])
+    assert np.allclose(res.eig["eigenvalue"].to_numpy(), r_eig, atol=1e-10, rtol=0)
+
+
+def test_pca_roww_var_coord(r_pca_decathlon_roww):
+    res = _pca_roww()
+    r_arr, r_labels = _r_block_to_array(r_pca_decathlon_roww["var"]["coord"], 5)
+    py = res.var.coord.loc[r_labels].to_numpy()
+    assert np.allclose(align_to_reference(py, r_arr), r_arr, atol=1e-9, rtol=0)
+
+
+def test_pca_roww_ind_coord(r_pca_decathlon_roww):
+    res = _pca_roww()
+    r_arr, r_labels = _r_block_to_array(r_pca_decathlon_roww["ind"]["coord"], 5)
+    py = res.ind.coord.loc[r_labels].to_numpy()
+    assert np.allclose(align_to_reference(py, r_arr), r_arr, atol=1e-9, rtol=0)
+
+
+def test_pca_roww_ind_contrib(r_pca_decathlon_roww):
+    res = _pca_roww()
+    r_arr, r_labels = _r_block_to_array(r_pca_decathlon_roww["ind"]["contrib"], 5)
+    py = res.ind.contrib.loc[r_labels].to_numpy()
+    assert np.allclose(py, r_arr, atol=1e-8, rtol=0)
+
+
 def test_pca_summary_has_expected_sections():
     res = _pca_full()
     s = res.summary()
