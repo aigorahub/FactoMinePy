@@ -276,6 +276,10 @@ def FAMD(  # noqa: N802 — mirrors R's function name
             "sup_num": list(sup_num),
             "sup_fac": list(sup_fac),
             "prop": prop.copy(),
+            # Training mean/sd of the active quantitative block, so predict.FAMD
+            # can standardize new individuals' numeric columns identically.
+            "q_center": q_center.copy(),
+            "q_sd": q_sd.copy(),
             "row_w": rw.copy(),
             "active_frame": X.copy(),
         },

@@ -8,6 +8,7 @@ import pandas as pd
 from ._result import SVD, Block, Result
 from ._scaling import center_scale, coerce_numeric, column_indices, row_indices
 from ._svd import standard_svd
+from .predict import _project_scaled
 
 
 def PCA(  # noqa: N802 — mirrors R's function name
@@ -139,21 +140,17 @@ def PCA(  # noqa: N802 — mirrors R's function name
         cor=pd.DataFrame(var_cor, index=active_col_labels, columns=dim_names),
     )
 
-    # Supplementary individuals
+    # Supplementary individuals: the same projection as predict.PCA — project the
+    # (training-)scaled sup rows onto V_tilde in the sqrt(col.w)-weighted space.
     ind_sup_block = None
     if sup_rows.size:
         X_sup = X.iloc[sup_rows, active_cols].to_numpy(dtype=np.float64)
         X_sup_scaled = (X_sup - mean) / scale if scale_unit else (X_sup - mean)
-        coord_sup = (X_sup_scaled * active_col_w[None, :]) @ V_tilde / sqrt_cw[None, :] / vs[None, :] * vs[None, :]
-        # Simpler: project onto V_tilde in the sqrt-weighted column space.
-        coord_sup = (X_sup_scaled * sqrt_cw[None, :]) @ V_tilde
-        dist2_sup = (X_sup_scaled**2 * active_col_w[None, :]).sum(axis=1)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            cos2_sup = np.where(dist2_sup[:, None] > 0, coord_sup**2 / dist2_sup[:, None], 0.0)
+        coord_sup, cos2_sup, dist_sup = _project_scaled(X_sup_scaled, active_col_w, V_tilde)
         ind_sup_block = Block(
             coord=pd.DataFrame(coord_sup, index=list(X.index[sup_rows]), columns=dim_names),
             cos2=pd.DataFrame(cos2_sup, index=list(X.index[sup_rows]), columns=dim_names),
-            dist=pd.Series(np.sqrt(dist2_sup), index=list(X.index[sup_rows]), name="dist"),
+            dist=pd.Series(dist_sup, index=list(X.index[sup_rows]), name="dist"),
         )
 
     # Supplementary quantitative variables

@@ -153,6 +153,19 @@ dump_dmfa <- function(res) {
   )
 }
 
+# predict.* output: coord/cos2 matrices (+ dist, named `dist2` for FAMD). Row
+# names are dropped by toJSON (as for dump_block), so the parity test aligns the
+# projected individuals positionally, in newdata order.
+dump_predict <- function(p) {
+  out <- list(
+    coord = as.data.frame(p$coord),
+    cos2  = as.data.frame(p$cos2)
+  )
+  if (!is.null(p$dist))  out$dist  <- as.numeric(p$dist)
+  if (!is.null(p$dist2)) out$dist2 <- as.numeric(p$dist2)
+  out
+}
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -439,5 +452,40 @@ for (k in seq_along(desc_loose)) {
 }
 write_json(desc_loose_payload, file.path(out_dir("dimdesc"), "pca_decathlon_proba50.json"))
 cat("[fixtures] dimdesc/pca_decathlon_proba50.json\n")
+
+# ---- predict.* (project held-out individuals onto a fitted model) ----------
+# Each fits on a row slice and predicts the complementary held-out rows. The
+# splits are chosen so held-out individuals contain no categories absent from
+# the training rows (R's predict errors on unknown levels): decathlon/poison are
+# safe (numeric / binary factors); for tea we hold out the first 5 rows and
+# train on the remaining 295, where every survey level is represented.
+
+# predict.PCA — decathlon, 10 active quantitative columns.
+res_pred_pca <- PCA(decathlon[1:38, 1:10], scale.unit = TRUE, ncp = 5, graph = FALSE)
+pred_pca <- predict(res_pred_pca, decathlon[39:41, 1:10])
+write_json(dump_predict(pred_pca), file.path(out_dir("predict_pca"), "decathlon.json"))
+cat("[fixtures] predict_pca/decathlon.json\n")
+
+# predict.MCA — tea, 18 active categorical columns; hold out rows 1:5.
+res_pred_mca <- MCA(tea[6:300, 1:18], ncp = 5, graph = FALSE)
+pred_mca <- predict(res_pred_mca, tea[1:5, 1:18])
+write_json(dump_predict(pred_mca), file.path(out_dir("predict_mca"), "tea.json"))
+cat("[fixtures] predict_mca/tea.json\n")
+
+# predict.FAMD — poison (mixed); hold out rows 1:5 (binary factors stay covered).
+res_pred_famd <- FAMD(poison[6:55, ], ncp = 5, graph = FALSE)
+pred_famd <- predict(res_pred_famd, poison[1:5, ])
+write_json(dump_predict(pred_famd), file.path(out_dir("predict_famd"), "poison.json"))
+cat("[fixtures] predict_famd/poison.json\n")
+
+# predict.MFA — poison, canonical grouping; hold out rows 1:5.
+res_pred_mfa <- MFA(poison[6:55, ],
+                    group      = c(2L, 2L, 5L, 6L),
+                    type       = c("s", "n", "n", "n"),
+                    name.group = c("desc", "desc2", "symptom", "eat"),
+                    graph      = FALSE)
+pred_mfa <- predict(res_pred_mfa, poison[1:5, ])
+write_json(dump_predict(pred_mfa), file.path(out_dir("predict_mfa"), "poison.json"))
+cat("[fixtures] predict_mfa/poison.json\n")
 
 cat("\ndone.\n")

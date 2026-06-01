@@ -148,3 +148,23 @@ def r_condes_tea_age() -> dict:
 @pytest.fixture(scope="session")
 def r_dimdesc_pca_decathlon_proba50() -> dict:
     return _load_r_fixture("dimdesc", "pca_decathlon_proba50")
+
+
+@pytest.fixture(scope="session")
+def r_predict_pca_decathlon() -> dict:
+    return _load_r_fixture("predict_pca", "decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_predict_mca_tea() -> dict:
+    return _load_r_fixture("predict_mca", "tea")
+
+
+@pytest.fixture(scope="session")
+def r_predict_famd_poison() -> dict:
+    return _load_r_fixture("predict_famd", "poison")
+
+
+@pytest.fixture(scope="session")
+def r_predict_mfa_poison() -> dict:
+    return _load_r_fixture("predict_mfa", "poison")

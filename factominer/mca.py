@@ -247,6 +247,9 @@ def MCA(  # noqa: N802 — mirrors R
             # Original active categorical data, so dimdesc(MCA) can describe each
             # axis via condes (R dimdesc routes MCA through the condes branch).
             "active_frame": X_active.copy(),
+            # CA column margin of the active indicator (length = total active
+            # categories), so predict.MCA can centre new row profiles on it.
+            "marge_col": np.asarray(ca_res.call["marge_col"][:total_cat], dtype=np.float64),
         },
         ind=ind_block,
         var=var_block,

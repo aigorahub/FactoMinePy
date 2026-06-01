@@ -18,6 +18,7 @@ from .hmfa import HMFA
 from .mca import MCA
 from .mfa import MFA
 from .pca import PCA
+from .predict import predict
 
 __all__ = [
     "PCA",
@@ -32,6 +33,7 @@ __all__ = [
     "dimdesc",
     "catdes",
     "condes",
+    "predict",
     "Result",
 ]
 
