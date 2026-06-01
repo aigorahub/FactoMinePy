@@ -9,34 +9,41 @@ exact-match channels, 1e-6 to 1e-5 on stat-test outputs).
 For status of an *individual* method, the source of truth is the table in
 [README.md](README.md#status). This file is the *plan*, not the snapshot.
 
-## Where we are (v0.1.0.dev0)
+## Where we are (v0.2.0.dev0)
 
 | Class | Live | Parity verified | Notes |
 | --- | --- | --- | --- |
-| `PCA`, `CA`, `MCA` | ✅ | ✅ | active + supplementary blocks |
+| `PCA`, `CA`, `MCA` | ✅ | ✅ | active + supplementary blocks (MCA sup blocks not yet asserted) |
+| `FAMD` | ✅ | ✅ | active variables; sup vars pending |
 | `HCPC` | ✅ | ✅ | k-means consolidation, desc.var via catdes |
-| `dimdesc`, `catdes`, `condes` | ✅ | ✅ | full R 2.14 schemas (Cla/Mod, n, sd in category, etc.) |
-| `plot.*` matplotlib | ✅ | structural | renders, no plot-data parity tests yet |
-| `FAMD`, `MFA`, `HMFA`, `DMFA`, `GPA` | 🚧 | — | importable as `NotImplementedError` stubs |
-| `plot.*` plotly | 🚧 | — | stub |
+| `GPA` | ✅ | ⚠️ rotation-invariant | RV/RVs/simi exact; consensus/Xfin up to rotation (R's GPA is stochastic) |
+| `dimdesc`, `catdes`, `condes` | ✅ | ✅ | full R 2.14 schemas; dimdesc CA/MCA branches pending |
+| `plot.*` matplotlib + plotly | ✅ | structural + ellipse | both backends on a shared `_data` layer; `coord.ellipse` vertex-exact |
+| `MFA`, `HMFA`, `DMFA` | 🚧 | — | importable `NotImplementedError` stubs |
 
-## Where we're going (v1.0)
+Run #1 (FAMD, GPA, plotly, plot-data/ellipse parity, v0.2.0.dev0) is complete.
 
-Every cell in the table ✅, the experimental warning gone from the README,
-plot-data parity tests across both backends, and a CHANGELOG that ends at
-`1.0.0`.
+## Where we're going (full parity → 1.0)
 
-There are two pieces of work standing between here and there:
+The complete closure of feature parity is planned as a single large run:
+**[docs/plans/elves-run-2-full-parity.md](docs/plans/elves-run-2-full-parity.md)**
+(~22 batches across 6 phases). Headline pieces:
 
-1. **The low-risk all-green sweep.** FAMD, GPA, plotly backend, plot-data
-   parity tests, README/version polish. Independent methods with single R
-   source files and canonical fixtures — well-suited to a focused
-   autonomous run.
-2. **The MFA family.** MFA itself, then HMFA and DMFA which depend on it.
-   The math is harder, the design surface bigger (group inertia
-   normalization, partial factor maps, RV coefficients, mixed quanti+quali
-   group types), and the R source spans multiple files. Worth a dedicated
-   pass with its own context budget.
+1. **MFA family** — MFA (the keystone), then HMFA and DMFA which reuse its
+   primitives. The largest remaining gap.
+2. **Completeness inside shipped methods** — FAMD sup vars; MCA sup-block
+   parity + Burt; GPA missing-values/unequal-width; missing-value + row-weight
+   support; dimdesc CA/MCA.
+3. **Auxiliary functions** — `predict.*`, `reconst`, `estim_ncp`, `descfreq`.
+4. **Long tail** — `CaGalt`, the regression family (`LinearModel`/`AovSum`/
+   `RegBest`/`meansComp`), `textual`, utility exports.
+5. **Plotting depth** — plots for the new methods, `autoLab`, `plotellipses`,
+   `ellipseCA`, partial plots.
+6. **Release** — README all-✅, version cut.
+
+Out of scope (recorded, not silently dropped): the `Rcmdr` GUI plugin,
+LaTeX/`xtable` printers, ggplot-mode output (no Python ggplot2; plotly is the
+analogue), pixel-exact plot images.
 
 ## Strategy: two autonomous runs
 
