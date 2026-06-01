@@ -157,7 +157,7 @@ def MFA(  # noqa: N802 — mirrors R's function name
                 raise ValueError(f"group {g + 1} is type {t!r} but has non-numeric columns")
             Q = block.to_numpy(dtype=np.float64)
             wcm_slice = None if wcm is None else wcm[col_cursor : col_cursor + len(cols)]
-            sep = PCA(block, scale_unit=(t == "s"), col_w=wcm_slice)
+            sep = PCA(block, scale_unit=(t == "s"), col_w=wcm_slice, ncp=ncp)
             separate.append(sep)
             sep_eig = sep.eig["eigenvalue"].to_numpy()
             lam1.append(float(sep_eig[0]))
@@ -188,7 +188,7 @@ def MFA(  # noqa: N802 — mirrors R's function name
             block_cat = block.copy()
             for c in cols:
                 block_cat[c] = block_cat[c].astype("category")
-            sep = MCA(block_cat)
+            sep = MCA(block_cat, ncp=ncp)
             separate.append(sep)
             sep_eig = sep.eig["eigenvalue"].to_numpy()
             lam1.append(float(sep_eig[0]))
@@ -252,7 +252,10 @@ def MFA(  # noqa: N802 — mirrors R's function name
     ncp_tmp = int(min(n - 1, n_data_cols - n_quali_vars))
     eig = pca.eig.iloc[:ncp_tmp].copy()
 
-    ncp_eff = int(min(ncp, pca.eig.shape[0]))
+    # Cap to the global PCA's actual coordinate columns (= min(ncp, n-1, p)), not
+    # the full eigenvalue count — otherwise a caller passing ncp >= n would size
+    # the partial-coordinate arrays past the available axes.
+    ncp_eff = int(min(ncp, pca.ind.coord.shape[1]))
     dim_names = list(pca.ind.coord.columns[:ncp_eff])
     eig_vals = pca.eig["eigenvalue"].to_numpy()
     n_ind = data.shape[0]
