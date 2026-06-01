@@ -364,6 +364,34 @@ Three reusable traps surfaced porting `CaGalt` (a thin orchestrator over `PCA`):
    so the pseudo-inverse has no near-zero columns. The tell: a near-zero inner
    eigenvalue and out-of-[0,1] sup cos2 in the smoke test.
 
+### L24 — The regression family (LinearModel/AovSum/RegBest): contr.sum, Type-III SS, extractAIC, make.names
+
+`LinearModel`/`AovSum` force `options(contrasts=c("contr.sum","contr.sum"))` —
+**every coefficient and SS depends on sum-to-zero contrasts** (a k-level factor →
+k-1 columns: row i = e_i, last row = -1). Reproduced in numpy with `np.linalg.lstsq`;
+no statsmodels needed (and statsmodels' defaults wouldn't match R's layout anyway).
+- **Type-III SS** for a term = `RSS(full minus that term's columns) - RSS(full)`,
+  df = the term's column count, F = MS/σ̂². The `Ftest` keeps a `Residuals` row
+  (df = n-p, F/p = NA). Type-II additionally drops higher-order terms that contain
+  the term. With contr.sum this matches `car::Anova` exactly (verified 1st try).
+- **`Ttest` is rebuilt per level**: a factor contributes its k-1 contrast coeffs +
+  the omitted level (`Estimate = -sum`, `SE = sqrt(sum(vcov[idx,idx]))`,
+  `p = pt(|t|, resid_df)*2`); factor×factor interactions reconstruct the full
+  cell grid (b-level outer, a-level inner; bottom-right cell = +sum of all). The
+  interaction design columns order a fastest within each b-level.
+- **AIC/BIC**: R's `extractAIC(lm)` = `n·log(RSS/n) + k·edf` (k=2 for AIC,
+  log(n) for BIC; edf = #params) — NOT the Gaussian log-likelihood AIC.
+
+`RegBest`: best subset by RSS per size (R's `leaps` branch-and-bound ≡ exhaustive
+`itertools.combinations` for small p), then pick by criterion (r2→min overall-F
+p; Cp→min Mallows; adjr2→max). **Trap:** R's `RegBest` builds formulas from the
+column names *without backticking*, so non-syntactic names (decathlon's `100m`)
+break `as.formula`. The caller must `make.names()` them ("100m"→"X100m") — do the
+same on the Python side so the coefficient row labels match. Fixture design: avoid
+a near-deterministic response (decathlon `Points` is an exact function of the 10
+events → R²≈1, p-values underflow, criteria can't discriminate); `Rank` gives a
+non-degenerate spread where r2/Cp/adjr2 pick different best sizes.
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch

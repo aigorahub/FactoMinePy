@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-06-01 (D1 CaGalt complete, parity-verified)
-- **Current phase:** Phase A + B + C done; Phase D started — D1 (CaGalt) done, D2 (regression family) next
-- **Active batch:** D1 → done; next D2 (LinearModel/AovSum + RegBest; meansComp deferred). B4b deferred.
-- **Last completed batch:** D1 (CaGalt type s/c) — eig/ind/freq/quanti.var parity vs live R
-- **Next exact batch:** D2 (regression family — D2a LinearModel+AovSum, D2b RegBest; defer meansComp)
+- **Last updated:** 2026-06-01 (D2 regression family complete, parity-verified)
+- **Current phase:** Phase A + B + C done; Phase D — D1 + D2 done, D3 (textual) next
+- **Active batch:** D2 → done; next D3 (textual). B4b + meansComp deferred.
+- **Last completed batch:** D2 (LinearModel/AovSum + RegBest) — contr.sum Type-III ANOVA + best-subset, parity vs live R
+- **Next exact batch:** D3 (textual — free text → document×word contingency table)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `46faab4` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→225 passed, 2 skipped (+102 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `56a1e39` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→231 passed, 2 skipped (+108 parity tests; skips unchanged)
 
 ---
 
@@ -66,6 +66,48 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch D2 — regression family — 2026-06-01 (COMPLETE — parity vs live R, first CI try)
+
+**Phase:** Complete. rpy2-parity CI green (run 26737903399); fixtures + zero drift.
+**Rollback tag:** `elves/pre-batch-d2` (pushed).
+
+**Contract:** `LinearModel` + `AovSum` (D2a) and `RegBest` (D2b). `meansComp` **deferred** (needs
+`emmeans`/`multcompView` semantics — out of proportion to an EDA port). **No statsmodels added**
+(numpy/scipy only; its defaults wouldn't match R's contr.sum layout anyway).
+
+**D2a — `LinearModel`/`AovSum` (`factominer/linear_model.py`), verbatim from R LinearModel.R:**
+contr.sum (sum-to-zero) OLS via `lstsq`. `Ftest` = Type-III/II SS (RSS increase from dropping a
+term's columns) + `Residuals` row. `Ttest` = coefficient table rebuilt per factor level (k-1
+contrasts + the omitted level = `-sum`, SE from the vcov submatrix; factor×factor interactions
+reconstruct the full cell grid). `lmResult`: r.squared/sigma/fstatistic + aic/bic via R's
+`extractAIC` (`n·log(RSS/n)+k·edf`, NOT loglik AIC). Stepwise `selection` + Type-II deferred. **All
+matched R first try** ([[L24]]).
+
+**D2b — `RegBest` (`factominer/reg_best.py`):** best subset per size by RSS (R's `leaps` ≡ exhaustive
+`itertools.combinations` for small p), choose by `r2`/`Cp`/`adjr2`. Returns per-size models +
+R²/Pvalue summary + the chosen best. **Fixture trap:** R's RegBest builds formulas without
+backticking → non-syntactic names (`100m`) break it; both sides `make.names` the columns. And
+decathlon `Points` is near-deterministic (degenerate) → used `Rank` (r2/Cp pick 6 vars, adjr2 picks
+7) ([[L24]]).
+
+**Fixtures (license-clean, bundled):** `linear_model/poison_main` (Time~Sick+Sex+Nausea) +
+`poison_inter` (Time~Sick*Sex), `aovsum/poison_main`, `regbest/decathlon_{r2,cp,adjr2}`.
+
+**Checks:** ruff clean; **231 passed / 2 skipped**; rpy2-parity green; SS/coef/SE/t 1e-6, p 1e-5, df
+exact, R²/sigma/AIC/BIC 1e-6.
+
+**Regression attestation:** additive — new `linear_model.py`, `reg_best.py` + tests + exports. No
+existing engine touched. **Confidence: HIGH.**
+
+**Docs:** README (LinearModel/AovSum/RegBest rows), ROADMAP, CHANGELOG, learnings L24, survival guide
++ `.elves-session.json` advanced to D3.
+
+**Deferred (recorded):** `meansComp`; LinearModel Type-II SS + aic/bic stepwise selection.
+
+**Commits:** `9f3e094` (RegBest), `56a1e39` (LinearModel/AovSum + RegBest fixture fix), + close-out.
+
+---
 
 ## Batch D1 — CaGalt (type s/c) — 2026-06-01 (COMPLETE — parity vs live R)
 

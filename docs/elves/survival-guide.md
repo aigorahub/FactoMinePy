@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 6 (13 of 20 enumerated batches done; + B4b deferred work)
+- **Planned batches remaining:** 5 (15 of 20 enumerated batches done; + B4b deferred work)
 - **Stop allowed right now:** no
-- **Why:** 13 done (A1–A4, B1–B5, C1–C3, D1); 6 remain (D2–D4, E1–E3, F1) + B4b.
-- **Next required action:** start D2 (regression family — D2a LinearModel+AovSum, D2b RegBest;
-  defer meansComp). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses.
+- **Why:** 15 done (A1–A4, B1–B5, C1–C3, D1, D2); 5 remain (D3, D4, E1–E3, F1) + B4b.
+- **Next required action:** start D3 (textual). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt
+  type=n/ellipses, meansComp, LinearModel Type-II/stepwise.
 
 ---
 
@@ -119,77 +119,70 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Phase A + B + C done; Phase D started. **D1 (CaGalt) complete.** 13 of 20 batches;
+**Status:** Phase A + B + C done; Phase D in progress. **D1 + D2 complete.** 15 of 20 batches;
 everything parity-verified at the deterministic / supplementary bar.
 
-**Active batch:** D1 done → D2 (regression family). B4b (missing values + FAMD ind_sup) deferred.
+**Active batch:** D2 done → D3 (textual). B4b (missing values + FAMD ind_sup) deferred.
 
-**What was just finished:** D1 — `CaGalt` (type s/c), new `factominer/cagalt.py` + `freq` Result
-slot. Thin orchestrator over PCA; required R's `svd.triplet` un-whitening for phi.stand/coord.ind,
-a direct `quanti.var` (port PCA conflates coord/cor when unscaled), and a non-degenerate synthetic
-fixture ([[L23]]). 225 passed / 2 skipped; rpy2-parity green (run 26737273383). Commits `1adc61b`,
-`46faab4` + close-out. Earlier: Phase A, B1–B5, C1–C3.
+**What was just finished:** D2 — regression family. `LinearModel`/`AovSum` (`linear_model.py`,
+contr.sum Type-III ANOVA + per-level Ttest reconstruction) and `RegBest` (`reg_best.py`, best-subset)
+— all parity-verified first CI try ([[L24]]); no statsmodels. 231 passed / 2 skipped; rpy2-parity
+green (run 26737903399). Commits `9f3e094`, `56a1e39` + close-out. Earlier: Phase A, B1–B5, C1–C3,
+D1 (CaGalt).
 
-**Single next action:** tag `elves/pre-batch-d2`, then start D2 — full spec (from the D2 research
-subagent) in the Next Exact Batch section below.
+**Single next action:** tag `elves/pre-batch-d3`, then start D3 (textual) — full spec (from the D3
+research subagent) in the Next Exact Batch section below.
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** D2 — regression family. **D2a = `LinearModel` + `AovSum`; D2b = `RegBest`; DEFER
-`meansComp`.** numpy/scipy only — **do NOT add statsmodels** (heavyweight; its ANOVA/contrast
-defaults don't match R's `contr.sum` Type-III layout anyway). Full D2 research report is in this
-turn's transcript. R's `car`/`leaps` are FactoMineR `Imports`, so fixtures generate fine in CI.
+**Batch:** D3 — `textual` (free text → document×word contingency table). Low-risk: deterministic
+**integer counting**, so parity is exact (atol=0), no SVD/eigen/stochastic. Full D3 research report
+in this turn's transcript. `textual` does NOT run a CA — it just builds the table (which then feeds
+the already-shipped `descfreq`/`CA`).
 
-**D2a — `LinearModel(formula, data, type="III", selection="none")` + `AovSum`:**
-- R forces `options(contrasts=c("contr.sum","contr.sum"))` — **every coefficient/SS depends on
-  sum-to-zero contrasts.** Coerce non-numeric cols to factors + droplevels. Fit OLS via
-  `np.linalg.lstsq` on the contr.sum design matrix (reuse `predict.py:_build_indicator` for the
-  one-hot, then map to sum contrasts; `condes.py:91-117` has the contr.sum Estimate idea).
-- **Ftest table** (`car::Anova(model, type)`), cols `SS, df, MS, F value, Pr(>F)`; Type-III drops the
-  intercept row. Type-III SS for a term = RSS increase when that term's columns are removed while all
-  others stay. (Type-II + `selection="aic"/"bic"` step() = documented stretch/gap, not blocking.)
-- **Ttest table** = `summary.lm$coef` (Estimate/Std.Error/t value/Pr(>|t|)) **rebuilt per level**: a
-  k-level factor appends the omitted last level as `-sum(estimates)`, SE `sqrt(sum(cov[idx,idx]))`
-  from `vcov = σ²(XᵀX)⁻¹`, p via `pt(.., resid_df)*2`; rownames `"<factor> - <level>"`, interactions
-  ` : `-joined. **Fixture MUST include a 2+level factor AND an interaction** to exercise this.
-- `lmResult` scalars: `r.squared`, `sigma`, `fstatistic` (value/numdf/dendf), and `aic`/`bic` via
-  R's `extractAIC` = `n·log(RSS/n) + k·edf` (NOT the Gaussian-loglik AIC — match exactly).
-- `AovSum(formula, data)` ≡ `LinearModel(type="III", selection="none")` returning only
-  `{Ftest, Ttest}` — implement as a thin wrapper over the shared core, don't duplicate the loop.
-- Output classes/names: `LinearModel` → `Ftest`, `Ttest`, `call`, `lmResult` (+`*Comp` when
-  selection used); `AovSum` → `Ftest`, `Ttest`.
+**Signature:** `textual(tab, num_text, contingence_by=None, maj_in_min=True, sep_word=None)`.
+`num_text` = the free-text column; `contingence_by` = grouping column(s) (default in R is
+`1:ncol(tab)`, but the common case is one grouping factor, or `num_text` itself = one row per
+document); `maj_in_min` lowercases; `sep_word` = the separator set.
 
-**D2b — `RegBest(y, x, int=TRUE, method="r2"|"Cp"|"adjr2", nbest=1)`:** all-numeric x (no contrasts).
-R uses `leaps` (branch-and-bound best subset) but the observable output = best subset of each size by
-RSS → reproduce with **exhaustive `itertools.combinations` + `lstsq`** (guard large p; fine for
-decathlon's 10). Per size: refit, record `r.squared` + overall-F p-value `pf(F, numdf, dendf,
-lower=F)`. Best-model choice: `r2`→min overall-F p; `Cp`→`argmin(Cp)` (Mallows, full-model MSE as
-σ̂²); `adjr2`→`argmax(adjr2)`; ties → first index. Output `all` (per-size summary.lm), `summary`
-matrix (`R2`,`Pvalue`, rows "Model with k variable(s)"), `best`.
+**Tokenizer (replicate R's `chartr`/`strsplit` literally — the whole game):**
+- Default `sep.word = "; (),?./:'!=+\n;{}-"` (18 chars incl. space and `\n`). R maps EVERY separator
+  char to `";"` via `chartr` (a positional 1:1 map → `str.maketrans({c: ";" for c in SEP})`).
+- Then: lowercase **A–Z only** (R's `chartr("A-Z","a-z")`, NOT `str.lower()` — accents differ);
+  collapse `";;"→";"` (loop `while ";;" in s`); strip a **leading** `";"` (one-sided — a trailing
+  separator leaves a trailing `""` token); `split(";")`.
+- Vocabulary = sorted unique tokens (R `as.factor` levels = ASCII/C-locale sort → Python `sorted`).
+  Build the groups×words integer count matrix; **no min-frequency filter.**
 
-**DEFER `meansComp`** — needs `emmeans` (estimated marginal means) + `multcompView` (compact-letter
-display) + studentized-range Tukey; out of proportion to an EDA port. Record as its own future batch.
+**Output:** an object/dict with `cont_table` (DataFrame, groups × words, integer counts — a drop-in
+`descfreq`/`CA` input) and `nb_words` (DataFrame, columns `words` / `nb.list` = #documents containing
+each word, **sorted by descending global frequency**). `contingence_by`: support default (group by
+row name = per-document), a single grouping factor (`groupby().sum()`), and the length-2 crossed
+factor (`paste(f1,f2,".")`); stacked multi-spec can be deferred. Skip the dead `accent` arg.
 
-**Fixtures (license-clean, bundled):** `LinearModel`/`AovSum` on `poison` (numeric Age/Time + 2-level
-factors Sick/Sex/Nausea): `LinearModel(Time~Sick+Sex+Nausea, type="III")` AND
-`LinearModel(Time~Sick*Sex, type="III")` (interaction path) + `AovSum(Time~Sick+Sex+Nausea)`.
-`RegBest` on `decathlon`: `x=decathlon[,1:10]`, `y=Points`, methods r2/Cp/adjr2. Dump Ftest/Ttest
-(incl. reconstructed last-level rows)/lmResult scalars, and RegBest summary + best$r.squared/coef +
-the chosen index. New `factominer/linear_model.py` (+ `AovSum`) and `factominer/reg_best.py`; export.
+**Gaps (additive):** new `factominer/textual.py` + export; new synthetic `datasets/data/textual_synth.csv`
+(NO bundled dataset has free text) + `load_textual_synth()` + PROVENANCE (MIT, like `gpa_synth`).
 
-**Parity bar:** SS/F/coefficients/SE/t/R²/AIC/BIC at 1e-6 relative; p-values 1e-5 rel; df exact.
+**Fixture (license-clean synthetic, ASCII short sentences + a grouping factor):** ~6 rows, a `review`
+text column + a `grp` factor (mixed case to exercise `maj_in_min`; a comma/hyphen to exercise the
+separator; NO trailing punctuation, to avoid empty-token JSON-key issues). R call:
+`textual(txt, num.text=which(names(txt)=="review"), contingence.by=which(names(txt)=="grp"))`; also a
+per-document variant (`contingence.by = num.text`) and optionally `maj.in.min=FALSE`. Dump
+`cont.table` + `nb.words`. **Parity = exact integer match (atol=0).**
 
-**Sharp edges:** contr.sum vs contr.treatment (use sum); Type-III SS term-drop mapping (test vs a
-2-factor+interaction fixture); `extractAIC` formula (not loglik AIC); RegBest best-index tie-break
-(first); singular designs. Reuse `predict.py:_build_indicator`, `condes.py` contr.sum idea.
+**Sharp edges:** lowercase A–Z only (not `.lower()`); the trailing-empty-token / one-sided lead-strip;
+vocabulary/column order (ASCII sort); keep fixture text ASCII + no trailing punctuation.
 
-**Rollback tag:** `elves/pre-batch-d2` (create before starting).
+**Rollback tag:** `elves/pre-batch-d3` (create before starting).
 
 **Deferred (carry forward):** B4b = missing values (PCA/CA/MCA/GPA) + FAMD `ind_sup`; Burt +
-`quali_sup`; MFA `reconst` (all-quanti); CaGalt `type="n"` + `conf_ellip`; D2 `meansComp` +
-LinearModel Type-II/AIC-BIC selection.
+`quali_sup`; MFA `reconst` (all-quanti); CaGalt `type="n"` + `conf_ellip`; `meansComp`; LinearModel
+Type-II/AIC-BIC selection; textual stacked multi-spec `contingence_by`.
+
+**After D3:** D4 (utility exports — `svd.triplet`/`tab.disjonctif`/`simule`/`write.infile`, mostly
+exposing existing primitives), then E1–E3 (plots for new methods), then F1 (release).
 
 ---
 

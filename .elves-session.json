@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 6,
+    "remaining_batches": 5,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "A1-A4 + B1-B5 + C1-C3 + D1 done (all CI-green). Start D2 (regression: D2a LinearModel+AovSum, D2b RegBest; defer meansComp; no statsmodels). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp."
+    "next_required_action": "A1-A4 + B1-B5 + C1-C3 + D1 + D2 done (all CI-green). Start D3 (textual — free text -> doc x word contingency table; deterministic integer counts, exact parity). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,8 +29,8 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "D2",
-    "name": "regression family (LinearModel/AovSum/RegBest)",
+    "id": "D3",
+    "name": "textual",
     "status": "not_started"
   },
   "phases": [
@@ -221,6 +221,16 @@
       "started_at": "2026-06-01",
       "completed_at": "2026-06-01",
       "parity": "CaGalt type s eig/ind/freq/quanti.var parity vs live R (run 26737273383, zero drift). type=n + ellipses deferred."
+    },
+    {
+      "id": "D2",
+      "name": "regression family (LinearModel/AovSum/RegBest)",
+      "status": "complete",
+      "rollback_tag": "elves/pre-batch-d2",
+      "commit": "56a1e39",
+      "started_at": "2026-06-01",
+      "completed_at": "2026-06-01",
+      "parity": "LinearModel/AovSum (contr.sum Type-III ANOVA) + RegBest (best-subset) parity vs live R first try (run 26737903399, zero drift). meansComp + LinearModel Type-II/stepwise deferred."
     }
   ],
   "review_comments": [

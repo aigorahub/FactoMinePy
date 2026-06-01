@@ -18,6 +18,16 @@ out of pre-release.
 
 ### Added
 
+- **Regression family: `LinearModel`, `AovSum`, `RegBest`.**
+  `factominer.LinearModel(formula, data, type, selection)` and
+  `factominer.AovSum(formula, data)` fit a linear model with `contr.sum`
+  (sum-to-zero) contrasts and report the Type-III/II ANOVA table (`Ftest`), the
+  per-level coefficient table (`Ttest`, including reconstructed omitted levels
+  and interaction cell grids), and `r.squared`/`sigma`/`fstatistic`/`aic`/`bic`.
+  `factominer.RegBest(y, x, method)` does best-subset regression (lowest-RSS
+  subset of each size; selection by `"r2"`/`"Cp"`/`"adjr2"`). All parity-verified
+  against live R FactoMineR 2.14; numpy/scipy only (no statsmodels). LinearModel
+  stepwise `selection` (aic/bic) and `meansComp` are deferred.
 - **`CaGalt` — Correspondence Analysis on Generalized Aggregated Lumped
   Tables.** New `factominer.CaGalt(Y, X, type, ...)` relates a frequency /
   lexical table `Y` to contextual covariates `X` via a generalized SVD built on
