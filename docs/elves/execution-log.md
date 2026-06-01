@@ -1,250 +1,67 @@
-# Execution Log — elves run #1
+# Execution Log — elves run #2 (full FactoMineR parity)
 
-> Running record of everything elves does in this run. Reverse chronological
-> (newest at top). Past entries are not edited. Reusable lessons get promoted
-> to `learnings.md`; stable repo truths eventually move to `.ai-docs/*`.
+> Reverse-chronological (newest at top). Past entries are not edited. Reusable
+> lessons get promoted to `learnings.md` (which already carries run #1's L1–L11).
+> After compaction, this file tells you what is done; the survival guide tells
+> you what to do next.
 >
-> After a context compaction, this file tells you what is done so you don't
-> repeat work. The survival guide tells you what to do next.
+> Run #1's execution log (FAMD/PD/PL/GPA/POLISH) lives in PR #3's history; this
+> file is reset for run #2.
 
 ---
 
 ## Run Digest
 
-- **Last updated:** 2026-05-30 (Batch GPA complete)
-- **Current phase:** In progress
-- **Active batch:** Batch POLISH (v0.2.0.dev0 release) — next
-- **Last completed batch:** Batch GPA (two-tier parity port)
-- **Next exact batch:** Batch POLISH (v0.2.0.dev0 release)
-- **Active PR:** [#3](https://github.com/aigorahub/FactoMinePy/pull/3)
-- **Docs promoted this run:** none yet
-- **Latest Elves Report:** not generated yet
+- **Last updated:** 2026-05-31 (staging complete)
+- **Current phase:** Staging — launch-ready
+- **Active batch:** Batch 0 (session setup)
+- **Last completed batch:** none (run #2)
+- **Next exact batch:** A1 (MFA core)
+- **Active PR:** _created with the Batch 0 push_
+- **Collision tripwire:** `19c448b`
 
 ---
 
-## Session Summary: 2026-05-18 → 2026-05-30
-
-**Batches completed:** 5 of 5 (FAMD, PD plot-data/ellipse, PL plotly, GPA, POLISH) + the GPA hard-stop resolution.
-**Status:** All planned work complete; v0.2.0.dev0 tagged and (auto-)published to PyPI. PR #3 ready for the user to merge.
-
-**What shipped:**
-- **FAMD** — exact 1e-9 parity (poison fixture), `quanti_var`/`quali_var` blocks.
-- **GPA** — deterministic core, two-tier parity (RV/RVs/simi exact incl. the Kazi-Aoual RVstd; consensus/Xfin rotation-invariant). New `GPAResult` + reproducible synthetic dataset.
-- **Plotly backend** — full mirror of the matplotlib surface on a shared `factominer/plot/_data.py` layer.
-- **Plot-data / ellipses** — R-exact `coord.ellipse` vertex parity (1e-9), shared by both backends.
-- **v0.2.0.dev0** — version bump, CHANGELOG, README refresh; published via the trusted-publisher release workflow.
-
-**Parity bar held:** no deterministic-method tolerance was loosened. The GPA hard stop (R's GPA is stochastic) was resolved by the user as "do it all" with an honest two-tier parity story, documented as such in the README.
-
-**Workflows used (per the user's request):** research fan-outs for FAMD, GPA, and plot-data (3 agents each); a 4-reviewer final readiness review that caught a missed `docs/conf.py` version bump and several README overclaims — all fixed before tagging.
-
-**Suite:** 123 passed / 2 skipped (the 2 are R fixtures with legitimately empty condes quali/category). Every fixture byte-identical to live R FactoMineR 2.14 (only residual ~1e-16 singular-value noise).
-
-**Human next steps:** review + merge PR #3; confirm v0.2.0.dev0 landed on PyPI.
-
----
-
-## Session Setup: 2026-05-18 (staging)
+## Session Setup: 2026-05-31 (staging)
 
 **Phase:** Staging complete
-**Plan:** `docs/plans/elves-run-1.md`
+**Plan:** `docs/plans/elves-run-2-full-parity.md`
 **Survival guide:** `docs/elves/survival-guide.md`
-**Learnings:** `docs/elves/learnings.md`
+**Learnings:** `docs/elves/learnings.md` (run #1 L1–L11 preserved)
 **Execution log:** `docs/elves/execution-log.md`
-**Branch:** `feat/elves-run-1`
-**PR:** [#3](https://github.com/aigorahub/FactoMinePy/pull/3) — opened immediately after the Batch 0 push, per elves convention
-**Run mode:** finite | **User returns:** within ~24h, finite no fixed deadline
-**Checkpoint semantics:** none | **Actual stop conditions:** any "stop condition" in `docs/plans/elves-run-1.md`, three consecutive same-job CI failures, or a tolerance-loosening requirement
-**Active compute at launch:** none
-**Continuation guard:** stop_allowed=no | remaining_batches=5 | checkpoint_is_stop=no | next_required_action=launch in a fresh Claude Code session
+**Branch:** `feat/full-parity`
+**Worktree:** `/Users/johnennis/aigora/dev/FactoMinePy-full-parity` (dedicated, per elves ≥1.11.0)
+**Baseline:** `origin/docs/run-2-full-parity-plan` (run #1 code + the run-2 plan), tip `19c448b`. NOT `main` — PR #3 (run #1) is unmerged, so main lacks FAMD/GPA/plotly that MFA builds on. The run-2 PR stacks on the plan branch and retargets to main as PR #3 → #4 merge.
+**Run mode:** finite, very large budget ("don't care how long"). **Merge:** never (user merges).
 
-**Batch breakdown:**
-1. Batch 1: FAMD port — implement `factominer.FAMD` matching FactoMineR 2.14 FAMD
-2. Batch 2: GPA port — implement `factominer.GPA` (iterative Procrustes)
-3. Batch 3: plotly backend — port matplotlib backend to plotly, structural parity
-4. Batch 4: plot-data parity tests — extract plot data, R fixtures, both backends consume the same data layer
-5. Batch 5: polish + v0.2.0.dev0 — README pruning, version bump, tag, PyPI publish via release.yml
+**Batch breakdown (6 phases, ~22 batches):**
+- A1 MFA core · A2 MFA completeness · A3 HMFA · A4 DMFA
+- B1 FAMD sup vars · B2 MCA sup-block parity + Burt · B3 GPA edge cases · B4 missing values + row weights · B5 dimdesc CA/MCA
+- C1 predict.* · C2 reconst + estim_ncp · C3 descfreq
+- D1 CaGalt · D2 regression family · D3 textual · D4 utility exports
+- E1 plots for new methods · E2 plot helpers (autoLab/plotellipses/ellipseCA) · E3 ggplot (likely out of scope)
+- F1 release
 
-**Preflight:**
-- Git remote / push / `gh` auth: PASS (verified: origin URL = https://github.com/aigorahub/FactoMinePy.git, `gh auth status` green, push tested via prior session)
-- Validation gate dry run: PASS (`.venv/bin/pytest -q` → 83 passed, 2 skipped on origin/main tip 6315896; `.venv/bin/ruff check factominer tests` → clean; `.venv/bin/python -m sphinx -W -b html docs docs/_build/html` → clean)
-- Environment / sleep / notification checks: WARN — macOS dev machine, no caffeinate running. User should consider `caffeinate -d -i -m -s &` before walking away if the run will span hours. Not a blocker for staging.
-- Notes:
-  - R is not installed locally; fixture regeneration goes through the `rpy2-parity` CI workflow on `feat/elves-run-1` via `workflow_dispatch`. See survival guide "R access loop" for the exact sequence.
-  - The previous round's parity work is the proven template — `tests/test_pca.py` / `test_mca.py` / `test_desc.py` are the structural references for the FAMD/GPA tests.
-  - PyPI trusted publisher is already configured for project `factominer` from the previous PyPI publish on commit `71fb150`. Batch 5's tag push will auto-publish via `.github/workflows/release.yml`.
+**Preflight (in the worktree):**
+- venv created + `pip install -e '.[dev]'` (incl. plotly): PASS (`factominer 0.2.0.dev0` imports).
+- `pytest -q`: PASS — **123 passed, 2 skipped** (baseline; matches run #1's final state).
+- `ruff check factominer tests`: clean.
+- `gh auth status`: logged in (`john-aigora`), scopes include `repo` + `workflow`.
+- caffeinate: recommend the user run `caffeinate -d -i -m -s &` for long unattended stretches.
+- R: NOT installed locally — fixtures go through the `rpy2-parity` CI workflow_dispatch loop.
+- PyPI trusted publisher already bound (from v0.2.0.dev0); the F1 release tag will auto-publish.
 
-**Launch readiness:** READY
+**Launch readiness:** READY. Stop allowed right now: NO.
 
 **Launch prompt:**
-> /elves docs/plans/elves-run-1.md
+> /elves docs/plans/elves-run-2-full-parity.md
 >
-> The run is already staged. Branch feat/elves-run-1 exists locally and on
-> origin. Session artifacts are at docs/elves/survival-guide.md,
-> docs/elves/learnings.md, docs/elves/execution-log.md, and
-> .elves-session.json.
->
-> Start with Batch 1 (FAMD). Read the survival guide first.
+> The run is staged. Worktree /Users/johnennis/aigora/dev/FactoMinePy-full-parity,
+> branch feat/full-parity (collision tripwire 19c448b). Session artifacts under
+> docs/elves/. Work ONLY in that worktree on that branch. Start with Batch A1
+> (MFA core). R is not installed locally — fixtures go through the rpy2-parity CI
+> workflow_dispatch loop. Parity bar + stop conditions are in the plan. Never merge.
 
 ---
 
 <!-- Batch entries land below this line, newest first. -->
-
-## 2026-05-30 — Batch GPA: two-tier parity port
-
-**Batch:** GPA. **Contract status:** met (two-tier: RV/RVs/simi exact, consensus/Xfin rotation-invariant).
-
-**What changed:**
-- `factominer/gpa.py` (new): deterministic single-start `algogpa` core (per-config PCA calibration, global SS normalization, iterative leave-one-out Procrustes rotations + the W12 scaling eigen-step, final consensus eigen-rotation, trailing-zero-dim trim) + `GPAResult` dataclass. `coeffRV` (Escoufier RV + Kazi-Aoual standardized RVstd) and `similarite` ported per FactoMineR source.
-- `factominer/__init__.py` + `_deferred.py`: GPA real, off the stubs.
-- `factominer/datasets`: `load_gpa_synth` + committed reproducible synthetic K=3 dataset (no third-party data; provenance documented).
-- `tools/refresh_r_fixtures.R`: GPA(gpa_synth, group=c(2,2,2)) under set.seed(42); 3D Xfin serialized as a list.
-- `tests/test_gpa.py` (new, 7 tests): Tier-1 RV/RVs/simi (1e-6) + Tier-2 consensus/Xfin distance-matrix parity + scaling + structure.
-
-**Decisions made:**
-- R's GPA is stochastic (f1ter random multi-start + rnorm basis completion); ported the deterministic core and skipped the multi-start. Two-tier parity: RV/RVs/simi exact (raw-config, rotation-invariant); consensus/Xfin via inter-object distances. Documented in the README as `⚠️ rotation-invariant`.
-- For the no-missing equal-width case the general GPA reduces cleanly (centering operator C shared, invgC = C/K) — implemented that path.
-- Scoped to no-missing, equal-width configs (the VMQTE + unequal-width branches raise NotImplementedError).
-
-**Test results:** First CI run 26674100207: 120/1 — only test_gpa_rvs failed (RVstd was the wrong formula). RV, simi, consensus distances, Xfin distances, AND scaling all matched R on the first try (the deterministic core reached R's optimum). Fix: ported coeffRV's Kazi-Aoual n>=6 moment standardization exactly, and the RV-matrix diagonal fill (RVs[i,i] = standardized self-RV ≈ 5.0, not 1). After fix: local 121 passed / 2 skipped; confirm run 26674183625 in flight.
-
-**Regression attestation:** additive — new module, dataclass, dataset, test file. No edits to existing analysis code. GPA moved out of `_deferred`. Test count 115 → 121. Confidence: HIGH (RV/RVs/simi exact to 1e-6; consensus/Xfin rotation-invariant-exact; scaling exact).
-
-**Next steps:** Batch POLISH (v0.2.0.dev0 release).
-
-## 2026-05-29 — Batch PL: plotly backend
-
-**Batch:** PL: plotly backend. **Contract status:** met (structural parity).
-
-**What changed:**
-- `factominer/plot/plotly_backend.py` (new): full mirror of the matplotlib surface returning `go.Figure`; PCA ind/var/biplot, scree, contrib; CA/MCA maps; HCPC factor map + dendrogram. ImportError with install hint if plotly absent.
-- `factominer/plot/_data.py`: added `DEFAULT_PALETTE` + pure `resolve_colors` (shared by both backends).
-- `factominer/plot/matplotlib_backend.py`: `_resolve_colors` delegates to `_data.resolve_colors`; palette imported from `_data` (centralized); `plot()` gains `backend=` arg routing to plotly.
-- `factominer/plot/__init__.py`: docstring documents both backends.
-- `pyproject.toml`: `plotly` added to the `dev` extra (still optional at runtime).
-- `tests/test_plotly.py` (new, 12 tests, importorskip-guarded).
-
-**Decisions made:**
-- No R parity for plots (R `plot.*` return no data); plotly is structural-parity like matplotlib. The one numeric plot quantity (ellipses) is already parity-tested in Batch PD and shared via `_data.coord_ellipse`.
-- Kept raw-coord slicing inline in each backend rather than routing through thin pass-through extractors — only the genuinely-shared computation (palette, ellipses) lives in `_data.py`, avoiding indirection with no value.
-
-**Test results:** Local ruff clean, 115 passed / 2 skipped, sphinx -W clean. PR lint-and-test run 26663337555 validates the plotly tests + dev-extra install on Linux (rpy2-parity correctly skipped — no R needed).
-
-**Regression attestation:** additive — new backend module, new test file, new `_data` palette helpers. The mpl edits are a color-resolver delegation (behavior-preserving; existing 9 test_plots.py tests still pass) and a new `backend=` kwarg (default "matplotlib" → unchanged path). Test count 103 → 115. Confidence: HIGH.
-
-**Next steps:** Batch GPA (two-tier parity port).
-
-## 2026-05-29 — Batch PD: plot-data layer + coord.ellipse parity
-
-**Batch:** PD: plot-data layer + parity. **Contract status:** met (focused scope).
-
-**What changed:**
-- `factominer/plot/_data.py` (new): backend-agnostic layer; R-exact `coord_ellipse` port.
-- `factominer/plot/matplotlib_backend.py`: `_draw_confidence_ellipses` now draws from `coord_ellipse` (vertex-identical to R); dropped unused `Ellipse` + `stats` imports.
-- `tools/refresh_r_fixtures.R`: `coord.ellipse` stanza on PCA(decathlon) individuals by Competition (bary False+True) + the exact input coords.
-- `tests/test_plot_parity.py` (new, 3 tests): pure-formula parity both bary modes (1e-9) + end-to-end PCA→ellipse with sign alignment (1e-8).
-- `tests/conftest.py`: `r_plot_ellipse_decathlon`.
-- `tests/fixtures/r_outputs/plot/ellipse_decathlon.json`: committed fixture.
-- README plot row → "structural + ellipse"; CHANGELOG entry.
-
-**Decisions made:**
-- Honest scope (from the 3-agent research): R `plot.*` return no data slot and raw plotted coords are already parity-tested, so the only genuine new parity target is `coord.ellipse`. Everything else stays structural. The `_data.py` layer is the shared base Batch PL's plotly backend will consume.
-- Found + fixed a real divergence: the mpl backend computed ellipses via eigendecomposition + matplotlib `Ellipse` (geometrically equivalent but NOT vertex-identical to R). Now matches R's parametric form exactly.
-
-**Test results:** rpy2-parity run 26662893820 GREEN first try (3 plot-parity tests passed against fresh R coord.ellipse). Local: ruff clean, 103 passed / 2 skipped. Zero-drift confirm run 26663034823 in flight.
-
-**Regression attestation:** purely additive — new `_data.py`, new test file, new fixture; the only edit to existing code is `_draw_confidence_ellipses` (an internal helper, no public-signature change) now delegating to `coord_ellipse`. Existing `test_plots.py` structural tests still pass (the refactor didn't change the rendered API). Test count 100 → 103. Confidence: HIGH (ellipse values are deterministic functions of stable PCA coords; first-try parity).
-
-**Next steps:** Batch PL (plotly backend on the shared `_data.py`).
-
-## 2026-05-29 — Batch 2 (GPA): HARD STOP, decision needed [SUPERSEDED by the do-it-all decision; GPA now scheduled after PL]
-
-**Status:** HALTED pending a user decision. Rollback tag `elves/pre-batch-2`
-created; no GPA source code written. Branch is clean at Batch 1's state
-plus this status note and the saved research.
-
-**The blocker (triggers the run's "tolerance below ROADMAP bar" hard stop):**
-R FactoMineR's `GPA()` is **non-deterministic**. Confirmed by reading
-`/tmp/GPA.R` + the research workflow (saved to
-`docs/plans/gpa-research-findings.json`):
-- `f1ter` (GPA.R:749, 586-666) runs P=5 random restarts — unseeded
-  `sample()` config permutations, random column permutations, random
-  sign-flips — and keeps the best-of-5 by residual loss.
-- `procrustesbis` (GPA.R:289) uses `rnorm()` to complete the null-space
-  basis when a config block is rank-deficient.
-So the returned `consensus` / `Xfin` / `scaling` depend on R's RNG state.
-Exact 1e-9 parity on those (the bar every other method meets) is not
-achievable without replicating R's RNG in Python (infeasible: R's RNG ≠
-NumPy's), nor by seeding (the seeds aren't comparable across languages).
-
-**What IS deterministic and matchable:** `RV`, `RVs`, `simi` (computed
-from the RAW configurations Xdd, GPA.R:765-812 — rotation/scale-invariant,
-independent of the random restart). And `consensus`/`Xfin` can be compared
-to R via rotation-invariant quantities (inter-point distance matrices) or
-by Procrustes-aligning the Python output to R before comparing.
-
-**Other GPA complexity** (from the research, all in
-`docs/plans/gpa-research-findings.json`): 860-line source; reflections
-allowed (general orthogonal H, not pure rotation); eigen(AᵀA) not svd(A);
-two different tolerances (1e-7 first pass vs 1e-10 in f1ter); a separate
-unported `coeffRV` (RV + bias-corrected rvstd); a 3D `Xfin` array + K×K
-matrices that need a dedicated `GPAResult` dataclass (HCPCResult is the
-precedent); the canonical `wine` dataset is not bundled (research
-recommends a deterministic synthetic K-config CSV).
-
-**Options presented to the user (awaiting choice):**
-- A. Reorder — do Batch 3 (plotly) + Batch 4 (plot-data parity) now (both
-  hit the clean exact bar), defer the GPA decision.
-- B. Implement GPA with a two-tier parity story: Tier 1 exact (RV/RVs/simi
-  to 1e-7) + Tier 2 rotation-invariant (consensus/Xfin via inter-point
-  distances / Procrustes alignment). Port the deterministic `algogpa`
-  core, skip the stochastic `f1ter`, seed R's fixture. Honest but a weaker
-  parity guarantee than the other methods.
-- C. Defer GPA to "Round 2" alongside the MFA family; keep it a documented
-  stub. Ship FAMD + plotly + plot-data parity in run #1.
-
-No tolerance was loosened and no GPA code was committed — halted per the
-run's explicit hard-stop instruction.
-
-## 2026-05-29 — Batch 1: FAMD port
-
-**Batch:** 1/5: FAMD port
-**Contract status:** all criteria met.
-
-**Timing:** Implement ~50m (incl. research workflow) / Validate ~25m (2 CI cycles) / Review inline. Session elapsed ~1h20m.
-
-**What changed:**
-- `factominer/famd.py` (new): FAMD as an unscaled weighted PCA on the mixed `[standardized-quanti | centered/sqrt(prop)-scaled indicator]` matrix; post-processes quanti.var, quali.var, var summary, eta². Delegates the decomposition to `PCA(scale_unit=False)` (matches FAMD.R:124).
-- `factominer/_result.py`: added `quanti_var` / `quali_var` Block fields.
-- `factominer/__init__.py` + `_deferred.py`: FAMD imported from new module; removed from deferred stubs; fixed stale `docs/plans/factominer-python-port.md §2` ref → ROADMAP.md.
-- `tools/refresh_r_fixtures.R`: `dump_famd` helper + FAMD(poison) stanza reading the committed CSV (row.names=1, stringsAsFactors=TRUE) for byte-identical input.
-- `tests/conftest.py`: `r_famd_poison` fixture.
-- `tests/test_famd.py` (new, 18 tests): column-by-column parity; ind block compared positionally (jsonlite drops poison's auto-rownames).
-- `tests/test_smoke.py`: FAMD off the deferred-raises parametrize.
-- `tests/fixtures/r_outputs/famd/poison.json`: committed fixture from live R FactoMineR 2.14.
-- README + CHANGELOG: FAMD → ✅; active-vars-only caveat; parity count 83 → 100.
-
-**Commands run:**
-- `gh workflow run ci.yml --ref feat/elves-run-1` (run 26653687097) → fixture generation success, pytest 97 passed / 3 failed (label lookups only) → fixed → run 26653954372 (zero-drift confirm).
-- `.venv/bin/pytest -q` → 100 passed, 2 skipped.
-- `.venv/bin/ruff check factominer tests` → clean.
-- `.venv/bin/python -m sphinx -W -b html docs docs/_build/html` → clean.
-
-**Test results:** Lint PASS / Tests PASS (100 passed, 2 skipped) / Sphinx PASS / rpy2-parity confirm run 26653954372 GREEN. Fixture drift vs committed = a single residual singular value `svd/vs[15]` at 1.4e-16 (max rel diff on real values: 0.0). vs[15] is the first spurious dummy-coding axis (poison has 2+26−13 = 15 meaningful axes) ≈ 0; this is the documented machine-epsilon LAPACK noise on residual eigenvalues (same as the prior round's CA `svd/vs[4]`), below every tolerance and ignored by `test_famd_svd_vs` (which compares only `|vs|>1e-12`). Not re-committed — chasing a 1e-16 wiggle is pointless.
-
-**Review findings:**
-- The two FAMD traps (eig truncation to ncp; quali.var principal-coord transform) were caught pre-implementation via the research workflow + direct source read, so no numeric rework was needed.
-- _No blocking findings._
-
-**Decisions made:**
-- Used the already-bundled `poison` dataset (2 quanti + 13 quali, 26 globally-unique category labels) as the FAMD fixture instead of bundling R's `wine` — avoids adding a new GPL-tabulated dataset and sidesteps label collisions.
-- Scoped Batch 1 to active-variable FAMD. Supplementary vars (`sup.var`/`ind.sup`) raise nothing yet (the param isn't exposed); documented as a known limitation. Rationale: keeps the parity claim honest (active FAMD is fully verified) and the batch tight. Logged as a scout follow-up.
-- R fixture reads the committed CSV rather than `data(poison)` to guarantee identical input without a local R to verify against.
-
-**Regression attestation:**
-- Cumulative diff vs main: new `factominer/famd.py`, `tests/test_famd.py`, fixture; additive fields on Result; FAMD moved out of stubs. No changes to PCA/CA/MCA/HCPC/desc source.
-- Shared surfaces: `_result.Result` gained two optional fields (default None) — purely additive, existing constructors unaffected. `__init__.py` export list unchanged in shape (FAMD still exported, now from a real module).
-- Test baseline: 83 → 100 passing (+17 FAMD; +1 net from smoke reparametrize −1 FAMD-deferred +18 FAMD... net new = 17), 2 skipped unchanged. Count only went up.
-- Confidence: HIGH. Every FAMD numeric channel matched R at 1e-9/1e-10 on the first CI generation; the only failures were label-lookup artifacts, now fixed.
-
-**Next steps:** confirm zero-drift run green, then Batch 2 (GPA).
