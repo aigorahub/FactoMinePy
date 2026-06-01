@@ -160,6 +160,54 @@ fixture rows then have no label. Compare such blocks **positionally**
 MCA tea ind block does. Datasets with real string rownames (decathlon,
 children) don't hit this.
 
+## Batch A1 (MFA) lessons
+
+### L12 — MFA = a weighted PCA on the 1/λ₁-normalized concatenation; reuse `PCA` wholesale
+
+The whole method delegates the eigen-step to `PCA(data, scale_unit=False,
+col_w=ponderation, quali_sup=raw_factors)`, exactly as R delegates to
+`FactoMineR::PCA`. So `ind`, `var`→`quanti.var`, `quali.sup`→`quali.var`
+(coord/cos2/v.test), `eig`, `svd` all come from the already-parity-tested
+engine. **Only three things are MFA-specific:** (1) the per-group `1/λ₁`
+column weight (λ₁ = first *eigenvalue* of the group's separate PCA(`s`/`c`) /
+MCA(`n`) — eigenvalue, not singular value); (2) the standardized-block
+assembly; (3) the `group`/`Lg`/`RV` block. This "build scaled matrix → call
+PCA → post-process" pattern (same as FAMD, [[L10 in the FAMD section]]) is the
+template **HMFA and DMFA (A3/A4) will reuse** — they're built on MFA's
+primitives, so keep the per-group normalization + global-PCA helpers factorable.
+
+### L13 — A categorical MFA group enters as a *standardized* centered indicator, NOT FAMD's `1/√p`
+
+For a `type="n"` group, each category column entering the global PCA is
+`(1[i∈k] − p_k)/√(p_k(1−p_k))` (R `MFA.R` L262-269 nets to this), with column
+weight `(1 − p_k)/(λ₁·J)` where `J` = #variables in the group (L261). Contrast
+FAMD, which uses `(1[i∈k]−p)/√p` ([[L9]]). The two are algebraically equivalent
+once the column weight is folded in, but R splits it the `√(p(1−p))` / `(1−p)`
+way and you must reproduce the split exactly for byte-parity. Easy bugs:
+dropping the `/J` factor, or using `1/√λ₁` instead of `1/λ₁`.
+
+### L14 — `group$coord` = contribution-fraction × eigenvalue; `dist2`/`cos2` use two different denominators
+
+`group$coord[g,k] = (Σ of group g's column contributions on axis k, as a [0,1]
+fraction) × eigenvalue_k`. **Strong self-check: the group coords sum to the
+eigenvalue down each axis** (Σ_g coord[g,k] = λ_k). Reported `group$contrib` is
+that fraction ×100. `group$dist2 = diag(Lg)` (the `funcLg` self-link), but
+`group$cos2` uses the *separate-spectrum* `Σ(λ_l/λ₁)²` denominator (R computes
+cos2 at L417 before overwriting dist2 with diag(Lg) at L450 — the two are
+numerically equal). The `Lg`/`RV` "MFA" row/col divides by the **global** first
+eigenvalue `res.globale$eig[1,1]`, not any group's λ₁.
+
+### L15 — `dump_block` emits a fixed 8-key schema; NULL fields serialize as `{}`, not omitted
+
+`tools/refresh_r_fixtures.R`'s `dump_block` always writes
+coord/cos2/contrib/cor/dist/inertia/v.test/eta2. When the R object lacks a
+field (e.g. MFA's `res$ind` has **no** `dist` — `MFA.R:657` lists only
+coord/contrib/cos2/within.inertia/coord.partiel), `as.numeric(NULL)` →
+`numeric(0)` and jsonlite serializes it as an empty object `{}`, which a test's
+`payload.get("dist")` returns as a non-`None` dict → `TypeError` on
+`np.asarray(..., float)`. **Don't assert a channel R doesn't actually emit.**
+Check the R result's real field list before writing the per-channel test.
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch

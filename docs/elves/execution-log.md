@@ -12,13 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-31 (staging complete)
-- **Current phase:** Staging — launch-ready
-- **Active batch:** Batch 0 (session setup)
-- **Last completed batch:** none (run #2)
-- **Next exact batch:** A1 (MFA core)
+- **Last updated:** 2026-05-31 (A1 complete, parity-verified)
+- **Current phase:** Batch A1 (MFA core) complete; re-triggering CI for zero-drift confirmation
+- **Active batch:** A1 → done; next A2
+- **Last completed batch:** A1 (MFA core) — 21/21 parity tests green vs live R
+- **Next exact batch:** A2 (MFA completeness — partial axes, group$correlation, coord.partiel)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire:** `19c448b`
+- **Collision tripwire (latest own HEAD):** `81c94be` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→144 passed, 2 skipped (the +21 are MFA parity tests; skip count unchanged)
 
 ---
 
@@ -66,10 +67,32 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
-## Batch A1 — MFA core — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+## Batch A1 — MFA core — 2026-05-31 (COMPLETE — 21/21 parity vs live R)
 
-**Phase:** Implement complete; Validate (local green) done; rpy2-parity CI loop pending.
+**Phase:** Implement → Validate → Review → Document, all done. Parity-verified.
 **Rollback tag:** `elves/pre-batch-a1` (pushed).
+**Commits:** `8607b69` (implementation + test harness), `81c94be` (R fixture + schema fixes),
+docs/close-out commit to follow.
+
+**Validation (final):** ruff clean; sphinx -W builds; pytest **144 passed / 2 skipped**
+(was 123/2 at baseline; +21 MFA parity tests, skip count unchanged → no tests disabled).
+All 21 MFA channels match live R FactoMineR 2.14 at the bar: eig 1e-10, eig% 1e-8, svd 1e-9,
+ind coord/cos2 1e-9 + contrib 1e-8, quanti.var coord/cos2/cor 1e-9 + contrib 1e-8,
+quali.var coord/cos2 1e-9 + contrib 1e-8 + v.test 1e-6, group coord/cos2/dist2/Lg/RV 1e-9 +
+contrib 1e-8.
+
+**Review (adversarial-verify, the plan's hard-method rhythm):** two independent opus reviewers
+read `mfa.py` against the R source — one on data-assembly/ponderation/global-PCA/eig/quanti.var/
+quali.var, one on the group/Lg/RV block. **Zero parity bugs found.** Both confirmed the keystone
+formulas (1/λ₁ eigenvalue weighting, `(1−p)/(λ₁·J)` categorical col.w, `√(p(1−p))` indicator
+scaling, group$coord = fraction×eigenvalue, the Lg "MFA" row dividing by the global first
+eigenvalue) and the internal cross-checks (group coords sum to eigenvalues per axis; active
+contributions close to 100%; RV diagonal=1).
+
+**First CI round** surfaced exactly one issue: `test_mfa_ind_dist` — R MFA's `res$ind` has no
+`dist` (MFA.R:657), and `dump_block`'s fixed schema serialized the NULL as `{}`. Fixed faithfully:
+dropped `dist` from MFA's ind block (schema parity) and removed the inapplicable test. See
+learnings [[L15]]. No tolerance was loosened; no fixture was edited to pass.
 
 **Contract (behaviors):**
 - `factominer/mfa.py` implements `MFA(X, group, type, ncp, name_group)` for active
@@ -90,11 +113,12 @@
 - New container `MFAGroup` in `_result.py`; `Result.group` field added.
 
 **Acceptance criteria:**
-- [x] ruff clean; sphinx -W builds; local pytest green (124 passed, 23 skipped).
+- [x] ruff clean; sphinx -W builds; local pytest green (144 passed, 2 skipped).
 - [x] MFA runs on canonical poison `group=c(2,2,5,6) type=c("s","n","n","n")`;
       internal check: group$coord sums to the eigenvalue per axis (Dim.1 = 3.0897 = eig₁).
-- [ ] **rpy2-parity zero drift** vs live R (eig 1e-10; coord/cos2/cor 1e-9; contrib 1e-8;
-      v.test 1e-6) — PENDING CI fixture generation.
+- [x] **rpy2-parity** vs live R (eig 1e-10; coord/cos2/cor 1e-9; contrib 1e-8; v.test 1e-6) —
+      **21/21 MFA tests pass** against the CI-generated R fixture; re-trigger pending to confirm
+      committed-fixture zero drift.
 
 **Pre-implementation survey / source verification:**
 - Read R `MFA.R` (master) L1-40 (funcLg/moy.p/ec), L180-320 (data assembly + ponderation),
@@ -111,6 +135,29 @@
 fixture lands). Next: push → `gh workflow run ci.yml --ref feat/full-parity` → download
 `r-outputs-fresh` → commit `tests/fixtures/r_outputs/mfa/poison.json` → confirm zero drift.
 
-**Commit:** _pending (mid-implementation push to trigger CI)_
+**Regression attestation:**
+- **Cumulative diff vs baseline** (`19c448b...HEAD`): new `factominer/mfa.py`, `tests/test_mfa.py`,
+  `tests/fixtures/r_outputs/mfa/poison.json`; additive edits to `_result.py` (new MFAGroup +
+  Result.group), `__init__.py`/`_deferred.py` (MFA stub→live), `refresh_r_fixtures.R` + `conftest.py`
+  (new fixture), `test_smoke.py` (MFA live, HMFA/DMFA still deferred), plus docs. No files changed
+  outside batch scope; no deletions of product code.
+- **Shared surfaces:** `_result.py` — purely additive (new `MFAGroup` dataclass; new optional
+  `Result.group` field defaulting `None`). `grep` confirms `Result.group` is read only by `mfa.py`;
+  all existing Block/SVD/Result consumers (pca/ca/mca/famd/gpa/hcpc/plot/desc) are untouched and
+  still green. `MCA`/`PCA` reused read-only by MFA (no signature changes).
+- **Test baseline:** 123→144 passed; skipped 2→2 (unchanged). Total only went up. No test disabled,
+  weakened, or skipped to pass.
+- **Confidence: HIGH.** Every channel matches live R at the deterministic bar; two independent
+  adversarial source-reviews found no bugs; the only failure was a fixture-schema artifact fixed
+  faithfully. MFA reuses the already-parity-verified PCA engine, so the blast radius is small.
+
+**Docs updated:** README status table + prose (MFA ✅/✅), ROADMAP table, CHANGELOG [Unreleased],
+learnings L12–L15.
+
+**Deferred to A2 (recorded, not dropped):** `ind$coord.partiel`, `partial.axes`,
+`group$correlation`, `inertia.ratio`, `summary.quanti`, supplementary groups (`num.group.sup`),
+and `type` `"f"`/`"m"` groups (raise `NotImplementedError`).
+
+**Commits:** `8607b69`, `81c94be`, + docs/close-out commit.
 
 ---

@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 22 (A1 in progress)
+- **Planned batches remaining:** 21 (A1 complete + parity-verified)
 - **Stop allowed right now:** no
-- **Why:** A1 implementation done but not parity-verified; 21 more batches after it.
-- **Next required action:** run the rpy2-parity CI loop for A1's MFA fixture, confirm zero
-  drift, finish A1 review/docs, then proceed to A2.
+- **Why:** A1 done; 21 batches remain (A2–A4, B1–B5, C1–C3, D1–D4, E1–E3, F1).
+- **Next required action:** push the docs/close-out commit, re-trigger CI to confirm the
+  committed MFA fixture shows zero drift + green, then start A2 (MFA completeness).
 
 ---
 
@@ -119,43 +119,40 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Batch A1 (MFA core) — implementation complete, in the rpy2-parity CI loop
+**Status:** Batch A1 (MFA core) COMPLETE — 21/21 parity vs live R. Closing out; A2 next.
 
-**Active batch:** A1 — MFA core
+**Active batch:** A1 done → A2 (MFA completeness)
 
-**What was just finished:** Implemented `factominer/mfa.py` (MFA via the weighted-PCA
-engine; group/Lg/RV block); added `MFAGroup` to `_result.py`; un-stubbed MFA in
-`__init__.py`/`_deferred.py`; wrote `tests/test_mfa.py` + `dump_mfa` + the canonical poison
-MFA block in `tools/refresh_r_fixtures.R`. Local: ruff clean, sphinx -W ok, pytest 124
-passed / 23 skipped (21 MFA tests skip until the R fixture lands).
+**What was just finished:** Implemented + parity-verified MFA (`factominer/mfa.py`, MFAGroup in
+`_result.py`). 144 passed / 2 skipped; ruff + sphinx clean. Committed `8607b69` (impl + harness),
+`81c94be` (R fixture + schema fixes). Two adversarial source-reviews found zero bugs. Docs updated
+(README/ROADMAP/CHANGELOG/learnings L12–L15). R fixture `mfa/poison.json` committed (CI-generated).
 
-**Single next action:** push, then `gh workflow run ci.yml --repo aigorahub/FactoMinePy
---ref feat/full-parity`; watch; download `r-outputs-fresh`; commit
-`tests/fixtures/r_outputs/mfa/poison.json`; run pytest; iterate to zero drift.
+**Single next action:** commit the docs/close-out, push, re-trigger CI to confirm committed-fixture
+zero drift + green; then start A2 (MFA completeness: partial axes / group$correlation /
+coord.partiel / summary.quanti).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** A1 — MFA core
+**Batch:** A2 — MFA completeness
 
-**Scope:** `factominer/mfa.py` — groups of variables, each normalized by its
-first singular value, then a global weighted PCA over the concatenated blocks;
-`type` per group (`s`/`c`/`n`/`f`). Output `eig`, `ind`, `quanti.var`,
-`quali.var`, `group`, `svd`. Reuse PCA/MCA/FAMD scaling primitives + `coeffRV`
-from `gpa.py`. Choose/bundle the MFA fixture dataset (the `wine` decision —
-surface licensing). Research fan-out (3 agents) → implement → adversarial-verify
-per component → rpy2-parity loop → docs.
+**Scope:** extend `factominer/mfa.py` with the partial-individuals / partial-axes machinery:
+`ind$coord.partiel` (per-group partial individual coords), `partial.axes`, `group$correlation`
+(partial group axes vs global axes via `cov.wt`, R MFA.R L459-483), `inertia.ratio`,
+`summary.quanti`. Keep the A1 PCA-engine + group block; add the `data.partiel` projection
+(R L459-477: replace all-but-one group's columns with the global mean, re-project on
+`res.globale$svd$V`, scale by `length(group.actif)`). Fixture extends the A1 poison dump.
 
-**Acceptance:** eig/ind/quanti.var/group coords to the deterministic bar; ruff
-clean; `rpy2-parity` zero drift.
+**Acceptance:** every added MFA block at the deterministic bar; ruff clean; rpy2-parity green.
 
-**Risk:** the group-normalization (divide block by its first singular value) and
-partial-axis machinery; the MCA standard-vs-principal-coord and FAMD scaling
-lessons both recur here (see learnings L1, L9, L10). Highest-risk batch — do it
-first and verify hard.
+**Risk:** the partial-projection scaling (`length(group.actif)` multiplier, the col.w and
+centre/ecart.type from `res.globale$call`) and the `cov.wt(..., method="ML")` weighted
+correlation. Reuse A1's `data` / `ponderation` / global PCA — refactor them out of the MFA
+body into the call dict or a helper so A2 (and HMFA/DMFA in A3/A4) can reuse them. See [[L12]].
 
-**Rollback tag:** `elves/pre-batch-a1` (create before starting).
+**Rollback tag:** `elves/pre-batch-a2` (create before starting).
 
 ---
 

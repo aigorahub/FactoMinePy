@@ -7,6 +7,23 @@ out of pre-release.
 
 ## [Unreleased]
 
+### Added
+
+- **`MFA` (Multiple Factor Analysis)** is now implemented
+  (`factominer/mfa.py` + an `MFAGroup` result container). MFA runs a single
+  global weighted PCA on the per-group-normalized (`1/λ₁`) concatenation of the
+  groups; the eigen-step is delegated to `factominer.PCA`
+  (`scale_unit=False`, `col_w=ponderation`), mirroring how R delegates to
+  `FactoMineR::PCA`. Supports group types `"s"` (standardized-quantitative),
+  `"c"` (centered-quantitative), and `"n"` (categorical). Outputs `eig`, `ind`,
+  `quanti.var`, `quali.var`, and the `group` block (coordinates, contributions,
+  cos², dist², and the `Lg` / `RV` matrices including the global "MFA" row).
+  Parity-verified column-by-column against live R FactoMineR 2.14 on the
+  canonical `MFA(poison, group=c(2,2,5,6), type=c("s","n","n","n"))` example.
+  Active groups with uniform row weights; partial factor maps
+  (`coord.partiel`), supplementary groups, and frequency/mixed (`"f"`/`"m"`)
+  groups are not yet supported.
+
 ## [0.2.0.dev0] — 2026-05-30
 
 This release adds two FactoMineR methods (FAMD, GPA) and a plotly plotting

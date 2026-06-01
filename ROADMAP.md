@@ -19,7 +19,8 @@ For status of an *individual* method, the source of truth is the table in
 | `GPA` | ✅ | ⚠️ rotation-invariant | RV/RVs/simi exact; consensus/Xfin up to rotation (R's GPA is stochastic) |
 | `dimdesc`, `catdes`, `condes` | ✅ | ✅ | full R 2.14 schemas; dimdesc CA/MCA branches pending |
 | `plot.*` matplotlib + plotly | ✅ | structural + ellipse | both backends on a shared `_data` layer; `coord.ellipse` vertex-exact |
-| `MFA`, `HMFA`, `DMFA` | 🚧 | — | importable `NotImplementedError` stubs |
+| `MFA` | ✅ | ✅ | active groups (types `s`/`c`/`n`); eig/ind/quanti.var/quali.var + group Lg/RV exact; partial axes, sup groups, `f`/`m` groups pending |
+| `HMFA`, `DMFA` | 🚧 | — | importable `NotImplementedError` stubs (build on MFA) |
 
 Run #1 (FAMD, GPA, plotly, plot-data/ellipse parity, v0.2.0.dev0) is complete.
 
