@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import pandas as pd
-import pytest
-
 import factominer
-from factominer import CA, HCPC, HMFA, MCA, MFA, PCA, catdes, condes, dimdesc
+from factominer import CA, DMFA, HCPC, HMFA, MCA, MFA, PCA, catdes, condes, dimdesc
 from factominer.datasets import load_children, load_decathlon, load_poison, load_tea
 
 
@@ -91,8 +88,10 @@ def test_hmfa_runs():
     assert list(res.quanti_var.coord.index) == ["Age", "Time"]
 
 
-@pytest.mark.parametrize("name", ["DMFA"])
-def test_deferred_methods_raise(name):
-    fn = getattr(factominer, name)
-    with pytest.raises(NotImplementedError):
-        fn(pd.DataFrame({"a": [1, 2, 3]}))
+def test_dmfa_runs():
+    deca = load_decathlon()
+    res = DMFA(deca, num_fact="Competition", quanti_sup=["Rank", "Points"])
+    assert res.method == "DMFA"
+    assert res.ind.coord.shape[0] == deca.shape[0]
+    assert list(res.group_coord.index) == ["Decastar", "OlympicG"]
+    assert res.var.coord.shape[0] == 10  # the 10 active events

@@ -130,6 +130,23 @@ dump_hmfa <- function(res) {
   )
 }
 
+dump_dmfa <- function(res) {
+  list(
+    eig         = as.data.frame(res$eig),
+    ind         = dump_block(res$ind),       # already reordered to input row order
+    var         = dump_block(res$var),
+    quanti.sup  = dump_block(res$quanti.sup),
+    group = list(
+      coord   = as.data.frame(res$group$coord),
+      coord.n = as.data.frame(res$group$coord.n),
+      cos2    = as.data.frame(res$group$cos2)
+    ),
+    cor.dim.gr  = lapply(res$cor.dim.gr,  as.data.frame),  # one frame per group level
+    var.partiel = lapply(res$var.partiel, as.data.frame),
+    svd         = list(vs = as.numeric(res$svd$vs))
+  )
+}
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -205,6 +222,15 @@ res_hmfa_d <- HMFA(deca10,
                    graph = FALSE)
 write_json(dump_hmfa(res_hmfa_d), file.path(out_dir("hmfa"), "decathlon.json"))
 cat("[fixtures] hmfa/decathlon.json\n")
+
+# ---- DMFA on decathlon (Competition as grouping factor) --------------------
+# After read.csv(row.names=1): cols 1-10 = events, 11 = Rank, 12 = Points,
+# 13 = Competition (Decastar n=13 / OlympicG n=28). num.fact=13 -> Competition;
+# Rank/Points are supplementary quanti. data(decathlon) == the bundled CSV.
+res_dmfa <- DMFA(decathlon, num.fact = 13, scale.unit = TRUE, ncp = 5,
+                 quanti.sup = c(11, 12), graph = FALSE)
+write_json(dump_dmfa(res_dmfa), file.path(out_dir("dmfa"), "decathlon.json"))
+cat("[fixtures] dmfa/decathlon.json\n")
 
 # ---- GPA on the synthetic K=3 configuration dataset ------------------------
 # R's GPA is stochastic (random multi-start + rnorm basis completion), so we

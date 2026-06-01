@@ -81,6 +81,11 @@ def r_hmfa_decathlon() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_dmfa_decathlon() -> dict:
+    return _load_r_fixture("dmfa", "decathlon")
+
+
+@pytest.fixture(scope="session")
 def r_plot_ellipse_decathlon() -> dict:
     return _load_r_fixture("plot", "ellipse_decathlon")
 

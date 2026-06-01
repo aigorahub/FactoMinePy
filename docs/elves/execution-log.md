@@ -67,6 +67,40 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
+## Batch A4 — DMFA — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+
+**Phase:** Implement complete; local green; rpy2-parity CI loop pending. **Last Phase-A method.**
+**Rollback tag:** `elves/pre-batch-a4` (pushed).
+
+**Contract:** `factominer/dmfa.py` implements Dual MFA. `DMFA(don, num_fact, scale_unit, ncp,
+quanti_sup)`. Per-group standardize each level's sub-table (its own mean/sd), form `Cov[j]`
+(cor/cov), stack + prepend the factor, run `PCA(quali_sup=[factor], quanti_sup=...)`, reorder ind
+to input order, then the DMFA group block `group.coord[j,s] = v_sᵀ Cov_active_j v_s / λ_s`,
+`coord.n` (÷ group λ₁), `cos2` (÷ Σλ²·100), plus `var.partiel` / `cor.dim.gr` / `Cov` / `Xc`.
+
+**Build on:** PCA wholesale (eig/ind/var/quanti.sup/svd) via `quali_sup=[0]` + `quanti_sup`. New
+`DMFAResult` container. ~110 lines total. NOT MFA's `1/λ₁` weighting — per-group standardization.
+
+**Source-verified (DMFA.R):** column reorder L13; per-group `scale()`+`cor`/`cov` L31-38; stacked
+PCA L40-41; ind reorder L49-52; group trace L65-82 (`V` = `var.coord` loadings, `Cov` sliced to
+active by dropping the `quanti.sup` rows/cols, three normalizers). Decathlon path drops `quali.sup`.
+
+**Local checks (pre-CI):** ruff clean; sphinx -W; pytest 165 passed / 16 skipped (14 DMFA tests
+await the fixture). Smoke: ind in original order (SEBRLE, CLAY...), var = 10 events, quanti.sup =
+Rank/Points, group levels Decastar/OlympicG, group.cos2 row sums ≤ 100.
+
+**Fixture (license-clean):** `DMFA(decathlon, num.fact=13, scale.unit=TRUE, quanti.sup=c(11,12))`
+(Competition factor; 10 events active, Rank/Points sup) — already-bundled decathlon. New `dump_dmfa`.
+
+**Deferred (recorded):** supplementary qualitatives (`quali_sup`, the interaction-factor branch),
+the `Cov`/`Xc` dumps (diagnostic; validated indirectly via group.coord/var.partiel).
+
+**Next:** push → trigger CI (dump_dmfa generates dmfa/decathlon.json) → verify the 14 DMFA tests vs
+fresh R → commit fixture → confirm zero drift. After A4, **Phase A (MFA family) is complete** and an
+entropy check is due (3 batches since the last one — A2/A3/A4).
+
+---
+
 ## Batch A3 — HMFA — 2026-05-31 (COMPLETE — 14/14 parity vs live R, first pass)
 
 **Phase:** Implement → Validate → Review → Document, done. Parity-verified, no iteration.
