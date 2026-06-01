@@ -9,6 +9,16 @@ out of pre-release.
 
 ### Added
 
+- **`GPA` unequal-width configurations + `correlations` / `PANOVA`.** GPA now
+  handles configurations of different column counts (the equal-width restriction
+  is lifted): each calibrated configuration is padded to `max(group)` and the
+  Procrustes congruence uses a symmetric, width-agnostic form. Adds the
+  per-configuration `correlations` (original variables vs the consensus axes) and
+  the `PANOVA` (Procrustes ANOVA) sum-of-squares tables. `RV`/`RVs`/`simi` and the
+  PANOVA per-object/per-config tables are parity-verified exactly against live R
+  FactoMineR 2.14; `consensus`/`Xfin`/`correlations` match up to the global
+  rotation/reflection gauge (R's GPA is stochastic). Missing values remain
+  unsupported.
 - **`MCA` supplementary blocks + Burt method.** MCA now computes the
   supplementary-variable blocks (`quanti_sup` correlations with the axes;
   `quali_sup` category barycenters with cos²/v.test and per-variable eta²) — the

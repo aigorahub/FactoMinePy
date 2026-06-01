@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-31 (B2 complete, parity-verified)
-- **Current phase:** Phase A + B1 + B2 done; B3 (GPA edge cases) next
-- **Active batch:** B2 → done; next B3 (GPA edge cases)
-- **Last completed batch:** B2 (MCA sup blocks + Burt) — 20/20 MCA parity tests green vs live R
-- **Next exact batch:** B3 (GPA missing values + unequal-width configs; correlations/PANOVA)
+- **Last updated:** 2026-05-31 (B3 complete, parity-verified)
+- **Current phase:** Phase A + B1 + B2 + B3 done; B4 (missing values + row weights) next
+- **Active batch:** B3 → done; next B4 (missing values + row weights)
+- **Last completed batch:** B3 (GPA edge cases) — 16/16 GPA parity tests green vs live R
+- **Next exact batch:** B4 (PCA/CA/MCA missing values + row.w; + deferred GPA-missing + FAMD ind_sup)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `0d61192` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→196 passed, 2 skipped (+73 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `93e9bfb` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→205 passed, 2 skipped (+82 parity tests; skips unchanged)
 
 ---
 
@@ -67,10 +67,33 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
-## Batch B3 — GPA edge cases — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+## Batch B3 — GPA edge cases — 2026-05-31 (COMPLETE — 16/16 GPA parity vs live R)
 
-**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Phase:** Implement → Validate → Review → Document, done. Parity-verified.
 **Rollback tag:** `elves/pre-batch-b3` (pushed).
+**Commits:** `66e03c9` (impl + harness), `93e9bfb` (R fixtures + symmetric simi fix).
+
+**Validation (final):** ruff clean; sphinx -W; pytest **205 passed / 2 skipped** (back to baseline).
+CI: unequal-width RV/RVs/simi (Tier-1 exact) + consensus/Xfin (Tier-2 pdist) + PANOVA objet/config
+(Tier-1) all match live R; equal-width regression unchanged (7/7) + its new PANOVA assertions.
+
+**First CI round** surfaced one issue: `simi(g1,g2)` (width-2 vs width-3 pair) was 0.985 vs R's 0.983
+— `_similarite` rotated the WIDER config onto the narrower and under-counted the `trace(yᵀy)`
+denominator. Fixed with the symmetric singular-value form `Σσ(XcᵀYc)/√(tr·tr)`, which equals the
+prior formula for equal widths (no equal-width regression) and matches R for unequal widths.
+
+**Regression attestation:** `gpa.py` `max(group)`/padding reduces to prior code for equal widths;
+`_procrustes_H` k=min slice = U@Vt when square; new symmetric `_similarite` = prior for square. New
+`GPAResult.panova` field (default {}). New synthetic `gpa_synth_uneven.csv` (provenance documented).
+Test baseline 196→205 passed, skips 2→2. **Confidence: HIGH** — equal-width unchanged; unequal-width
+exact on the Tier-1 invariants; the stochastic boundary (consensus/Xfin/correlations) stays Tier-2.
+
+**Scope/deferred:** GPA **missing values** (VMQTE) → B4 (NaN still raises NotImplementedError → B4).
+
+**Docs updated:** README (GPA unequal-width + PANOVA), ROADMAP, CHANGELOG.
+
+**Next:** confirm zero-drift CI, then B4 (missing values + row weights — PCA/CA/MCA NA handling +
+`row.w`; folds in GPA missing-values + FAMD `ind_sup` deferred from B3/B1).
 
 **Contract:** (1) **unequal-width configurations** — lift the equal-width restriction in `gpa.py`
 (pad each calibrated config to `max(group)`; `_procrustes_H` generalized to the semi-orthogonal map

@@ -60,12 +60,12 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 13 (A1–A4 + B1 + B2 done = 6 of 20 enumerated batches)
+- **Planned batches remaining:** 12 (7 of 20 enumerated batches done)
 - **Stop allowed right now:** no
-- **Why:** 6 batches done; 13 remain (B3–B5, C1–C3, D1–D4, E1–E3, F1). (Plan said "~22"; the
-  enumerated list is 20.)
-- **Next required action:** confirm B2 zero-drift CI green, then start B3 (GPA edge cases). Deferred
-  items to fold in later: FAMD `ind_sup` → B4; Burt+quali_sup. Entropy check due ~after B4/B5.
+- **Why:** 7 done (A1–A4, B1–B3); 12 remain (B4–B5, C1–C3, D1–D4, E1–E3, F1).
+- **Next required action:** confirm B3 zero-drift CI green, then start B4 (missing values + row
+  weights). B4 folds in deferred FAMD `ind_sup` + GPA missing-values. Still deferred: Burt+quali_sup.
+  Entropy check due ~after B5.
 
 ---
 
@@ -120,22 +120,43 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Phase A + entropy check + B1 + B2 done. MFA family + FAMD sup + MCA sup/Burt all parity-verified.
+**Status:** Phase A + entropy + B1 + B2 + B3 done. MFA family + FAMD sup + MCA sup/Burt + GPA
+unequal-width all parity-verified.
 
-**Active batch:** B2 done → B3 (GPA edge cases).
+**Active batch:** B3 done → B4 (missing values + row weights).
 
-**What was just finished:** B2 — MCA quanti.sup/quali.sup blocks + the Burt method; 20/20 MCA parity
-vs live R. Active MCA + FAMD unchanged; `weighted_eta2` relocated to `_corr.py`. 196 passed / 2
-skipped. Commits through `0d61192`. README/ROADMAP/CHANGELOG/learnings L18 updated. Burt+quali_sup
-deferred. Earlier: Phase A (MFA family), entropy check, B1 (FAMD sup vars).
+**What was just finished:** B3 — GPA unequal-width configs + correlations + PANOVA; 16/16 GPA parity
+vs live R (symmetric `_similarite` fixed the unequal-width simi). Equal-width unchanged. 205 passed /
+2 skipped. Commits through `93e9bfb`. README/ROADMAP/CHANGELOG updated. GPA missing-values deferred to
+B4. Earlier: Phase A, entropy check, B1 (FAMD sup), B2 (MCA sup/Burt).
 
-**Single next action:** confirm B2 zero-drift CI green, then start B3 (GPA edge cases).
+**Single next action:** confirm B3 zero-drift CI green, then start B4 (missing values + row weights).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** B3 — GPA edge cases
+**Batch:** B4 — missing values + row weights
+
+**Scope (from the plan + deferrals):** audit PCA/CA/MCA for R's missing-value handling and `row.w`
+support; add the paths R supports + fixtures that exercise them. R FactoMineR has documented NA
+handling (iterative imputation `imputePCA`-style, or the simpler complete-case/row-weight paths) and
+`row.w` in several methods; today the port assumes complete data + uniform weights. **Folds in the
+deferred items:** GPA missing values (the VMQTE path — `M`/`Cj` 0/1-diagonal metrics, `invgC=pinv(Cc)`,
+pairwise-deleted RV/simi; spec captured in the B3 GPA research) and FAMD `ind_sup` (supplementary
+individuals — compute the active scaling from active rows only, then project sup rows; spec in the B1
+FAMD research).
+
+**Suggested order (independent sub-tasks; can split if too large):** (1) PCA `row.w` (R's PCA takes
+`row.w`; the port's PCA already accepts `row_w` — assert it against an R fixture with non-uniform
+weights). (2) FAMD `ind_sup` (B1 deferral — the cleanest add). (3) PCA/MCA missing-value handling
+(the largest — R's `MCA` NA→`.NA` category vs `imputeMCA`; PCA NA handling). (4) GPA missing values.
+
+**Risk:** R's missing-value handling differs by method (NA-as-category in MCA vs iterative imputation
+in PCA). Verify R's EXACT NA semantics per method before implementing; don't assume one approach.
+This batch may be large — split into B4a/B4b if needed and record in the log.
+
+**Rollback tag:** `elves/pre-batch-b4` (create before starting).
 
 **Scope (from the plan):** in `factominer/gpa.py`, handle the two
 `NotImplementedError` branches — (1) **missing values** (the VMQTE path), (2)

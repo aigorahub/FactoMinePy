@@ -16,7 +16,7 @@ For status of an *individual* method, the source of truth is the table in
 | `PCA`, `CA`, `MCA` | ✅ | ✅ | active + supplementary blocks; MCA quanti.sup/quali.sup + Burt parity-verified |
 | `FAMD` | ✅ | ✅ | active + supplementary variables (`sup_var`); sup individuals (`ind_sup`) pending → B4 |
 | `HCPC` | ✅ | ✅ | k-means consolidation, desc.var via catdes |
-| `GPA` | ✅ | ⚠️ rotation-invariant | RV/RVs/simi exact; consensus/Xfin up to rotation (R's GPA is stochastic) |
+| `GPA` | ✅ | ⚠️ rotation-invariant | unequal-width configs; RV/RVs/simi + PANOVA totals exact; consensus/Xfin/correlations up to rotation. Missing values → B4 |
 | `dimdesc`, `catdes`, `condes` | ✅ | ✅ | full R 2.14 schemas; dimdesc CA/MCA branches pending |
 | `plot.*` matplotlib + plotly | ✅ | structural + ellipse | both backends on a shared `_data` layer; `coord.ellipse` vertex-exact |
 | `MFA` | ✅ | ✅ | active groups (types `s`/`c`/`n`); eig/ind/quanti.var/quali.var + group Lg/RV/correlation + coord.partiel + partial.axes + inertia.ratio exact; sup groups, `f`/`m` groups pending |
