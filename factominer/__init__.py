@@ -24,6 +24,7 @@ from .predict import predict
 from .reconst import estim_ncp, reconst
 from .reg_best import RegBest
 from .textual import textual
+from .utils import svd_triplet, tab_disjonctif
 
 __all__ = [
     "PCA",
@@ -47,6 +48,8 @@ __all__ = [
     "LinearModel",
     "AovSum",
     "textual",
+    "svd_triplet",
+    "tab_disjonctif",
     "Result",
 ]
 

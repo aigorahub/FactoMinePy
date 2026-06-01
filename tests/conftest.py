@@ -238,3 +238,13 @@ def r_textual_synth_grp() -> dict:
 @pytest.fixture(scope="session")
 def r_textual_synth_doc() -> dict:
     return _load_r_fixture("textual", "synth_doc")
+
+
+@pytest.fixture(scope="session")
+def r_svd_triplet_decathlon() -> dict:
+    return _load_r_fixture("svd_triplet", "decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_tab_disjonctif_tea() -> dict:
+    return _load_r_fixture("tab_disjonctif", "tea")

@@ -235,6 +235,11 @@ dump_textual <- function(res) {
   )
 }
 
+# svd.triplet: singular values + un-whitened left/right vectors.
+dump_svd_triplet <- function(s) {
+  list(vs = as.numeric(s$vs), U = as.data.frame(s$U), V = as.data.frame(s$V))
+}
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -634,5 +639,19 @@ cat("[fixtures] textual/synth_grp.json\n")
 res_txt_doc <- textual(txt, num.text = ntext, contingence.by = ntext)
 write_json(dump_textual(res_txt_doc), file.path(out_dir("textual"), "synth_doc.json"))
 cat("[fixtures] textual/synth_doc.json\n")
+
+# ---- svd.triplet on the raw decathlon events (non-uniform row.w / col.w) -----
+deca_mat <- as.matrix(decathlon[, 1:10])
+svd_rw <- rep(c(1, 2, 3), length.out = nrow(deca_mat))
+svd_cw <- rep(c(1, 0.5), length.out = ncol(deca_mat))
+res_svd <- svd.triplet(deca_mat, row.w = svd_rw, col.w = svd_cw, ncp = 5)
+write_json(dump_svd_triplet(res_svd), file.path(out_dir("svd_triplet"), "decathlon.json"))
+cat("[fixtures] svd_triplet/decathlon.json\n")
+
+# ---- tab.disjonctif on a 4-variable tea slice -------------------------------
+res_tabdisj <- tab.disjonctif(tea[, 1:4])
+write_json(list(table = as.data.frame(res_tabdisj)),
+           file.path(out_dir("tab_disjonctif"), "tea.json"))
+cat("[fixtures] tab_disjonctif/tea.json\n")
 
 cat("\ndone.\n")
