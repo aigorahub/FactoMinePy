@@ -231,12 +231,13 @@ def MFA(  # noqa: N802 — mirrors R's function name
     dim_names = list(pca.ind.coord.columns[:ncp_eff])
     eig_vals = pca.eig["eigenvalue"].to_numpy()
 
-    # --- ind: straight from the global PCA ---
+    # --- ind: straight from the global PCA. R MFA's res$ind exposes only
+    #     coord/contrib/cos2 (+ within.inertia/coord.partiel, A2 scope); it has
+    #     no `dist`, so we don't surface one either (schema parity). ---
     ind_block = Block(
         coord=pca.ind.coord[dim_names].copy(),
         cos2=pca.ind.cos2[dim_names].copy(),
         contrib=pca.ind.contrib[dim_names].copy(),
-        dist=pca.ind.dist.copy() if pca.ind.dist is not None else None,
     )
 
     # --- quanti.var: the quantitative active columns of the global var block ---

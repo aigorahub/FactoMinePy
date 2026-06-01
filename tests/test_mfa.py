@@ -123,14 +123,9 @@ def test_mfa_ind_contrib(r_mfa_poison):
     assert np.allclose(py, r_arr, atol=1e-8, rtol=0)
 
 
-def test_mfa_ind_dist(r_mfa_poison):
-    res = _mfa()
-    r_dist = r_mfa_poison["ind"].get("dist")
-    if r_dist is None:
-        return
-    r = np.asarray(r_dist, dtype=np.float64)
-    py = np.asarray(res.ind.dist, dtype=np.float64)
-    assert np.allclose(py, r, atol=1e-9, rtol=0)
+# (R MFA's res$ind has no `dist` channel — MFA.R:657 lists only
+# coord/contrib/cos2/within.inertia/coord.partiel — so there is nothing to
+# assert here, unlike PCA/FAMD where the global ind block carries dist.)
 
 
 # ---------------------------------------------------------------------------
