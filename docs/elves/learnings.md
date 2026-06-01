@@ -270,6 +270,28 @@ Two traps when generating/consuming the R fixture:
    from the `"Dim N"` key and skip non-axis keys — never index axes positionally (`[0,1][i]`).
    Same lesson applies to any R list that mixes per-axis payloads with bookkeeping entries.
 
+### L20 — `predict.*` may scale new data differently than the *fit*; verify against R's predict, and test held-out
+
+`predict.PCA`/`predict.MCA`/`predict.FAMD` are just the supplementary-individual
+projection: scale the new rows with the **training** centre/scale/proportion,
+then `coord = (M_scaled · √col.w) @ svd$V` (the shared `_project_scaled` helper;
+PCA's `ind_sup` block uses the same path). MCA is the CA transition formula on
+the indicator row profile `(prof - marge.col)/√marge.col`; its coord is the
+**principal** coord (same scale as `ind$coord`), not the standard `var$coord`.
+
+**`predict.MFA` is the trap.** R's `predict.MFA` scales a categorical column as
+`(1[cat] - 2·marge.col)/ec` — centred at `2·marge.col = 2p/J` (the separate
+MCA's column margin) with `ec` = the weighted RMS of the training column, and
+with **no global-mean subtraction**. That is NOT the fit-time parametrization
+`(1[cat]-p)/√(p(1-p))`. The two are covariance-equivalent **after** the global
+PCA recentres each column to weighted-mean 0, so the *active* MFA stays
+parity-exact — but they differ for **out-of-sample** rows, where predict applies
+the affine map directly. Quanti groups centre/scale by the group's separate
+analysis centre/ecart.type (`"c"` scales by 1). General lesson: derive `predict`
+from R's *predict* source, not by extending the fit scaling; and always test
+predict with **held-out** rows, because the in-sample check (predict(train) ==
+`ind$coord`) holds for *any* self-consistent extension and won't catch this.
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch

@@ -36,7 +36,8 @@ The complete closure of feature parity is planned as a single large run:
 2. **Completeness inside shipped methods** — FAMD sup vars; MCA sup-block
    parity + Burt; GPA missing-values/unequal-width; missing-value + row-weight
    support; dimdesc CA/MCA.
-3. **Auxiliary functions** — `predict.*`, `reconst`, `estim_ncp`, `descfreq`.
+3. **Auxiliary functions** — `predict.*` ✅ (PCA/MCA/FAMD/MFA, parity-verified),
+   `reconst`, `estim_ncp`, `descfreq`.
 4. **Long tail** — `CaGalt`, the regression family (`LinearModel`/`AovSum`/
    `RegBest`/`meansComp`), `textual`, utility exports.
 5. **Plotting depth** — plots for the new methods, `autoLab`, `plotellipses`,

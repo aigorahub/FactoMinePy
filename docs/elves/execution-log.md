@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-06-01 (B5 complete, parity-verified — PHASE B DONE)
-- **Current phase:** Phase A + Phase B (B1–B5) done; Phase C (C1 predict.*) next
-- **Active batch:** B5 → done; next C1 (predict.PCA/MCA/FAMD/MFA). B4b (missing values + FAMD ind_sup) deferred.
-- **Last completed batch:** B5 (dimdesc CA/MCA) — MCA parity vs live R; CA self-consistent (R's dimdesc(CA) broken on R 4.x)
-- **Next exact batch:** C1 (predict.* family — project held-out individuals onto a fitted model)
+- **Last updated:** 2026-06-01 (C1 complete, parity-verified)
+- **Current phase:** Phase A + B done; Phase C started — C1 (predict.*) done, C2 (reconst + estim_ncp) next
+- **Active batch:** C1 → done; next C2 (reconst + estim_ncp). B4b (missing values + FAMD ind_sup) deferred.
+- **Last completed batch:** C1 (predict.PCA/MCA/FAMD/MFA) — all four parity-verified vs live R
+- **Next exact batch:** C2 (reconst low-rank reconstruction + estim_ncp component estimation)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `06e3559` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→212 passed, 2 skipped (+89 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `17dada0` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→216 passed, 2 skipped (+93 parity tests; skips unchanged)
 
 ---
 
@@ -66,6 +66,57 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch C1 — predict.* family — 2026-06-01 (COMPLETE — all four parity vs live R)
+
+**Phase:** Complete. rpy2-parity CI green; 4 predict fixtures generated + committed.
+**Rollback tag:** `elves/pre-batch-c1` (pushed).
+
+**Contract:** `predict.PCA` / `predict.MCA` / `predict.FAMD` / `predict.MFA` — project new
+(held-out) individuals onto a fitted model, returning `coord`, `cos2`, and the distance to the
+origin. New `factominer.predict(res, newdata)` dispatches on `res.method`.
+
+**Design — one shared projection, four scalings:** added `factominer/predict.py` with
+`_project_scaled(M_scaled, col_w, V)` = `coord = (M·√col.w) @ svd$V`; `dist²` weighted; `cos²`.
+PCA's `ind_sup` block now calls it too (centralize; removed a dead overwritten line). Per method the
+only difference is how `M_scaled` is built from the **training** stats stashed on `call`:
+- **PCA:** `(X-centre)/ecart.type`, `col.w` = active col weights. (`mean`/`scale`/`col_w` already stashed.)
+- **MCA:** indicator row profile `(prof - marge.col)/√marge.col` via the CA transition formula,
+  `col.w=1`; coord is the **principal** row coord (= `ind$coord` scale), not the standard `var$coord`.
+  Stashed `marge_col` on the MCA call.
+- **FAMD:** `[(Q-centre)/sd | (1[cat]-prop)/√prop]`, `col.w=1`. Stashed `q_center`/`q_sd`.
+- **MFA:** per-group scaling (`group_meta`): quanti centre/scale by the group's training
+  centre/ecart.type (`"c"` scales by 1); **categorical uses R's `(1[cat]-2·marge.col)/ec` form** —
+  centred at `2p/J` (separate-MCA margin) with the weighted-RMS denominator, NOT the fit-time
+  `(1[cat]-p)/√(p(1-p))`. No global-mean subtraction.
+
+**The MFA subtlety (learnings [[L20]]):** the MFA active analysis is parity-exact, yet a naïve
+"reuse the fit scaling" predict was ~7% off out-of-sample. R's `predict.MFA` uses a *different*
+categorical parametrization than the fit; the two are covariance-equivalent after the global PCA
+recentres, so they agree on the active fit but diverge for new rows. Caught it by fetching R's
+`predict.MFA.R` and reconciling (the in-sample property `predict(train)==ind$coord` held for the
+wrong version too — it can't catch this; held-out fixtures can).
+
+**Fixtures (held-out splits, license-clean):** `predict_pca/decathlon` (fit 1:38, predict 39:41),
+`predict_mca/tea` (fit rows 6:300, predict 1:5), `predict_famd/poison` + `predict_mfa/poison` (fit
+6:55, predict 1:5). Splits chosen so held-out rows carry no unseen categories.
+
+**Checks:** ruff clean; **216 passed / 2 skipped** locally; rpy2-parity green; all four predict
+methods match live R at the supplementary tier (coord 1e-7 after per-axis sign alignment;
+cos2/dist 1e-7). In-sample cross-check (predict(train) == `ind$coord`) exact for all four.
+
+**Regression attestation:** additive — new `predict.py`; PCA `ind_sup` refactored onto the shared
+helper (PCA/FAMD/MCA suites still green); MCA/FAMD/MFA gained `call`-dict stashes only. No product
+code deleted; no test weakened. **Confidence: HIGH.**
+
+**Docs updated:** README (predict row), ROADMAP (C1 ✅), CHANGELOG [Unreleased], learnings L20,
+survival guide + `.elves-session.json` advanced to C2.
+
+**Deferred (carry forward):** B4b (missing values + FAMD `ind_sup`); Burt + `quali_sup`.
+
+**Commits:** `bfa74a8` (PCA/MCA/FAMD), `17dada0` (MFA + fixtures), + this close-out.
+
+---
 
 ## Batch B5 — dimdesc CA/MCA — 2026-06-01 (COMPLETE — MCA parity vs live R; CA self-consistent)
 

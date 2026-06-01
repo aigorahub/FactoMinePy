@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 10,
+    "remaining_batches": 9,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "A1-A4 + B1-B5 done (Phase A+B complete, all CI-green, zero drift). Start C1 (predict.PCA/MCA/FAMD/MFA). Entropy check due at C1 boundary. Deferred: B4b (missing values + FAMD ind_sup), Burt+quali_sup."
+    "next_required_action": "A1-A4 + B1-B5 + C1 done (all CI-green, zero drift). Start C2 (reconst + estim_ncp). Deferred: B4b (missing values + FAMD ind_sup), Burt+quali_sup."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,8 +29,8 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "C1",
-    "name": "predict.* family",
+    "id": "C2",
+    "name": "reconst + estim_ncp",
     "status": "not_started"
   },
   "phases": [
@@ -181,6 +181,16 @@
       "started_at": "2026-06-01",
       "completed_at": "2026-06-01",
       "parity": "MCA dimdesc parity vs live R (run 26734779119, zero drift); CA self-consistent (R 2.14 dimdesc(CA) broken on R 4.x)"
+    },
+    {
+      "id": "C1",
+      "name": "predict.* family",
+      "status": "complete",
+      "rollback_tag": "elves/pre-batch-c1",
+      "commit": "17dada0",
+      "started_at": "2026-06-01",
+      "completed_at": "2026-06-01",
+      "parity": "predict.PCA/MCA/FAMD/MFA all parity-verified vs live R (run 26735782046, zero drift); supplementary tier 1e-7"
     }
   ],
   "review_comments": [

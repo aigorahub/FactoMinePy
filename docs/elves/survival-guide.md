@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 10 (9 of 20 enumerated batches done; + B4b deferred work)
+- **Planned batches remaining:** 9 (10 of 20 enumerated batches done; + B4b deferred work)
 - **Stop allowed right now:** no
-- **Why:** 9 done (A1–A4, B1–B5 = Phase A+B complete); 10 remain (C1–C3, D1–D4, E1–E3, F1) + B4b.
-- **Next required action:** start C1 (predict.* family). Deferred: B4b (missing values + FAMD
-  ind_sup), Burt+quali_sup. **Entropy check due now** — run at the C1 boundary.
+- **Why:** 10 done (A1–A4, B1–B5, C1); 9 remain (C2–C3, D1–D4, E1–E3, F1) + B4b.
+- **Next required action:** start C2 (reconst + estim_ncp). Deferred: B4b (missing values + FAMD
+  ind_sup), Burt+quali_sup. Entropy check done at C1 boundary (tree clean, logs OK).
 
 ---
 
@@ -119,87 +119,62 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Phase A + entropy + B1–B5 done. **Phase A + B complete.** 9 of 20 batches; everything
-parity-verified at the deterministic bar.
+**Status:** Phase A + B done; Phase C started. **C1 (predict.*) complete.** 10 of 20 batches;
+everything parity-verified at the deterministic / supplementary bar.
 
-**Active batch:** B5 done → C1 (predict.* family). B4b (missing values + FAMD ind_sup) deferred.
+**Active batch:** C1 done → C2 (reconst + estim_ncp). B4b (missing values + FAMD ind_sup) deferred.
 
-**What was just finished:** B5 — wired `dimdesc` CA + MCA branches. MCA routes through the existing
-condes path (added `active_frame` to MCA's call); CA is a self-consistency test (R 2.14's
-`dimdesc(CA)` is broken on R 4.x). Handled R's extra `call` element in the MCA dimdesc result. 212
-passed / 2 skipped; rpy2-parity green (run 26734779119), zero drift. Commits through `06e3559` +
-close-out. Earlier: Phase A (MFA/HMFA/DMFA), entropy, B1 (FAMD sup), B2 (MCA sup/Burt), B3 (GPA
-unequal-width), B4 (PCA row.w).
+**What was just finished:** C1 — `predict.PCA/MCA/FAMD/MFA` (`factominer.predict`). One shared
+`_project_scaled` helper; per-method training-stat scaling. MFA needed R's idiosyncratic categorical
+predict scaling (`(1[cat]-2·marge.col)/ec`, centred at 2p/J), distinct from the fit parametrization
+([[L20]]). PCA's `ind_sup` refactored onto the shared helper. 216 passed / 2 skipped; rpy2-parity
+green (run 26735782046). Commits `bfa74a8`, `17dada0` + close-out. Earlier: Phase A, B1–B5.
 
-**Single next action:** tag `elves/pre-batch-c1`, then start C1 (predict.PCA/MCA/FAMD/MFA).
+**Single next action:** tag `elves/pre-batch-c2`, then start C2 (reconst + estim_ncp).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** C1 — `predict.*` family (project held-out individuals onto a fitted model)
+**Batch:** C2 — `reconst` + `estim_ncp`
 
-**Scope (from the plan):** implement `predict_pca`, `predict_mca`, `predict_famd`, `predict_mfa` —
-each projects NEW individuals (rows not used to fit) onto an existing model's axes, returning
-`coord`, `cos2`, and (PCA/MCA/MFA) `dist` / (FAMD) `dist2`. One batch covers all four. Fixtures:
-fit on a train slice, predict a held-out slice, compare to R.
+**Scope (from the plan):**
+- **`reconst(res, ncp)`** — low-rank reconstruction of the original table from a PCA / CA / MFA
+  result, using the first `ncp` axes. R `reconst.R` (~41 lines). For PCA:
+  `Xhat = (ind.coord[,1:ncp] %*% t(var.coord[,1:ncp]) / sqrt(eig)... )` then un-scale by
+  `ecart.type` and add back `centre` — i.e. `Xhat[i,j] = centre_j + ecart.type_j · Σ_{d≤ncp}
+  F_id·G_jd/λ_d`? **Read R `reconst.R` for the exact rank-`ncp` formula and which coords it uses**
+  (it likely reuses `svd$U`/`svd$V`/`svd$vs` directly: `Xhat = U[,1:ncp] diag(vs[1:ncp]) V[,1:ncp]'`
+  then un-whiten by `/sqrt(row.w)/sqrt(col.w)`, un-scale, re-centre). CA's reconstruction is in the
+  chi-square metric. The port stores `res.svd` (U_tilde/vs/V_tilde) + `call` centre/scale/row_w/col_w
+  for PCA — everything needed. Returns a DataFrame the shape of the active table.
+- **`estim_ncp(X, ncp.min, ncp.max, scale, method)`** — estimate the number of PCA components by
+  GCV / generalized cross-validation (the "Smooth" / "GCV" criteria). R `estim_ncp.R`. Returns the
+  chosen `ncp` + the criterion curve. This is a model-selection routine over PCA reconstructions.
 
-**IMPORTANT — the C1 research subagent read the WRONG checkout** (main, not this worktree) and
-falsely claimed FAMD/MFA "don't exist." They DO exist here (`factominer/famd.py`, `mfa.py` — built
-in A1/B1). The R-algorithm half of its report (below) is fetched from GitHub and is reliable; its
-Python-machinery / file:line claims are stale — re-verify against THIS worktree before coding.
+**Build on:** `res.svd` (already `U_tilde`/`vs_full`/`V_tilde`), `res.call` (`mean`/`scale`/`row_w`/
+`col_w`/`active_frame`). `reconst` is essentially `_project_scaled` run backwards — a low-rank
+`U diag(vs) V'` un-whitened/un-scaled. `estim_ncp` loops `reconst` over candidate `ncp`. Likely a
+new `factominer/reconst.py` (+ maybe `estim_ncp` alongside, or in a small `_ncp.py`). Export both.
 
-**R projection recipe (verbatim from `husson/FactoMineR` master, the reliable part):**
-- **predict.PCA:** `nd <- (newdata - centre)/ecart.type; coord <- (t(t(nd)*col.w)) %*% svd$V;
-  dist2 <- rowSums(t(t(nd^2)*col.w)); cos2 <- coord^2/dist2`. `centre/ecart.type/col.w/svd$V` are
-  the TRAINING values. Output `coord, cos2, dist=sqrt(dist2)`. **This is the SAME math as the
-  existing PCA `ind_sup` projection — reuse/extract a shared helper, don't duplicate.**
-- **predict.MCA:** build `tab.disjonctif(newdata)` forced to TRAINING column set+order (absent
-  categories → zero columns); `somme.row = rowSums = #active vars`; `tab <- tab/somme.row`;
-  `coord <- tab %*% svd$V`; `dist2 <- rowSums(t((t(tab)-marge.col)^2/marge.col))`;
-  `cos2 <- coord^2/dist2`. Output `coord, cos2` (**no dist**). `coord` is the **PRINCIPAL** coord
-  (same scale as `ind$coord`), NOT the standard `var$coord`. Needs `marge.col` (CA col margin) +
-  the active categorical frame stashed on the MCA result. Does NOT require the deferred MCA
-  `ind_sup` — predict IS that projection.
-- **predict.FAMD:** quanti block `(x-centre)/ecart.type`; quali block `(disjonctif - prop)/sqrt(prop)`
-  (prop = training category proportions); `cbind`, `coord <- tab %*% svd$V`;
-  `dist2 <- rowSums(tab^2)` (UNWEIGHTED); `cos2 <- coord^2/dist2`. Output `coord, cos2, dist2`
-  (element literally named `dist2` but holds `sqrt(dist2)`).
-- **predict.MFA:** per group, process by its method using that group's separate-analysis training
-  centre/scale (quanti) or training marge.col (quali), then `sweep(tab,2,sqrt(col.w),"*")` and
-  `coord <- tab %*% (global.pca$svd$V * sqrt(col.w))`; `dist2 <- rowSums(tab^2)`. Output
-  `coord, cos2, dist=sqrt(dist2)`.
+**Fixtures (license-clean):** `reconst(PCA(decathlon[,1:10]), ncp=2)` → `reconst/pca_decathlon.json`
+(the n×p reconstructed matrix); `reconst(CA(children), ncp=2)` if CA reconst is in scope;
+`estim_ncp(decathlon[,1:10], ...)` → `estim_ncp/decathlon.json` (the chosen ncp + criterion vector).
+Add a `dump_reconst`/`dump_estim_ncp` to `tools/refresh_r_fixtures.R`.
 
-**Column-name quirk:** PCA/MFA use `"Dim.1"` (dot); **MCA/FAMD use `"Dim 1"` (space)** — the
-`_as_df` conftest loader already tolerates both, but assert against the right one per method.
+**Parity bar:** reconst is a deterministic linear map → **1e-9** on the reconstructed entries (it's
+just coords × loadings). estim_ncp's criterion curve → 1e-7 relative; the chosen integer `ncp` must
+match exactly.
 
-**Build on (re-verify in THIS worktree):** the PCA `ind_sup` block (extract a shared
-`_project_individuals` helper used by both sup-ind and predict); the MCA→CA `svd.V` + `marge_col`;
-FAMD's stashed active scaling (means/sds/category proportions); MFA's per-group `col_w` + global
-`svd.V`. Check what each result's `call` dict already carries; add only what's missing.
+**Risk:** R's `reconst` may reconstruct in the *scaled* space vs the original units — check whether
+it re-adds `centre` and multiplies by `ecart.type` (PCA) or works in the CA chi-square metric. For
+`estim_ncp`, R has multiple criteria (`"GCV"`, `"Smooth"`) — verify which is the default and match
+its exact GCV formula (the residual-variance / penalty expression). Read both R sources first.
 
-**Sign convention:** projected `coord` inherits `svd.V` signs → compare to R with
-`align_to_reference` per axis (as every coord test does). `cos2`/`dist` are sign-invariant. Parity
-bar for projected quantities: **1e-7** (sup tier).
-
-**Fixture plan (license-clean, already-bundled datasets):** PCA on `decathlon[1:20,1:10]` predict
-`[21:23]`; MCA on `tea[1:250,1:18]` predict `[251:255]` (verify no unseen category in test rows —
-widen train slice if so); FAMD on `poison` train/test; MFA on `poison` canonical grouping
-train/test. Append a `dump_predict` helper to `tools/refresh_r_fixtures.R`.
-
-**Risk:** the disjunctive-table rebuild forcing training column order (MCA/FAMD) is the most
-error-prone step — use the training categorical dtype's category list so absent categories still
-emit zero columns in the right positions. MCA principal-vs-standard coord (don't ×√eig). FAMD's
-`dist2`-named-but-sqrt output. Full C1 research report is in this turn's transcript.
-
-**Rollback tag:** `elves/pre-batch-c1` (create before starting).
-
-**Entropy check:** due now (~C1 boundary). At the C1 start: stop idle jobs, rotate oversized logs,
-archive completed execution-log entries if the file is long, confirm learnings/.ai-docs current.
+**Rollback tag:** `elves/pre-batch-c2` (create before starting).
 
 **Deferred (carry forward):** B4b = missing-value handling (PCA/CA/MCA/GPA) + FAMD `ind_sup`;
-Burt + `quali_sup` combination. Slot into the long tail (Phase D) or fold into C1 if the predict
-work naturally surfaces the FAMD/MCA sup-projection machinery.
+Burt + `quali_sup` combination. Slot into the long tail (Phase D).
 
 ---
 

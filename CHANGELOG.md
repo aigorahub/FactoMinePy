@@ -18,6 +18,16 @@ out of pre-release.
 
 ### Added
 
+- **`predict.*` — project new individuals onto a fitted model.** New
+  `factominer.predict(res, newdata)` (dispatching on the model type) projects
+  held-out individuals onto a fitted `PCA`, `MCA`, `FAMD`, or `MFA`, returning
+  `coord`, `cos2`, and the distance to the origin. Each uses the model's
+  training centers / scales / category proportions, so the projection matches
+  `FactoMineR::predict.*` exactly (parity-verified to the supplementary tier for
+  all four). MCA returns the principal row coordinate (same scale as
+  `ind$coord`); MFA reproduces R's per-group new-data scaling. The `PCA`
+  supplementary-individual path was refactored onto the same shared projection
+  helper.
 - **`dimdesc` CA and MCA branches.** `dimdesc` now describes the axes of `CA`
   and `MCA` results, not only `PCA`. MCA routes through the same `condes` path as
   PCA (per-axis `quali` eta²/p.value and `category` Estimate/p.value) and is
