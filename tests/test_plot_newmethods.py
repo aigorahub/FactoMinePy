@@ -52,3 +52,14 @@ def test_plot_ind_point_count():
     ax = plot(res, choix="ind", backend="matplotlib")
     n_pts = sum(c.get_offsets().shape[0] for c in ax.collections)
     assert n_pts >= res.ind.coord.shape[0]
+
+
+def test_mfa_partial_plot():
+    # MFA's partial-individuals map draws the global points + the per-group
+    # partial points from the parity-verified coord_partiel.
+    res = MODELS["MFA"]
+    ax = plot(res, choix="partial", backend="matplotlib")
+    assert ax is not None
+    # methods without partial coordinates raise cleanly
+    with pytest.raises(ValueError, match="partial"):
+        plot(MODELS["FAMD"], choix="partial")

@@ -80,7 +80,45 @@ def plot(
             return plot_ca(res, kind="biplot", axes=axes, ax=ax, title=title)
         if res.method == "MCA":
             return plot_mca(res, kind="biplot", axes=axes, ax=ax, title=title)
+    if choix == "partial":
+        return plot_mfa_partial(res, axes=axes, invisible=invisible, ax=ax, title=title)
     raise ValueError(f"unsupported choix: {choix!r}")
+
+
+def plot_mfa_partial(
+    res: Result,
+    axes: tuple[int, int] = (0, 1),
+    invisible: set[str] | None = None,  # noqa: ARG001
+    ax: Axes | None = None,
+    title: str | None = None,
+) -> Axes:
+    """Partial-individuals factor map (MFA / HMFA): each individual's global point
+    plus one partial point per group, joined by a line. Uses the parity-verified
+    ``res.ind.coord_partiel`` (one row per (individual, group), individual-major)."""
+    cp = getattr(res.ind, "coord_partiel", None) if res.ind is not None else None
+    if cp is None:
+        raise ValueError(f"{res.method} has no partial coordinates (choix='partial')")
+    if ax is None:
+        import matplotlib.pyplot as plt
+        _, ax = plt.subplots(figsize=(7, 6))
+    glob = res.ind.coord.iloc[:, list(axes)].to_numpy()
+    n = glob.shape[0]
+    k = cp.shape[0] // n
+    part = cp.iloc[:, list(axes)].to_numpy()
+    group_names = [str(cp.index[g]).rsplit(".", 1)[-1] for g in range(k)]
+    palette = [f"C{i}" for i in range(k)]
+    ax.scatter(glob[:, 0], glob[:, 1], c="black", s=28, zorder=3)
+    for i in range(n):
+        gx, gy = glob[i]
+        for g in range(k):
+            px, py = part[i * k + g]
+            ax.plot([gx, px], [gy, py], color=palette[g], lw=0.6, alpha=0.55)
+            ax.scatter(px, py, color=palette[g], s=14, zorder=2)
+    for g in range(k):
+        ax.scatter([], [], color=palette[g], label=group_names[g], s=20)
+    ax.legend(title="group", fontsize=8)
+    _axis_decoration(ax, res, axes, title or "Partial individuals factor map (MFA)")
+    return ax
 
 
 # -- PCA --------------------------------------------------------------------
