@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 5,
+    "remaining_batches": 4,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "A1-A4 + B1-B5 + C1-C3 + D1 + D2 done (all CI-green). Start D3 (textual — free text -> doc x word contingency table; deterministic integer counts, exact parity). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise."
+    "next_required_action": "A1-A4 + B1-B5 + C1-C3 + D1-D3 done (all CI-green). Start D4 (utility exports: svd.triplet + tab.disjonctif/.prop; assess simule/write.infile). Then E1-E3 (plots), F1 (release). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,8 +29,8 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "D3",
-    "name": "textual",
+    "id": "D4",
+    "name": "utility exports (svd.triplet, tab.disjonctif)",
     "status": "not_started"
   },
   "phases": [
@@ -231,6 +231,16 @@
       "started_at": "2026-06-01",
       "completed_at": "2026-06-01",
       "parity": "LinearModel/AovSum (contr.sum Type-III ANOVA) + RegBest (best-subset) parity vs live R first try (run 26737903399, zero drift). meansComp + LinearModel Type-II/stepwise deferred."
+    },
+    {
+      "id": "D3",
+      "name": "textual",
+      "status": "complete",
+      "rollback_tag": "elves/pre-batch-d3",
+      "commit": "54952b9",
+      "started_at": "2026-06-01",
+      "completed_at": "2026-06-01",
+      "parity": "textual cont_table + nb_words exact integer parity vs live R (run 26738229192, zero drift)."
     }
   ],
   "review_comments": [

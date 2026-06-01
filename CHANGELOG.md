@@ -18,6 +18,12 @@ out of pre-release.
 
 ### Added
 
+- **`textual` — free text to a document × word contingency table.** New
+  `factominer.textual(tab, num_text, contingence_by, maj_in_min, sep_word)`
+  tokenizes a free-text column (faithfully replicating R's separator handling and
+  lowercasing) and counts word frequencies per document or per grouping level,
+  returning `cont_table` (a drop-in `CA`/`descfreq` input) and `nb_words`.
+  Parity-verified (exact integer counts) against live R FactoMineR 2.14.
 - **Regression family: `LinearModel`, `AovSum`, `RegBest`.**
   `factominer.LinearModel(formula, data, type, selection)` and
   `factominer.AovSum(formula, data)` fit a linear model with `contr.sum`

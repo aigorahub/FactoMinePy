@@ -28,9 +28,11 @@ def _check_cont_table(py: pd.DataFrame, r_records):
 
 
 def _check_nb_words(py: pd.DataFrame, r_records):
-    r = pd.DataFrame(r_records)
-    # Same order (freq-desc, reverse-alpha ties) and same nb.list values.
-    assert list(py["words"]) == list(r["words"]), f"nb_words order: py={list(py['words'])}"
+    # R's nb.words: row name = word, column "words" = global frequency,
+    # "nb.list" = #documents. Same word order (freq-desc, reverse-alpha ties).
+    r = pd.DataFrame(r_records).set_index([c for c in pd.DataFrame(r_records).columns if str(c) == "_row"][0])
+    assert list(py.index) == list(r.index), f"nb_words order: py={list(py.index)} r={list(r.index)}"
+    assert [int(v) for v in py["words"]] == [int(v) for v in r["words"]], "nb_words frequency"
     assert [int(v) for v in py["nb.list"]] == [int(v) for v in r["nb.list"]], "nb.list"
 
 

@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 5 (15 of 20 enumerated batches done; + B4b deferred work)
+- **Planned batches remaining:** 4 (16 of 20 enumerated batches done; + B4b deferred work)
 - **Stop allowed right now:** no
-- **Why:** 15 done (A1–A4, B1–B5, C1–C3, D1, D2); 5 remain (D3, D4, E1–E3, F1) + B4b.
-- **Next required action:** start D3 (textual). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt
-  type=n/ellipses, meansComp, LinearModel Type-II/stepwise.
+- **Why:** 16 done (A1–A4, B1–B5, C1–C3, D1–D3); 4 remain (D4, E1–E3, F1) + B4b.
+- **Next required action:** start D4 (utility exports). Deferred: B4b, Burt+quali_sup, MFA reconst,
+  CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise, textual stacked multi-spec.
 
 ---
 
@@ -119,70 +119,63 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Phase A + B + C done; Phase D in progress. **D1 + D2 complete.** 15 of 20 batches;
+**Status:** Phase A + B + C done; Phase D nearly done. **D1–D3 complete.** 16 of 20 batches;
 everything parity-verified at the deterministic / supplementary bar.
 
-**Active batch:** D2 done → D3 (textual). B4b (missing values + FAMD ind_sup) deferred.
+**Active batch:** D3 done → D4 (utility exports). B4b (missing values + FAMD ind_sup) deferred.
 
-**What was just finished:** D2 — regression family. `LinearModel`/`AovSum` (`linear_model.py`,
-contr.sum Type-III ANOVA + per-level Ttest reconstruction) and `RegBest` (`reg_best.py`, best-subset)
-— all parity-verified first CI try ([[L24]]); no statsmodels. 231 passed / 2 skipped; rpy2-parity
-green (run 26737903399). Commits `9f3e094`, `56a1e39` + close-out. Earlier: Phase A, B1–B5, C1–C3,
-D1 (CaGalt).
+**What was just finished:** D3 — `textual` (`textual.py`), free text → document×word contingency
+table, verbatim from R; exact integer parity. Found R's misnamed `nb.words` frame ([[L25]]). 233
+passed / 2 skipped; rpy2-parity green (run 26738229192). Commit `54952b9` + nb.words fix + close-out.
+Earlier: Phase A, B1–B5, C1–C3, D1 (CaGalt), D2 (regression family).
 
-**Single next action:** tag `elves/pre-batch-d3`, then start D3 (textual) — full spec (from the D3
-research subagent) in the Next Exact Batch section below.
+**Single next action:** tag `elves/pre-batch-d4`, then start D4 (utility exports) — spec in the Next
+Exact Batch section below.
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** D3 — `textual` (free text → document×word contingency table). Low-risk: deterministic
-**integer counting**, so parity is exact (atol=0), no SVD/eigen/stochastic. Full D3 research report
-in this turn's transcript. `textual` does NOT run a CA — it just builds the table (which then feeds
-the already-shipped `descfreq`/`CA`).
+**Batch:** D4 — utility exports. Mostly **expose + verify existing primitives**. Recommended scope:
+`svd.triplet` + `tab.disjonctif` (+ `.prop`). Assess `simule`/`write.infile` (likely defer — see
+below). R sources fetched (`svd.triplet.R`, `tab.disjonctif.R`, `tab.disjonctif.prop.R`, `simule.r`,
+`write.infile.R`); decode via `gh api repos/cran/FactoMineR/contents/R/<name> --jq '.content' | base64 -d`.
 
-**Signature:** `textual(tab, num_text, contingence_by=None, maj_in_min=True, sep_word=None)`.
-`num_text` = the free-text column; `contingence_by` = grouping column(s) (default in R is
-`1:ncol(tab)`, but the common case is one grouping factor, or `num_text` itself = one row per
-document); `maj_in_min` lowercases; `sep_word` = the separator set.
+**`svd_triplet(X, row_w=None, col_w=None, ncp=Inf)` — the weighted-SVD primitive (R `svd.triplet`):**
+- `row.w <- row.w/sum(row.w)`; `ncp <- min(ncp, nrow-1, ncol)`; `Xw = t(t(X)·√col.w)·√row.w`.
+- SVD of `Xw` (with the `ncol<nrow` vs transpose branch — for parity just `np.linalg.svd`).
+- **Sign convention:** `mult = sign(colSums(V))` (0→1), applied to BOTH U and V (only when ncp>1).
+- **Un-whiten:** `U <- U/√row.w`, `V <- V/√col.w`. Return `vs` (=d[1:ncp]), `U`, `V`.
+- Build on `factominer/_svd.py` (`standard_svd` already does the SVD + a sign align — but check its
+  sign rule matches `colSums(V)`; the port stores WHITENED U/V on results, so `svd_triplet` must
+  return the UN-whitened R-convention U/V = whitened/√w, the same conversion used in CaGalt [[L23]]).
+  Likely a thin new `factominer/_svd.py` public `svd_triplet` (or a small module) + export. Verify
+  vs an R fixture (decathlon, with and without non-uniform row.w/col.w).
 
-**Tokenizer (replicate R's `chartr`/`strsplit` literally — the whole game):**
-- Default `sep.word = "; (),?./:'!=+\n;{}-"` (18 chars incl. space and `\n`). R maps EVERY separator
-  char to `";"` via `chartr` (a positional 1:1 map → `str.maketrans({c: ";" for c in SEP})`).
-- Then: lowercase **A–Z only** (R's `chartr("A-Z","a-z")`, NOT `str.lower()` — accents differ);
-  collapse `";;"→";"` (loop `while ";;" in s`); strip a **leading** `";"` (one-sided — a trailing
-  separator leaves a trailing `""` token); `split(";")`.
-- Vocabulary = sorted unique tokens (R `as.factor` levels = ASCII/C-locale sort → Python `sorted`).
-  Build the groups×words integer count matrix; **no min-frequency filter.**
+**`tab_disjonctif(df)` + `tab_disjonctif_prop(df)` — the indicator builders (R `tab.disjonctif.R`):**
+- `tab.disjonctif`: the 0/1 disjunctive (one-hot) table with R's column naming. Already built inline
+  in `mca.py`/`famd.py` and `predict.py:_build_indicator` — centralize a public version that matches
+  R's column-label rule (the `y/n`/`Y/N` → `var.level` prefixing; read `tab.disjonctif.R` for the
+  exact naming). `tab.disjonctif.prop` fills NAs with the column proportion (read the source).
+- Fixture: `tab.disjonctif(tea[,1:4])` or a small factor frame; exact match (0/1 ints) + column names.
 
-**Output:** an object/dict with `cont_table` (DataFrame, groups × words, integer counts — a drop-in
-`descfreq`/`CA` input) and `nb_words` (DataFrame, columns `words` / `nb.list` = #documents containing
-each word, **sorted by descending global frequency**). `contingence_by`: support default (group by
-row name = per-document), a single grouping factor (`groupby().sum()`), and the length-2 crossed
-factor (`paste(f1,f2,".")`); stacked multi-spec can be deferred. Skip the dead `accent` arg.
+**`simule` / `write.infile` — ASSESS, likely DEFER:** `simule` (R `simule.r`) simulates data from a
+PCA result — likely **stochastic** (rnorm) → would need a weaker tier or exclusion; read it and if
+stochastic, defer like GPA/ellipses. `write.infile` writes a result to a text file (I/O formatting,
+not analytic) → **out of scope** (record the decision, don't implement). Confirm by reading both.
 
-**Gaps (additive):** new `factominer/textual.py` + export; new synthetic `datasets/data/textual_synth.csv`
-(NO bundled dataset has free text) + `load_textual_synth()` + PROVENANCE (MIT, like `gpa_synth`).
+**Parity bar:** `svd_triplet` vs (1e-9 coord-like); `tab.disjonctif` exact (integer + labels). License-
+clean: reuse bundled `decathlon` (svd) and `tea`/`poison` (disjonctif).
 
-**Fixture (license-clean synthetic, ASCII short sentences + a grouping factor):** ~6 rows, a `review`
-text column + a `grp` factor (mixed case to exercise `maj_in_min`; a comma/hyphen to exercise the
-separator; NO trailing punctuation, to avoid empty-token JSON-key issues). R call:
-`textual(txt, num.text=which(names(txt)=="review"), contingence.by=which(names(txt)=="grp"))`; also a
-per-document variant (`contingence.by = num.text`) and optionally `maj.in.min=FALSE`. Dump
-`cont.table` + `nb.words`. **Parity = exact integer match (atol=0).**
-
-**Sharp edges:** lowercase A–Z only (not `.lower()`); the trailing-empty-token / one-sided lead-strip;
-vocabulary/column order (ASCII sort); keep fixture text ASCII + no trailing punctuation.
-
-**Rollback tag:** `elves/pre-batch-d3` (create before starting).
+**Rollback tag:** `elves/pre-batch-d4` (create before starting).
 
 **Deferred (carry forward):** B4b = missing values (PCA/CA/MCA/GPA) + FAMD `ind_sup`; Burt +
 `quali_sup`; MFA `reconst` (all-quanti); CaGalt `type="n"` + `conf_ellip`; `meansComp`; LinearModel
-Type-II/AIC-BIC selection; textual stacked multi-spec `contingence_by`.
+Type-II/AIC-BIC selection; textual stacked multi-spec; D4 `simule`/`write.infile` (assess).
 
-**After D3:** D4 (utility exports — `svd.triplet`/`tab.disjonctif`/`simule`/`write.infile`, mostly
-exposing existing primitives), then E1–E3 (plots for new methods), then F1 (release).
+**After D4:** E1–E3 (plots for the new methods — plot data-layer parity; E3 ggplot likely out of
+scope), then F1 (release: README all-✅, version cut, final-review fan-out, tag → PyPI). **Never
+merge — hand off PR #5 for the user.**
 
 ---
 

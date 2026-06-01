@@ -30,7 +30,10 @@ class TextualResult:
     """Result of :func:`textual`: the contingency table and the word summary."""
 
     cont_table: pd.DataFrame  # groups × words (integer counts)
-    nb_words: pd.DataFrame    # columns ``words`` / ``nb.list``, freq-descending
+    # Indexed by word (freq-descending order); column ``words`` holds the global
+    # frequency and ``nb.list`` the number of documents containing the word
+    # (matching R's — confusingly named — ``nb.words`` data frame).
+    nb_words: pd.DataFrame
 
 
 def _tokenize(text: str, sep_word: str, maj_in_min: bool) -> list[str]:
@@ -84,14 +87,16 @@ def textual(
         grouped = per_doc.groupby(keys, sort=True).sum()
         grouped.index.name = None
 
-    # nb.words: per word, the number of documents it appears in, ordered as R's
-    # ``rev(order(global_freq))`` — descending frequency, ties broken by
-    # descending vocabulary index (i.e. reverse-alphabetical).
+    # nb.words: indexed by word, ordered as R's ``rev(order(global_freq))`` —
+    # descending frequency, ties broken by descending vocabulary index
+    # (reverse-alphabetical). Column ``words`` = the global frequency,
+    # ``nb.list`` = the number of documents containing the word (R's naming).
     global_freq = per_doc.sum(axis=0).to_numpy()
     nb_list = (per_doc > 0).sum(axis=0).to_numpy()
     order = sorted(range(len(vocab)), key=lambda i: (int(global_freq[i]), i), reverse=True)
     nb_words = pd.DataFrame(
-        {"words": [vocab[i] for i in order], "nb.list": [int(nb_list[i]) for i in order]}
+        {"words": [int(global_freq[i]) for i in order], "nb.list": [int(nb_list[i]) for i in order]},
+        index=[vocab[i] for i in order],
     )
     return TextualResult(cont_table=grouped, nb_words=nb_words)
 

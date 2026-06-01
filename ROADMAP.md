@@ -39,8 +39,8 @@ The complete closure of feature parity is planned as a single large run:
 3. **Auxiliary functions** ✅ — `predict.*` (PCA/MCA/FAMD/MFA), `reconst`
    (PCA/CA), `estim_ncp` (GCV/Smooth), `descfreq`, all parity-verified.
 4. **Long tail** — `CaGalt` ✅ (type s/c); regression family ✅
-   (`LinearModel`/`AovSum`/`RegBest`; `meansComp` deferred); `textual`, utility
-   exports next.
+   (`LinearModel`/`AovSum`/`RegBest`; `meansComp` deferred); `textual` ✅;
+   utility exports (`svd.triplet`/`tab.disjonctif`/…) next.
 5. **Plotting depth** — plots for the new methods, `autoLab`, `plotellipses`,
    `ellipseCA`, partial plots.
 6. **Release** — README all-✅, version cut.

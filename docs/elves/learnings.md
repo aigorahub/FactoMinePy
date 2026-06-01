@@ -392,6 +392,23 @@ a near-deterministic response (decathlon `Points` is an exact function of the 10
 events → R²≈1, p-values underflow, criteria can't discriminate); `Rank` gives a
 non-degenerate spread where r2/Cp/adjr2 pick different best sizes.
 
+### L25 — `textual`: a chartr-based tokenizer and the misnamed `nb.words` frame
+
+R's `textual` tokenizer is a positional `chartr` map (NOT a regex): every char
+of `sep.word` (default `"; (),?./:'!=+\n;{}-"`) → `";"`, lowercase **ASCII A–Z
+only** (`chartr("A-Z","a-z")`, not locale `.lower()` — accents differ), collapse
+`";;"→";"`, strip ONE leading `";"` (one-sided → a trailing separator leaves a
+trailing `""` token), `strsplit(";")`. Vocabulary = `as.factor` levels = ASCII
+sort.
+
+The `nb.words` output frame is **misnamed**: its row names are the words, the
+column literally called `"words"` holds the **global frequency**, and `nb.list`
+is the document count. It is ordered by `rev(order(global_freq))` — descending
+frequency, ties broken by **descending vocabulary index** (reverse-alphabetical),
+which is `sorted(range(n), key=lambda i:(freq[i], i), reverse=True)` in Python,
+NOT a stable argsort. The `cont.table` columns stay in plain alphabetical
+(vocabulary) order. Counts are integers → exact parity (atol=0).
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch

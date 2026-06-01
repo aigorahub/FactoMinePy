@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-06-01 (D2 regression family complete, parity-verified)
-- **Current phase:** Phase A + B + C done; Phase D — D1 + D2 done, D3 (textual) next
-- **Active batch:** D2 → done; next D3 (textual). B4b + meansComp deferred.
-- **Last completed batch:** D2 (LinearModel/AovSum + RegBest) — contr.sum Type-III ANOVA + best-subset, parity vs live R
-- **Next exact batch:** D3 (textual — free text → document×word contingency table)
+- **Last updated:** 2026-06-01 (D3 textual complete, parity-verified)
+- **Current phase:** Phase A + B + C done; Phase D — D1–D3 done, D4 (utility exports) next
+- **Active batch:** D3 → done; next D4 (svd.triplet/tab.disjonctif/…). B4b + meansComp deferred.
+- **Last completed batch:** D3 (textual) — free text → doc×word contingency table, exact parity vs live R
+- **Next exact batch:** D4 (utility exports — svd.triplet, tab.disjonctif/.prop; assess simule/write.infile)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `56a1e39` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→231 passed, 2 skipped (+108 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `54952b9` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→233 passed, 2 skipped (+110 parity tests; skips unchanged)
 
 ---
 
@@ -66,6 +66,40 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch D3 — textual — 2026-06-01 (COMPLETE — exact parity vs live R)
+
+**Phase:** Complete. rpy2-parity CI green; textual fixtures + zero drift.
+**Rollback tag:** `elves/pre-batch-d3` (pushed).
+
+**Contract:** `textual(tab, num_text, contingence_by, maj_in_min, sep_word)` — tokenize a free-text
+column into a document×word contingency table. New `factominer/textual.py`. Does NOT run a CA; the
+`cont_table` feeds the shipped `descfreq`/`CA`.
+
+**Implementation (verbatim from R `textual.r`):** the chartr-based tokenizer — map every separator
+char to `";"`, lowercase ASCII A–Z only, collapse `";;"`, strip one leading `";"`, split. Groups×words
+integer counts (by document / a factor / a crossed pair). `nb_words` = words ordered freq-desc with
+reverse-alpha tie-break (`rev(order)`). [[L25]]
+
+**The bug found (first CI run; cont_table matched immediately):** R's `nb.words` frame is misnamed —
+row names are the words, the column called `"words"` holds the **global frequency**, `nb.list` is the
+document count. Fixed the Python structure + test to match.
+
+**Fixture (license-clean synthetic):** `textual_synth.csv` (6 ASCII sentences + a `grp` factor, MIT)
++ `load_textual_synth()` + PROVENANCE. Dumps `textual(...by grp)` and `(...by document)`. Exact
+integer match (atol=0).
+
+**Checks:** ruff clean; **233 passed / 2 skipped**; rpy2-parity green.
+
+**Regression attestation:** additive — new `textual.py`, new synthetic dataset + loader, new test.
+No existing engine touched. **Confidence: HIGH.**
+
+**Docs:** README (textual row), ROADMAP, CHANGELOG, learnings L25, survival guide +
+`.elves-session.json` advanced to D4.
+
+**Commits:** `54952b9` (impl), + nb.words-structure fix + close-out.
+
+---
 
 ## Batch D2 — regression family — 2026-06-01 (COMPLETE — parity vs live R, first CI try)
 
