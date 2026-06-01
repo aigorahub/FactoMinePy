@@ -143,12 +143,13 @@ def test_dmfa_group_cos2(r_dmfa_decathlon):
 
 
 def test_dmfa_cor_dim_gr(r_dmfa_decathlon):
+    # R's cor.dim.gr is a named list (keyed by level) -> a JSON object.
     payload = r_dmfa_decathlon.get("cor.dim.gr")
     if payload is None:
         return
     res = _dmfa()
-    for j, lv in enumerate(_LEVELS):
-        r, labels = _labeled_block(payload[j], 5)
+    for lv in _LEVELS:
+        r, labels = _labeled_block(payload[lv], 5)
         py = res.cor_dim_gr[lv].loc[labels].to_numpy()[:, :5]
         # cor(FS_j) is invariant to global-axis sign flips (both axes flip together).
         assert np.allclose(py, r, atol=1e-9, rtol=0), f"cor.dim.gr[{lv}]"
@@ -159,8 +160,8 @@ def test_dmfa_var_partiel(r_dmfa_decathlon):
     if payload is None:
         return
     res = _dmfa()
-    for j, lv in enumerate(_LEVELS):
-        r, labels = _labeled_block(payload[j], 5)
+    for lv in _LEVELS:
+        r, labels = _labeled_block(payload[lv], 5)
         py = res.var_partiel[lv].loc[labels].to_numpy()[:, :5]
         assert np.allclose(align_to_reference(py, r), r, atol=1e-9, rtol=0), f"var.partiel[{lv}]"
 
