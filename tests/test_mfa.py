@@ -65,6 +65,19 @@ def _square_matrix(payload) -> tuple[np.ndarray, list[str]]:
     return arr, labels
 
 
+def _align_2d(py: np.ndarray, ref: np.ndarray) -> np.ndarray:
+    """Sign-align ``py`` to ``ref`` along BOTH axes. ``partial.axes`` rows are a
+    group's *separate*-analysis axes (whose SVD sign convention can differ from
+    R's) and columns are the global axes (already sign-ambiguous), so the matrix
+    carries a row-sign AND a column-sign ambiguity. Align columns first, then
+    flip any row whose dot with the reference is negative."""
+    out = align_to_reference(py, ref)
+    for p in range(out.shape[0]):
+        if float(out[p] @ ref[p]) < 0:
+            out[p] = -out[p]
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Eigenvalues + SVD
 # ---------------------------------------------------------------------------
@@ -298,7 +311,7 @@ def test_mfa_partial_axes_coord(r_mfa_poison):
     r_arr, r_labels = _labeled_block(pax["coord"], 5)
     res = _mfa()
     py = res.partial_axes.coord.loc[r_labels].to_numpy()[:, :5]
-    py_aligned = align_to_reference(py, r_arr)
+    py_aligned = _align_2d(py, r_arr)
     assert np.allclose(py_aligned, r_arr, atol=1e-9, rtol=0)
 
 
@@ -309,7 +322,7 @@ def test_mfa_partial_axes_cor(r_mfa_poison):
     r_arr, r_labels = _labeled_block(pax["cor"], 5)
     res = _mfa()
     py = res.partial_axes.cor.loc[r_labels].to_numpy()[:, :5]
-    py_aligned = align_to_reference(py, r_arr)
+    py_aligned = _align_2d(py, r_arr)
     assert np.allclose(py_aligned, r_arr, atol=1e-9, rtol=0)
 
 
