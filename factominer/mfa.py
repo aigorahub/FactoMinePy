@@ -57,6 +57,18 @@ _QUANTI_TYPES = {"s", "c"}
 _SUPPORTED_TYPES = {"s", "c", "n"}
 
 
+def _weighted_corr(a: np.ndarray, b: np.ndarray, w: np.ndarray) -> float:
+    """Weighted (ML / population) Pearson correlation — matches R's
+    ``cov.wt(cbind(a, b), wt, method="ML", cor=TRUE)$cor[1,2]``."""
+    w = w / w.sum()
+    da = a - float((a * w).sum())
+    db = b - float((b * w).sum())
+    cov = float((w * da * db).sum())
+    va = float((w * da * da).sum())
+    vb = float((w * db * db).sum())
+    return cov / np.sqrt(va * vb) if va > 0 and vb > 0 else 0.0
+
+
 def _modality_label(var: str, level: str) -> str:
     """R ``tab.disjonctif`` modality naming: the bare category level, except
     levels that are exactly ``y``/``n``/``Y``/``N`` get the variable name
@@ -129,6 +141,7 @@ def MFA(  # noqa: N802 — mirrors R's function name
     data_cols_of_group: list[list[int]] = []  # global-PCA column indices per group
     lam1: list[float] = []              # first separate eigenvalue per group
     dist2_sep: list[float] = []         # Σ(λ_l/λ₁)² per group (separate spectrum)
+    separate: list[Result] = []         # each group's separate analysis (for partial.axes)
 
     col_cursor = 0
     for g, (start, end) in enumerate(col_ranges):
@@ -148,6 +161,7 @@ def MFA(  # noqa: N802 — mirrors R's function name
                 raise ValueError(f"group {g + 1} is type {t!r} but has non-numeric columns")
             Q = block.to_numpy(dtype=np.float64)
             sep = PCA(block, scale_unit=(t == "s"))
+            separate.append(sep)
             sep_eig = sep.eig["eigenvalue"].to_numpy()
             lam1.append(float(sep_eig[0]))
             dist2_sep.append(float(((sep_eig / sep_eig[0]) ** 2).sum()))
@@ -170,6 +184,7 @@ def MFA(  # noqa: N802 — mirrors R's function name
             for c in cols:
                 block_cat[c] = block_cat[c].astype("category")
             sep = MCA(block_cat)
+            separate.append(sep)
             sep_eig = sep.eig["eigenvalue"].to_numpy()
             lam1.append(float(sep_eig[0]))
             dist2_sep.append(float(((sep_eig / sep_eig[0]) ** 2).sum()))
@@ -230,14 +245,46 @@ def MFA(  # noqa: N802 — mirrors R's function name
     ncp_eff = int(min(ncp, pca.eig.shape[0]))
     dim_names = list(pca.ind.coord.columns[:ncp_eff])
     eig_vals = pca.eig["eigenvalue"].to_numpy()
+    n_ind = data.shape[0]
+    K = nbre_group  # number of active groups (all active in this case)
 
-    # --- ind: straight from the global PCA. R MFA's res$ind exposes only
-    #     coord/contrib/cos2 (+ within.inertia/coord.partiel, A2 scope); it has
-    #     no `dist`, so we don't surface one either (schema parity). ---
+    # --- partial individual coordinates (R/MFA.R:458-477) ---
+    # For group g, project the individuals using ONLY group g's centered columns
+    # (every other group held at the global mean), scaled by K, onto the global
+    # axes: data.partiel = broadcast centre with group g's columns = data, so
+    # Xis = data.partiel − centre has group g centered and all other groups 0.
+    # coord = K·(Xis·col.w)·V_unwhitened = K·(Xis·√col.w)·V_tilde (pca.svd.V is
+    # the whitened V_tilde, so the √col.w factor restores R's unwhitened V).
+    centre = np.asarray(pca.call["mean"], dtype=np.float64)
+    col_w_active = np.asarray(pca.call["col_w"], dtype=np.float64)
+    v_tilde = pca.svd.V[:, :ncp_eff]
+    sqrt_cw = np.sqrt(col_w_active)
+    data_centered = data - centre
+    partial_coords: list[np.ndarray] = []  # K arrays, each (n × ncp_eff)
+    for g in range(nbre_group):
+        xis = np.zeros_like(data)
+        idx = data_cols_of_group[g]
+        xis[:, idx] = data_centered[:, idx]
+        partial_coords.append(K * (xis * sqrt_cw[None, :]) @ v_tilde)
+    # Assemble (n·K) × ncp, rows interleaved by individual (R's nom.ligne order:
+    # ind_1.group_1, ind_1.group_2, …, ind_1.group_K, ind_2.group_1, …).
+    ind_names = [str(x) for x in X.index]
+    coord_partiel_arr = np.empty((n_ind * nbre_group, ncp_eff))
+    partiel_labels: list[str] = []
+    for i in range(n_ind):
+        for g in range(nbre_group):
+            coord_partiel_arr[i * nbre_group + g] = partial_coords[g][i]
+            partiel_labels.append(f"{ind_names[i]}.{name_group[g]}")
+    coord_partiel = pd.DataFrame(coord_partiel_arr, index=partiel_labels, columns=dim_names)
+
+    # --- ind: straight from the global PCA (+ coord.partiel). R MFA's res$ind
+    #     exposes coord/contrib/cos2/coord.partiel (and within.inertia, deferred);
+    #     it has no `dist`, so we don't surface one either (schema parity). ---
     ind_block = Block(
         coord=pca.ind.coord[dim_names].copy(),
         cos2=pca.ind.cos2[dim_names].copy(),
         contrib=pca.ind.contrib[dim_names].copy(),
+        coord_partiel=coord_partiel,
     )
 
     # --- quanti.var: the quantitative active columns of the global var block ---
@@ -308,14 +355,67 @@ def MFA(  # noqa: N802 — mirrors R's function name
     group_labels = list(name_group) + ["MFA"]
     dist2_group = np.diag(Lg)[:nbre_group]
 
+    # group$correlation (R/MFA.R:478-483): weighted (ML) correlation of each
+    # group's partial individual coords with the global coords, per axis.
+    global_coord = pca.ind.coord[dim_names].to_numpy()
+    cor_grpe = np.zeros((nbre_group, ncp_eff))
+    for g in range(nbre_group):
+        for k in range(ncp_eff):
+            cor_grpe[g, k] = _weighted_corr(partial_coords[g][:, k], global_coord[:, k], rw)
+
     group_block = MFAGroup(
         coord=pd.DataFrame(coord_group, index=name_group, columns=dim_names),
         contrib=pd.DataFrame(contrib_group, index=name_group, columns=dim_names),
         cos2=pd.DataFrame(cos2_group, index=name_group, columns=dim_names),
         dist2=pd.Series(dist2_group, index=name_group, name="dist2"),
+        correlation=pd.DataFrame(cor_grpe, index=name_group, columns=dim_names),
         Lg=pd.DataFrame(Lg, index=group_labels, columns=group_labels),
         RV=pd.DataFrame(RV, index=group_labels, columns=group_labels),
     )
+
+    # --- partial.axes (R/MFA.R:521-554): each group's separate principal axes,
+    #     standardized, correlated with the global axes. coord == cor (the tab is
+    #     unit-variance, so dividing by its sd is a no-op); contrib is the squared
+    #     coord weighted by the group's separate eigenvalue ratio, normalized to
+    #     100 per axis. ---
+    tab_cols: list[np.ndarray] = []
+    pa_labels: list[str] = []
+    pa_eig_ratio: list[float] = []
+    for g in range(nbre_group):
+        sep_coord = separate[g].ind.coord.to_numpy()
+        sep_eig_g = separate[g].eig["eigenvalue"].to_numpy()
+        nbcol = int(min(ncp_eff, sep_coord.shape[1]))
+        for col_l in range(nbcol):
+            tab_cols.append(sep_coord[:, col_l])
+            pa_labels.append(f"Dim{col_l + 1}.{name_group[g]}")
+            pa_eig_ratio.append(float(sep_eig_g[col_l] / sep_eig_g[0]))
+    tab = np.column_stack(tab_cols)
+    tab_centre = (tab * rw[:, None]).sum(axis=0)
+    tab_c = tab - tab_centre
+    tab_sd = np.sqrt((tab_c**2 * rw[:, None]).sum(axis=0))
+    tab_sd = np.where(tab_sd <= 1e-8, 1.0, tab_sd)
+    tab_scaled = tab_c / tab_sd
+    u_tilde = pca.svd.U[:, :ncp_eff]
+    pa_coord = (tab_scaled * np.sqrt(rw)[:, None]).T @ u_tilde  # (P_axes × ncp_eff)
+    pa_sigma = np.sqrt((tab_scaled**2 * rw[:, None]).sum(axis=0))
+    pa_sigma = np.where(pa_sigma <= 0, 1.0, pa_sigma)
+    pa_cor = pa_coord / pa_sigma[:, None]
+    pa_contrib = pa_coord**2 * np.asarray(pa_eig_ratio)[:, None]
+    pa_col_sums = pa_contrib.sum(axis=0)
+    pa_col_sums = np.where(pa_col_sums <= 0, 1.0, pa_col_sums)
+    pa_contrib = pa_contrib / pa_col_sums[None, :] * 100.0
+    partial_axes = Block(
+        coord=pd.DataFrame(pa_coord, index=pa_labels, columns=dim_names),
+        cor=pd.DataFrame(pa_cor, index=pa_labels, columns=dim_names),
+        contrib=pd.DataFrame(pa_contrib, index=pa_labels, columns=dim_names),
+    )
+
+    # --- inertia.ratio (R/MFA.R:484-486): per-axis between/total inertia ratio. ---
+    it = np.zeros(ncp_eff)
+    for g in range(nbre_group):
+        it += (partial_coords[g] ** 2 * rw[:, None]).sum(axis=0)
+    global_inertia = (global_coord**2 * rw[:, None]).sum(axis=0)
+    inertia_ratio = pd.Series(global_inertia * K / it, index=dim_names, name="inertia.ratio")
 
     return Result(
         eig=eig,
@@ -334,5 +434,7 @@ def MFA(  # noqa: N802 — mirrors R's function name
         quanti_var=quanti_var,
         quali_var=quali_var,
         group=group_block,
+        partial_axes=partial_axes,
+        inertia_ratio=inertia_ratio,
         method="MFA",
     )

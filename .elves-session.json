@@ -28,7 +28,7 @@
     "status": "captured",
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
-  "current_batch": {"id": "A2", "name": "MFA completeness", "status": "pending"},
+  "current_batch": {"id": "A2", "name": "MFA completeness", "status": "in_progress"},
   "phases": [
     {"id": "A", "name": "MFA family", "batches": ["A1 MFA core", "A2 MFA completeness", "A3 HMFA", "A4 DMFA"]},
     {"id": "B", "name": "Completeness in shipped methods", "batches": ["B1 FAMD sup vars", "B2 MCA sup-block parity + Burt", "B3 GPA edge cases", "B4 missing values + row weights", "B5 dimdesc CA/MCA"]},
@@ -39,7 +39,9 @@
   ],
   "batches": [
     {"id": "A1", "name": "MFA core", "status": "complete", "rollback_tag": "elves/pre-batch-a1", "commit": "81c94be", "started_at": "2026-05-31", "completed_at": "2026-05-31", "parity": "21/21 vs live R FactoMineR 2.14"},
-    {"id": "A2", "name": "MFA completeness", "status": "pending", "rollback_tag": "elves/pre-batch-a2", "commit": null, "started_at": null, "completed_at": null}
+    {"id": "A2", "name": "MFA completeness", "status": "in_progress", "rollback_tag": "elves/pre-batch-a2", "commit": null, "started_at": "2026-05-31", "completed_at": null}
   ],
-  "review_comments": []
+  "review_comments": [
+    {"source": "copilot", "batch": "A1", "cycle": 1, "type": "review_comment", "summary": "Absolute worktree path / GitHub username embedded in docs/elves/* and .elves-session.json (non-portable, leaks local env)", "disposition": "dismissed", "reason": "Operational elves artifacts (survival guide / execution log / session JSON) intentionally record the real worktree path for the compaction-recovery protocol; they are git rm'd from the PR at Final Completion so paths never reach merged product code. No product-code findings raised. Disposition posted as PR comment #4589000266."}
+  ]
 }

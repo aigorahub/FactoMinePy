@@ -90,9 +90,11 @@ dump_famd <- function(res) {
 
 dump_mfa <- function(res) {
   grp <- res$group
+  pax <- res$partial.axes
   list(
     eig        = as.data.frame(res$eig),
     ind        = dump_block(res$ind),
+    ind.coord.partiel = if (!is.null(res$ind$coord.partiel)) as.data.frame(res$ind$coord.partiel) else NULL,
     quanti.var = dump_block(res$quanti.var),
     quali.var  = dump_block(res$quali.var),
     group = list(
@@ -100,9 +102,16 @@ dump_mfa <- function(res) {
       contrib     = if (!is.null(grp$contrib))     as.data.frame(grp$contrib)     else NULL,
       cos2        = if (!is.null(grp$cos2))        as.data.frame(grp$cos2)        else NULL,
       dist2       = if (!is.null(grp$dist2))       as.numeric(grp$dist2)          else NULL,
+      correlation = if (!is.null(grp$correlation)) as.data.frame(grp$correlation) else NULL,
       Lg          = if (!is.null(grp$Lg))          as.data.frame(grp$Lg)          else NULL,
       RV          = if (!is.null(grp$RV))          as.data.frame(grp$RV)          else NULL
     ),
+    partial.axes = list(
+      coord   = if (!is.null(pax$coord))   as.data.frame(pax$coord)   else NULL,
+      cor     = if (!is.null(pax$cor))     as.data.frame(pax$cor)     else NULL,
+      contrib = if (!is.null(pax$contrib)) as.data.frame(pax$contrib) else NULL
+    ),
+    inertia.ratio = if (!is.null(res$inertia.ratio)) as.numeric(res$inertia.ratio) else NULL,
     svd        = list(vs = as.numeric(res$svd$vs))
   )
 }

@@ -13,7 +13,7 @@
 ## Run Digest
 
 - **Last updated:** 2026-05-31 (A1 complete, parity-verified)
-- **Current phase:** Batch A1 (MFA core) complete; re-triggering CI for zero-drift confirmation
+- **Current phase:** Batch A1 complete + CI-confirmed zero drift; Batch A2 (MFA completeness) in progress
 - **Active batch:** A1 → done; next A2
 - **Last completed batch:** A1 (MFA core) — 21/21 parity tests green vs live R
 - **Next exact batch:** A2 (MFA completeness — partial axes, group$correlation, coord.partiel)
@@ -67,6 +67,41 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
+## Batch A2 — MFA completeness — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+
+**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Rollback tag:** `elves/pre-batch-a2` (pushed).
+
+**Contract:** extend `factominer/mfa.py` with MFA's partial-factor-map machinery:
+`ind$coord.partiel` (per-group partial individual coords, `(n·K)×ncp`), `group$correlation`
+(weighted-ML correlation of partial vs global coords), `partial.axes` (coord/cor/contrib — each
+group's separate principal axes vs the global axes), `inertia.ratio` (per-axis between/total
+inertia). Reuses A1's `data`/`ponderation`/global-PCA/separate-analyses (now retained).
+
+**Build on:** A1's global PCA (`pca.svd.U/V`, `pca.call["mean"]`/`["col_w"]`), the per-group
+separate analyses (`separate[]`, newly kept), `data_cols_of_group`. New containers:
+`Block.coord_partiel`, `Result.partial_axes` (Block), `Result.inertia_ratio` (Series),
+`MFAGroup.correlation`.
+
+**Source-verified (MFA.R):** coord.partiel L458-477 (`K·Xis·col.w·V`, Xis = group g centered /
+others 0); group$correlation L478-483 (`cov.wt(..., method="ML")`); partial.axes L521-554
+(separate ind coords standardized, projected on `svd$U`; contrib = coord²·sep_eig_ratio, col-norm
+to 100; coord==cor since the tab is unit-variance); inertia.ratio L484-486.
+
+**Local checks (pre-CI):** ruff clean; pytest 150 passed / 2 skipped (6 A2 tests no-op until the
+extended fixture lands). **Barycenter invariant holds** (mean over groups of partial coords ==
+global coord, max diff 7e-15) — the defining MFA property. partial.axes contrib columns sum to 100;
+coord==cor. inertia.ratio in (0,1] as expected.
+
+**Deferred (recorded):** `partial.axes$cor.between` (P×P cross-correlation of separate axes, with
+R's inconsistent `Dim.1.group` labeling), `ind$within.inertia`/`within.partial.inertia`,
+`summary.quanti`, `quali.var$coord.partiel`. Plus the A1 deferrals (sup groups, f/m types).
+
+**Next:** push → trigger CI (extended `dump_mfa` regenerates `mfa/poison.json` with the A2
+channels) → verify the 6 A2 tests pass vs fresh R → commit fixture → confirm zero drift.
+
+---
+
 ## Batch A1 — MFA core — 2026-05-31 (COMPLETE — 21/21 parity vs live R)
 
 **Phase:** Implement → Validate → Review → Document, all done. Parity-verified.
@@ -117,8 +152,8 @@ learnings [[L15]]. No tolerance was loosened; no fixture was edited to pass.
 - [x] MFA runs on canonical poison `group=c(2,2,5,6) type=c("s","n","n","n")`;
       internal check: group$coord sums to the eigenvalue per axis (Dim.1 = 3.0897 = eig₁).
 - [x] **rpy2-parity** vs live R (eig 1e-10; coord/cos2/cor 1e-9; contrib 1e-8; v.test 1e-6) —
-      **21/21 MFA tests pass** against the CI-generated R fixture; re-trigger pending to confirm
-      committed-fixture zero drift.
+      **21/21 MFA tests pass**; CI run 26731204533 **green on both jobs (zero drift confirmed)** —
+      the committed `mfa/poison.json` byte-matches freshly-generated live R output.
 
 **Pre-implementation survey / source verification:**
 - Read R `MFA.R` (master) L1-40 (funcLg/moy.p/ec), L180-320 (data assembly + ponderation),

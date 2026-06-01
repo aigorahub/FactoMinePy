@@ -31,6 +31,9 @@ class Block:
     inertia: pd.Series | None = None
     v_test: pd.DataFrame | None = None
     eta2: pd.DataFrame | None = None
+    # MFA's per-group partial coordinates (``res$ind$coord.partiel``): an
+    # ``(n·K) × ncp`` frame with one row per (individual, group) pair.
+    coord_partiel: pd.DataFrame | None = None
 
 
 @dataclass(frozen=True)
@@ -90,6 +93,11 @@ class Result:
     quali_var: Block | None = None
     # MFA's groups-of-variables block (coord/contrib/cos2/dist2/correlation/Lg/RV).
     group: MFAGroup | None = None
+    # MFA's ``res$partial.axes`` — correlations/coords/contribs of each group's
+    # separate principal axes with the global axes (a ``coord``/``cor``/``contrib``
+    # Block), and ``res$inertia.ratio`` — the per-axis between/total inertia ratio.
+    partial_axes: Block | None = None
+    inertia_ratio: pd.Series | None = None
     # Method tag for ``summary()``: "PCA", "CA", "MCA", ...
     method: str = ""
 

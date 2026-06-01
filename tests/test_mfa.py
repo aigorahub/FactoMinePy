@@ -264,6 +264,76 @@ def test_mfa_group_RV(r_mfa_poison):
 
 
 # ---------------------------------------------------------------------------
+# A2: partial factor maps / partial axes / group correlation / inertia ratio
+# ---------------------------------------------------------------------------
+
+
+def test_mfa_ind_coord_partiel(r_mfa_poison):
+    """Per-group partial individual coordinates ((n·K) × ncp, row '<ind>.<group>')."""
+    payload = r_mfa_poison.get("ind.coord.partiel")
+    if payload is None:
+        return
+    r_arr, r_labels = _labeled_block(payload, 5)
+    res = _mfa()
+    py = res.ind.coord_partiel.loc[r_labels].to_numpy()[:, :5]
+    py_aligned = align_to_reference(py, r_arr)
+    assert np.allclose(py_aligned, r_arr, atol=1e-9, rtol=0)
+
+
+def test_mfa_group_correlation(r_mfa_poison):
+    payload = r_mfa_poison["group"].get("correlation")
+    if payload is None:
+        return
+    r_arr, r_labels = _labeled_block(payload, 5)
+    res = _mfa()
+    py = res.group.correlation.loc[r_labels].to_numpy()[:, :5]
+    py_aligned = align_to_reference(py, r_arr)
+    assert np.allclose(py_aligned, r_arr, atol=1e-9, rtol=0)
+
+
+def test_mfa_partial_axes_coord(r_mfa_poison):
+    pax = r_mfa_poison.get("partial.axes")
+    if pax is None or pax.get("coord") is None:
+        return
+    r_arr, r_labels = _labeled_block(pax["coord"], 5)
+    res = _mfa()
+    py = res.partial_axes.coord.loc[r_labels].to_numpy()[:, :5]
+    py_aligned = align_to_reference(py, r_arr)
+    assert np.allclose(py_aligned, r_arr, atol=1e-9, rtol=0)
+
+
+def test_mfa_partial_axes_cor(r_mfa_poison):
+    pax = r_mfa_poison.get("partial.axes")
+    if pax is None or pax.get("cor") is None:
+        return
+    r_arr, r_labels = _labeled_block(pax["cor"], 5)
+    res = _mfa()
+    py = res.partial_axes.cor.loc[r_labels].to_numpy()[:, :5]
+    py_aligned = align_to_reference(py, r_arr)
+    assert np.allclose(py_aligned, r_arr, atol=1e-9, rtol=0)
+
+
+def test_mfa_partial_axes_contrib(r_mfa_poison):
+    pax = r_mfa_poison.get("partial.axes")
+    if pax is None or pax.get("contrib") is None:
+        return
+    r_arr, r_labels = _labeled_block(pax["contrib"], 5)
+    res = _mfa()
+    py = res.partial_axes.contrib.loc[r_labels].to_numpy()[:, :5]
+    assert np.allclose(py, r_arr, atol=1e-8, rtol=0)
+
+
+def test_mfa_inertia_ratio(r_mfa_poison):
+    payload = r_mfa_poison.get("inertia.ratio")
+    if payload is None:
+        return
+    r = np.asarray(payload, dtype=np.float64)
+    res = _mfa()
+    py = res.inertia_ratio.to_numpy()
+    assert np.allclose(py, r, atol=1e-9, rtol=0)
+
+
+# ---------------------------------------------------------------------------
 # Smoke
 # ---------------------------------------------------------------------------
 
