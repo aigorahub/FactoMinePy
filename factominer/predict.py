@@ -156,10 +156,57 @@ def predict_famd(res: Result, newdata: pd.DataFrame) -> Block:
     )
 
 
-def predict_mfa(res: Result, newdata: pd.DataFrame) -> Block:  # noqa: ARG001
-    raise NotImplementedError(
-        "predict.MFA is implemented in the next sub-batch (C1b); it needs the "
-        "per-group training centers/scales/proportions stashed on the MFA result."
+def predict_mfa(res: Result, newdata: pd.DataFrame) -> Block:
+    """Project new individuals onto a fitted :func:`factominer.MFA` model.
+
+    Each group's new columns are rescaled with that group's training recipe
+    (``"s"``: centre/sd standardization; ``"c"``: raw, centred by the global
+    mean; ``"n"``: ``(1[cat] - prop)/sqrt(prop(1-prop))``), concatenated in the
+    fit column order, centred on the global PCA mean, then projected with the
+    MFA group weights ``col.w``.
+    """
+    call = res.call
+    group_meta = call["group_meta"]
+    blocks: list[np.ndarray] = []
+    for meta in group_meta:
+        if meta["type"] in ("s", "c"):
+            # Quanti: centre/scale by the group's training centre/ecart.type
+            # (R predict.MFA uses the separate analysis's centre/ecart.type;
+            # "c" has ecart.type = 1, so only centring applies).
+            Q = newdata[meta["cols"]].to_numpy(dtype=np.float64)
+            Q = (Q - meta["centre"]) / meta["sd"]
+            blocks.append(Q)
+        else:  # "n" — categorical, scaled exactly as R predict.MFA does
+            j = len(meta["vars"])  # variables in the group
+            for var in meta["vars"]:
+                col = newdata[var["name"]]
+                seen = {str(cm["cat"]) for cm in var["cats"]}
+                bad = sorted({str(v) for v in col.to_numpy()} - seen)
+                if bad:
+                    raise ValueError(
+                        f"predict: column {var['name']!r} has categories not seen "
+                        f"in training: {bad}"
+                    )
+                col_str = col.astype(str).to_numpy()
+                for cm in var["cats"]:
+                    # R centres the indicator at 2*marge.col = 2*p/J and divides
+                    # by the weighted RMS of the training column (ec), NOT by
+                    # sqrt(p(1-p)); no global-mean subtraction in predict.
+                    p = cm["p"]
+                    centre = 2.0 * p / j
+                    rms = np.sqrt(p * (1.0 - centre) ** 2 + (1.0 - p) * centre**2)
+                    rms = rms if rms > 1e-12 else 1.0
+                    ind = (col_str == str(cm["cat"])).astype(np.float64)
+                    blocks.append(((ind - centre) / rms)[:, None])
+    M = np.hstack(blocks)
+    col_w = np.asarray(call["col_w"], dtype=np.float64)
+    coord, cos2, dist = _project_scaled(M, col_w, res.svd.V)
+    cols_out = _dim_names(res.svd.V.shape[1], ".")
+    idx = list(newdata.index)
+    return Block(
+        coord=pd.DataFrame(coord, index=idx, columns=cols_out),
+        cos2=pd.DataFrame(cos2, index=idx, columns=cols_out),
+        dist=pd.Series(dist, index=idx, name="dist"),
     )
 
 

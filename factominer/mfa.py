@@ -135,6 +135,9 @@ def MFA(  # noqa: N802 — mirrors R's function name
     lam1: list[float] = []              # first separate eigenvalue per group
     dist2_sep: list[float] = []         # Σ(λ_l/λ₁)² per group (separate spectrum)
     separate: list[Result] = []         # each group's separate analysis (for partial.axes)
+    # Per-group scaling recipe (training centres/sds/proportions, in column
+    # order) so predict.MFA can rescale new individuals identically.
+    group_meta: list[dict] = []
 
     col_cursor = 0
     for g, (start, end) in enumerate(col_ranges):
@@ -165,8 +168,16 @@ def MFA(  # noqa: N802 — mirrors R's function name
                 sd = np.sqrt((Qc**2 * rw[:, None]).sum(axis=0))
                 sd = np.where(sd <= 1e-8, 1.0, sd)  # R/MFA.R:233
                 block_arr = Qc / sd
+                group_meta.append(
+                    {"type": "s", "cols": list(cols), "centre": centre.copy(), "sd": sd.copy()}
+                )
             else:  # "c": enter raw; the global PCA centers (scale_unit=False)
                 block_arr = Q
+                centre = (Q * rw[:, None]).sum(axis=0)  # predict centres by this
+                group_meta.append(
+                    {"type": "c", "cols": list(cols), "centre": centre.copy(),
+                     "sd": np.ones(len(cols))}
+                )
             data_blocks.append(block_arr)
             for c in cols:
                 col_labels.append(str(c))
@@ -183,9 +194,11 @@ def MFA(  # noqa: N802 — mirrors R's function name
             lam1.append(float(sep_eig[0]))
             dist2_sep.append(float(((sep_eig / sep_eig[0]) ** 2).sum()))
             J = len(cols)
+            var_meta: list[dict] = []
             for c in cols:
                 factor_cols.append(str(c))
                 col = block_cat[c]
+                cats_meta: list[dict] = []
                 for cat in col.cat.categories:
                     indicator = (col == cat).to_numpy(dtype=np.float64)
                     p = float((indicator * rw).sum())  # category proportion
@@ -198,6 +211,9 @@ def MFA(  # noqa: N802 — mirrors R's function name
                     quali_modality_labels.append(label)
                     ponderation.append((1.0 - p) / (lam1[g] * J))
                     col_cursor += 1
+                    cats_meta.append({"cat": cat, "p": p, "sd": sd})
+                var_meta.append({"name": str(c), "cats": cats_meta})
+            group_meta.append({"type": "n", "vars": var_meta})
         data_cols_of_group.append(list(range(group_cols_start, col_cursor)))
 
     if len(set(col_labels)) != len(col_labels):
@@ -429,6 +445,9 @@ def MFA(  # noqa: N802 — mirrors R's function name
             "XTDC": pd.DataFrame(data, index=X.index, columns=col_labels),
             "col_w": ponderation_arr.copy(),
             "group_mod": [len(c) for c in data_cols_of_group],
+            # predict.MFA: per-group scaling recipe in active-column order
+            # ("s"/"c": centre + sd; "n": per-category proportion).
+            "group_meta": group_meta,
         },
         ind=ind_block,
         quanti_var=quanti_var,

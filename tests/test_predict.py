@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from factominer import FAMD, MCA, PCA, predict
 from factominer._sign import align_to_reference
@@ -20,11 +19,13 @@ from factominer.datasets import load_decathlon, load_poison, load_tea
 
 
 def _mat(records: list[dict]) -> np.ndarray:
-    """Build an ``(n × k)`` array from a jsonlite list-of-records, ordering the
-    ``Dim.k`` / ``Dim k`` columns by their trailing index."""
+    """Build an ``(n × k)`` array from a jsonlite list-of-records, keeping only
+    the ``Dim.k`` / ``Dim k`` columns (jsonlite also emits a ``_row`` name
+    column) and ordering them by their trailing index."""
     df = pd.DataFrame(records)
-    cols = sorted(df.columns, key=lambda c: int(str(c).split()[-1] if " " in str(c) else str(c).split(".")[-1]))
-    return df[cols].to_numpy(dtype=np.float64)
+    dim_cols = [c for c in df.columns if str(c).startswith("Dim")]
+    dim_cols = sorted(dim_cols, key=lambda c: int(str(c).replace("Dim.", "").replace("Dim ", "").strip()))
+    return df[dim_cols].to_numpy(dtype=np.float64)
 
 
 def test_predict_pca(r_predict_pca_decathlon):
@@ -76,7 +77,6 @@ def test_predict_famd(r_predict_famd_poison):
     assert np.allclose(p.dist.to_numpy(), r_dist, atol=1e-7, rtol=0)
 
 
-@pytest.mark.xfail(raises=NotImplementedError, strict=True, reason="predict.MFA lands in C1b")
 def test_predict_mfa(r_predict_mfa_poison):
     from factominer import MFA
 
@@ -90,7 +90,12 @@ def test_predict_mfa(r_predict_mfa_poison):
     p = predict(res, poison.iloc[0:5])
 
     r_coord = _mat(r_predict_mfa_poison["coord"])
+    r_cos2 = _mat(r_predict_mfa_poison["cos2"])
+    r_dist = np.asarray(r_predict_mfa_poison["dist"], dtype=np.float64)
     k = r_coord.shape[1]
+
     assert np.allclose(
         align_to_reference(p.coord.to_numpy()[:, :k], r_coord), r_coord, atol=1e-7, rtol=0
     )
+    assert np.allclose(p.cos2.to_numpy()[:, :k], r_cos2, atol=1e-7, rtol=0)
+    assert np.allclose(p.dist.to_numpy(), r_dist, atol=1e-7, rtol=0)
