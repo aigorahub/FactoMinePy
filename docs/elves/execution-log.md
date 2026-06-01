@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-31 (A1 complete, parity-verified)
-- **Current phase:** Batch A1 complete + CI-confirmed zero drift; Batch A2 (MFA completeness) in progress
-- **Active batch:** A1 → done; next A2
-- **Last completed batch:** A1 (MFA core) — 21/21 parity tests green vs live R
-- **Next exact batch:** A2 (MFA completeness — partial axes, group$correlation, coord.partiel)
+- **Last updated:** 2026-05-31 (A2 complete, parity-verified)
+- **Current phase:** Batch A2 (MFA completeness) complete; Batch A3 (HMFA) next
+- **Active batch:** A2 → done; next A3 (HMFA)
+- **Last completed batch:** A2 (MFA completeness) — 27/27 parity tests green vs live R
+- **Next exact batch:** A3 (HMFA — hierarchical MFA on the existing MFA primitives)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `81c94be` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→144 passed, 2 skipped (the +21 are MFA parity tests; skip count unchanged)
+- **Collision tripwire (latest own HEAD):** `b69e136` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→150 passed, 2 skipped (the +27 are MFA parity tests; skip count unchanged)
 
 ---
 
@@ -67,10 +67,23 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
-## Batch A2 — MFA completeness — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+## Batch A2 — MFA completeness — 2026-05-31 (COMPLETE — 27/27 parity vs live R)
 
-**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Phase:** Implement → Validate → Review → Document, done. Parity-verified.
 **Rollback tag:** `elves/pre-batch-a2` (pushed).
+**Commits:** `0e5aaae` (impl + harness), `b69e136` (extended R fixture + 2-D sign-align fix).
+
+**Validation (final):** ruff clean; pytest **150 passed / 2 skipped** (27 MFA tests now, +6 over A1).
+All 6 A2 channels match live R FactoMineR 2.14 at the bar: ind.coord.partiel (coord 1e-9),
+group.correlation (1e-9), partial.axes coord/cor (1e-9, 2-D sign-aligned) + contrib (1e-8),
+inertia.ratio (1e-9). First CI round: inertia.ratio/coord.partiel/group.correlation/contrib passed;
+partial.axes coord/cor failed on a pure per-row sign flip (symptom group's 5th separate-MCA axis) —
+magnitudes were exact (ratios precisely ±1), fixed with a row+column `_align_2d` (learnings L5). No
+tolerance loosened; no fixture hand-edited.
+
+**Self-review / internal cross-checks:** the barycenter invariant (mean over groups of partial coords
+== global coord, 7e-15) independently confirms coord.partiel; partial.axes contrib sums to 100 per
+axis; coord==cor for partial.axes (unit-variance tab); inertia.ratio ∈ (0,1].
 
 **Contract:** extend `factominer/mfa.py` with MFA's partial-factor-map machinery:
 `ind$coord.partiel` (per-group partial individual coords, `(n·K)×ncp`), `group$correlation`
@@ -97,8 +110,19 @@ coord==cor. inertia.ratio in (0,1] as expected.
 R's inconsistent `Dim.1.group` labeling), `ind$within.inertia`/`within.partial.inertia`,
 `summary.quanti`, `quali.var$coord.partiel`. Plus the A1 deferrals (sup groups, f/m types).
 
-**Next:** push → trigger CI (extended `dump_mfa` regenerates `mfa/poison.json` with the A2
-channels) → verify the 6 A2 tests pass vs fresh R → commit fixture → confirm zero drift.
+**Regression attestation:** cumulative diff adds only `factominer/mfa.py` (A2 block), `_result.py`
+(additive: `Block.coord_partiel`, `Result.partial_axes`, `Result.inertia_ratio`, `MFAGroup.correlation`
+already optional), `refresh_r_fixtures.R` (extended dump), `tests/test_mfa.py`, and the regenerated
+`mfa/poison.json`. No product files changed outside MFA scope; A1's 21 channels unchanged (still green).
+Test baseline 144→150 passed, skips 2→2 (no test disabled). **Confidence: HIGH** — every channel exact
+vs live R, the barycenter invariant holds, and the only deviation was an arbitrary SVD sign handled the
+same way as every other coord channel.
+
+**Docs updated:** README MFA row, ROADMAP, CHANGELOG [Unreleased].
+
+**Next:** confirm zero-drift CI green, then A3 (HMFA). Note: A3 requires extending `mfa.py` to accept
+`weight_col_mfa` and expose `call["XTDC"]`/`["col_w"]`/`["group_mod"]` (HMFA re-enters MFA per
+hierarchy level with `weight.col.mfa`). Research spec captured for A3.
 
 ---
 

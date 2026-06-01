@@ -20,9 +20,12 @@ out of pre-release.
   cos², dist², and the `Lg` / `RV` matrices including the global "MFA" row).
   Parity-verified column-by-column against live R FactoMineR 2.14 on the
   canonical `MFA(poison, group=c(2,2,5,6), type=c("s","n","n","n"))` example.
-  Active groups with uniform row weights; partial factor maps
-  (`coord.partiel`), supplementary groups, and frequency/mixed (`"f"`/`"m"`)
-  groups are not yet supported.
+  Also exposes the partial-factor-map machinery: `ind.coord_partiel` (per-group
+  partial individual coordinates), `group.correlation`, `partial_axes`
+  (coordinates/correlations/contributions of each group's separate principal
+  axes with the global axes), and `inertia_ratio` — all parity-verified.
+  Active groups with uniform row weights; supplementary groups and
+  frequency/mixed (`"f"`/`"m"`) groups are not yet supported.
 
 ## [0.2.0.dev0] — 2026-05-30
 

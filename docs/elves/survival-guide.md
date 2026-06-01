@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 21 (A1 complete + parity-verified)
+- **Planned batches remaining:** 20 (A1 + A2 complete + parity-verified)
 - **Stop allowed right now:** no
-- **Why:** A1 done; 21 batches remain (A2–A4, B1–B5, C1–C3, D1–D4, E1–E3, F1).
-- **Next required action:** push the docs/close-out commit, re-trigger CI to confirm the
-  committed MFA fixture shows zero drift + green, then start A2 (MFA completeness).
+- **Why:** A1+A2 done; 20 batches remain (A3–A4, B1–B5, C1–C3, D1–D4, E1–E3, F1).
+- **Next required action:** confirm A2 zero-drift CI green, then start A3 (HMFA) — first extend
+  `mfa.py` with `weight_col_mfa` + `call["XTDC"/"col_w"/"group_mod"]`.
 
 ---
 
@@ -119,40 +119,55 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Batch A1 (MFA core) COMPLETE — 21/21 parity vs live R. Closing out; A2 next.
+**Status:** Batches A1 + A2 COMPLETE — MFA fully parity-verified (27/27 vs live R). A3 (HMFA) next.
 
-**Active batch:** A1 done → A2 (MFA completeness)
+**Active batch:** A2 done → A3 (HMFA)
 
-**What was just finished:** Implemented + parity-verified MFA (`factominer/mfa.py`, MFAGroup in
-`_result.py`). 144 passed / 2 skipped; ruff + sphinx clean. Committed `8607b69` (impl + harness),
-`81c94be` (R fixture + schema fixes). Two adversarial source-reviews found zero bugs. Docs updated
-(README/ROADMAP/CHANGELOG/learnings L12–L15). R fixture `mfa/poison.json` committed (CI-generated).
+**What was just finished:** A1 (MFA core, 21 channels) + A2 (MFA completeness: coord.partiel,
+group.correlation, partial.axes, inertia.ratio — 6 more channels). 150 passed / 2 skipped; ruff +
+sphinx clean. Commits `8607b69`/`81c94be`/`caebd01` (A1), `0e5aaae`/`b69e136` (A2). Docs updated
+(README/ROADMAP/CHANGELOG/learnings L12–L15). HMFA (A3) research spec captured.
 
-**Single next action:** commit the docs/close-out, push, re-trigger CI to confirm committed-fixture
-zero drift + green; then start A2 (MFA completeness: partial axes / group$correlation /
-coord.partiel / summary.quanti).
+**Single next action:** confirm A2 zero-drift CI green, then start A3 (HMFA). **A3 prerequisite:**
+extend `mfa.py` to accept `weight_col_mfa` and expose `call["XTDC"]` / `["col_w"]` / `["group_mod"]`
+(HMFA's `hweight` re-enters MFA per hierarchy level passing `weight.col.mfa`, multiplying in one
+`1/λ₁` per level). Fixture: poison `H=[[2,2,5,6],[2,2]]`, type `[s,n,n,n]` (license-clean reshape).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** A2 — MFA completeness
+**Batch:** A3 — HMFA (Hierarchical MFA)
 
-**Scope:** extend `factominer/mfa.py` with the partial-individuals / partial-axes machinery:
-`ind$coord.partiel` (per-group partial individual coords), `partial.axes`, `group$correlation`
-(partial group axes vs global axes via `cov.wt`, R MFA.R L459-483), `inertia.ratio`,
-`summary.quanti`. Keep the A1 PCA-engine + group block; add the `data.partiel` projection
-(R L459-477: replace all-but-one group's columns with the global mean, re-project on
-`res.globale$svd$V`, scale by `length(group.actif)`). Fixture extends the A1 poison dump.
+**Scope:** `factominer/hmfa.py` (or extend MFA). HMFA = MFA with per-hierarchy-level `1/λ₁`
+accumulation, then one weighted `PCA(scale_unit=False)` on the level-1-normalized `XTDC` with the
+accumulated column weights. `H = list of per-level group counts` (`H[[1]]` = elementary group sizes
+like MFA's `group`; `H[[h≥2]]` = #groups-of-previous-level per node). Ported helpers: `htabdes`
+(expand group-of-groups → XTDC column counts), `hdil`, `hweight` (HMFA.R L41-56 — the keystone).
+Outputs: `eig`, `ind` (+ `coord.partiel` per level), `quanti.var`, `quali.var`, `group$coord`
+(LIST, one matrix per level), `group$canonical` (canonical correlations), `partial` (per-level
+arrays). Remove the HMFA stub.
 
-**Acceptance:** every added MFA block at the deterministic bar; ruff clean; rpy2-parity green.
+**A3 PREREQUISITE (do first):** extend `factominer/mfa.py` to (1) accept `weight_col_mfa` and thread
+it into BOTH the separate-group analyses (multiply col weights before computing λ₁) AND the final
+`ponderation`; (2) store `XTDC` (the `data` matrix), `col_w` (ponderation), and `group_mod` (expanded
+per-group col counts) in the result `call` dict. HMFA's `hweight` re-calls `MFA(XTDC,
+group=Hinter[[n]], type="c", weight.col.mfa=cw)` at each level ≥ 2 and reads `call$col.w` /
+`call$group.mod` / `call$XTDC`. This is the single hardest parity point.
 
-**Risk:** the partial-projection scaling (`length(group.actif)` multiplier, the col.w and
-centre/ecart.type from `res.globale$call`) and the `cov.wt(..., method="ML")` weighted
-correlation. Reuse A1's `data` / `ponderation` / global PCA — refactor them out of the MFA
-body into the call dict or a helper so A2 (and HMFA/DMFA in A3/A4) can reuse them. See [[L12]].
+**Fixture (license-clean):** poison `H=list(c(2,2,5,6), c(2,2))`, type `c("s","n","n","n")`
+(level-2 super-groups: description={desc,desc2}, signs={symptom,eat}); plus a pure-quanti sanity:
+decathlon[:,1:10] `H=list(c(4,3,3), c(1,2))`, type all `"s"`. Needs a new `dump_hmfa` (group$coord is
+a list-per-level, partial is a list-per-level of per-node arrays). Full research spec in the A3 entry
+of the execution log / the HMFA research summary.
 
-**Rollback tag:** `elves/pre-batch-a2` (create before starting).
+**Acceptance:** eig/ind/quanti.var/quali.var/group$coord(per level)/canonical to the deterministic
+bar; ruff clean; rpy2-parity green.
+
+**Risk:** the `hweight` per-level `1/λ₁` accumulation via `weight.col.mfa` (HMFA.R L51-52). Verify
+`poids[[1]]`/`poids[[2]]` before trusting the full fixture. See [[L12]].
+
+**Rollback tag:** `elves/pre-batch-a3` (create before starting).
 
 ---
 
