@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 [![Status](https://img.shields.io/badge/status-alpha-orange)](#status)
 
-> ⚠️ **Experimental — use with caution.** This is an independent Python port of the R package [FactoMineR](https://cran.r-project.org/package=FactoMineR). It is **not** affiliated with or endorsed by the authors of FactoMineR. The port is in early development; APIs may change, edge cases may differ from R, and several FactoMineR methods are not yet implemented (see status table below). For production work or published research, treat results as preliminary and cross-check against the original R package.
+> ⚠️ **Experimental — use with caution.** This is an independent Python port of the R package [FactoMineR](https://cran.r-project.org/package=FactoMineR). It is **not** affiliated with or endorsed by the authors of FactoMineR. The port is still pre-release; APIs may change and some option-level features differ from R (see the status table and known-limitations below). Every analytic method is parity-checked against live R, but for production work or published research treat results as preliminary and cross-check against the original R package.
 
 A from-primitives reimplementation in pure NumPy/SciPy/Pandas of the R package [FactoMineR](https://cran.r-project.org/package=FactoMineR) for multivariate exploratory data analysis (PCA, CA, MCA, HCPC, dimdesc/catdes/condes).
 
@@ -13,14 +13,18 @@ This package is **not** a wrapper around R; every method is reimplemented from t
 
 ## Status
 
-**Early-alpha (`0.2.0.dev0`).** Live against R FactoMineR 2.14: PCA, CA, MCA,
-FAMD, MFA, HMFA, DMFA, HCPC, GPA, the `dimdesc` / `catdes` / `condes`
-descriptors, and matplotlib + plotly plotting backends. PCA / CA / MCA / FAMD /
-MFA / HMFA / DMFA / HCPC and the descriptors are numerically parity-verified;
-GPA is rotation-invariant-verified (R's GPA is stochastic); the plotting
-backends are structurally verified (plus vertex-exact ellipses). The full MFA
-family (MFA, HMFA, DMFA) is now live. The supported-methods table below is the
-source of truth for exactly what works and at what parity bar.
+**Dev release (`0.3.0.dev0`).** Every analytically meaningful R FactoMineR 2.14
+method is now live and parity-verified against live R: PCA, CA, MCA, FAMD, the
+MFA family (MFA / HMFA / DMFA), GPA, HCPC, CaGalt, the regression family
+(`LinearModel` / `AovSum` / `RegBest`), `textual`, the `predict.*` family,
+`reconst`, `estim_ncp`, the `dimdesc` / `catdes` / `condes` / `descfreq`
+descriptors, the `svd_triplet` / `tab_disjonctif` utilities, and matplotlib +
+plotly plotting backends. The deterministic methods are numerically
+parity-verified; GPA is rotation-invariant-verified (R's GPA is stochastic); the
+plotting backends are structurally verified (plus vertex-exact ellipses).
+Remaining gaps are at the **option level** (noted per row below), not whole
+methods. The supported-methods table below is the source of truth for exactly
+what works and at what parity bar.
 
 | FactoMineR method | Python equivalent | Live | R-parity verified | Notes |
 | --- | --- | --- | --- | --- |
@@ -128,10 +132,10 @@ pytest -q
 
 This port targets the most common FactoMineR API surface and is rigorously validated on the bundled datasets, but the following caveats apply:
 
-- **Several methods are stubs.** `MFA`, `HMFA`, `DMFA` are importable but raise `NotImplementedError` when called.
-- **FAMD covers active variables only.** Supplementary variables/individuals (`sup.var` / `ind.sup` in R) are not yet implemented; pass only active data.
-- **GPA parity is rotation-invariant, and the port is deterministic.** R's GPA is stochastic (random multi-start + random rank-deficient basis completion), so its `consensus` / `Xfin` are reproducible only up to a global rotation/reflection — an inherent gauge freedom of Procrustes analysis. The port implements the deterministic single-start core; `RV` / `RVs` / `simi` (computed from the raw configurations) match R exactly, and `consensus` / `Xfin` match R's inter-object distances. Currently limited to no-missing, equal-width configurations.
-- **Parity is empirical, not exhaustive.** The parity suite covers the active + supplementary blocks for PCA / CA, active blocks for MCA (its supplementary blocks are not yet asserted) and HCPC, active-variable FAMD, rotation-invariant GPA, and the full output schemas of dimdesc / catdes / condes on standard fixtures (`decathlon`, `children`, `tea`, `poison`, and a synthetic GPA set). Behavior with row weights, missing values, very small samples, or `method="burt"` MCA has not been independently verified.
+- **Complete data only — no missing-value handling.** R's iterative imputation / NA-as-category paths (PCA / CA / MCA / GPA missing values) are not implemented; pass complete data.
+- **Remaining gaps are at the option level**, not whole methods: FAMD supplementary *individuals* (`ind_sup`; `sup_var` is supported); MCA `method="Burt"` combined with `quali_sup`; `MFA` reconstruction via `reconst`; CaGalt qualitative covariates (`type="n"`) and its bootstrap confidence ellipses; `LinearModel` Type-II SS and AIC/BIC stepwise selection, and `meansComp` (which would need an `emmeans`/`multcompView` port); `simule` (stochastic) and `write.infile` (text I/O). These are documented per row in the status table.
+- **GPA parity is rotation-invariant, and the port is deterministic.** R's GPA is stochastic (random multi-start + random rank-deficient basis completion), so its `consensus` / `Xfin` / `PANOVA` are reproducible only up to a global rotation/reflection and the converged optimum — an inherent gauge freedom of Procrustes analysis (R's GPA is not even reproducible run-to-run with `set.seed`). The port implements the deterministic single-start core; `RV` / `RVs` / `simi` (from the raw configurations) match R exactly, `consensus` / `Xfin` match R's inter-object distances, and `PANOVA` matches at a stochastic tolerance. Unequal-width configurations are supported; missing values are not.
+- **Parity is empirical, not exhaustive.** Every analytic method is checked column-by-column against freshly-generated live R FactoMineR 2.14 output (via a CI `rpy2` job) on the bundled fixtures. Plots are verified structurally, not pixel-by-pixel.
 - **Sign of axes is arbitrary.** SVD is sign-ambiguous; we apply a deterministic rule that may give the opposite sign from R on a given axis. Distances, clusters, contributions, and cos² are sign-invariant; coordinates may need a flip to align visually with R output.
 - **HCPC partitions can differ by one or two individuals.** K-means consolidation is sensitive to initialization; the adjusted Rand index against R is ≥ 0.999 on the decathlon test fixture but not exactly 1.0.
 - **Plot parity is structural, not pixel-exact.** Both backends are verified to produce the expected traces/artists and the R-faithful `coord.ellipse` geometry, but not pixel-identical images. The plotly backend mirrors the matplotlib surface and shares the same data layer.

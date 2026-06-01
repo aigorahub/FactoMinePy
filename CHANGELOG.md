@@ -5,7 +5,16 @@ All notable changes to FactoMinePy are tracked here. The format follows
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once
 out of pre-release.
 
-## [Unreleased]
+## [0.3.0.dev0] - 2026-06-01
+
+This dev release closes the gap to complete R FactoMineR 2.14 feature parity for
+every analytically meaningful method: the MFA family (`MFA`/`HMFA`/`DMFA`),
+`CaGalt`, the regression family (`LinearModel`/`AovSum`/`RegBest`), `textual`,
+`predict.*`, `reconst`, `estim_ncp`, `descfreq`, the `dimdesc` CA/MCA branches,
+completeness work across the shipped methods (FAMD/MCA/GPA supplementary and
+edge-case handling, PCA row weights), and the `svd_triplet` / `tab_disjonctif`
+utilities. Every analytic method is parity-verified against live R; the package
+remains experimental. See the entries below.
 
 ### Fixed
 
