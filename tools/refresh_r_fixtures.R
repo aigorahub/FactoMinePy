@@ -370,6 +370,35 @@ for (k in seq_along(desc)) {
 write_json(desc_payload, file.path(out_dir("dimdesc"), "pca_decathlon.json"))
 cat("[fixtures] dimdesc/pca_decathlon.json\n")
 
+# dimdesc on CA(children) — the CA branch returns sorted row/col coords per axis.
+ca_desc <- dimdesc(res_ca, axes = 1:2, proba = 0.05)
+ca_desc_payload <- list()
+for (k in seq_along(ca_desc)) {
+  d <- ca_desc[[k]]
+  ca_desc_payload[[names(ca_desc)[k]]] <- list(
+    row = if (!is.null(d$row)) as.data.frame(d$row) else NULL,
+    col = if (!is.null(d$col)) as.data.frame(d$col) else NULL
+  )
+}
+write_json(ca_desc_payload, file.path(out_dir("dimdesc"), "ca_children.json"))
+cat("[fixtures] dimdesc/ca_children.json\n")
+
+# dimdesc on a small MCA(tea[,1:6]) — routes through the condes branch
+# (quali eta2 + category estimates per axis).
+res_mca_small <- MCA(tea[, 1:6], ncp = 5, graph = FALSE)
+mca_desc <- dimdesc(res_mca_small, axes = 1:2, proba = 0.05)
+mca_desc_payload <- list()
+for (k in seq_along(mca_desc)) {
+  d <- mca_desc[[k]]
+  mca_desc_payload[[names(mca_desc)[k]]] <- list(
+    quanti   = if (!is.null(d$quanti))   as.data.frame(d$quanti)   else NULL,
+    quali    = if (!is.null(d$quali))    as.data.frame(d$quali)    else NULL,
+    category = if (!is.null(d$category)) as.data.frame(d$category) else NULL
+  )
+}
+write_json(mca_desc_payload, file.path(out_dir("dimdesc"), "mca_tea.json"))
+cat("[fixtures] dimdesc/mca_tea.json\n")
+
 # catdes on tea (Tea-time as target)
 catdes_tea <- catdes(tea, num.var = which(names(tea) == "Tea"), proba = 0.05)
 catdes_payload <- list(

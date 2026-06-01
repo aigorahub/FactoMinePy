@@ -28,6 +28,12 @@ def dimdesc(
     coords = res.ind.coord if res.ind is not None else res.row.coord
     axes = list(range(coords.shape[1])) if axes is None else list(axes)
 
+    # CA has its own dimdesc branch (R dimdesc.r L6-36): describe each axis by the
+    # sorted row and column coordinates (active + supplementary). MCA and the rest
+    # route through the condes-based path below (R's `else` branch).
+    if res.method == "CA":
+        return _dimdesc_ca(res, axes)
+
     active_frame = res.call.get("active_frame") if isinstance(res.call, dict) else None
     quanti_sup_frame = res.call.get("quanti_sup_frame") if isinstance(res.call, dict) else None
     quali_sup_frame = res.call.get("quali_sup_frame") if isinstance(res.call, dict) else None
@@ -61,4 +67,25 @@ def dimdesc(
             unique = f"{axis_name}__dim{i}"
         merged = pd.concat([axis_col.rename(unique), X_all], axis=1)
         out[k] = condes(merged, num_var=unique, proba=proba)
+    return out
+
+
+def _dimdesc_ca(res: Result, axes: list[int]) -> dict[int, dict[str, pd.DataFrame]]:
+    """CA dimdesc: per axis, the row and column coordinates sorted ascending
+    (active + supplementary), each a one-column ``coord`` frame."""
+    row_coord = res.row.coord
+    if res.row_sup is not None:
+        row_coord = pd.concat([row_coord, res.row_sup.coord])
+    col_coord = res.col.coord
+    if res.col_sup is not None:
+        col_coord = pd.concat([col_coord, res.col_sup.coord])
+    n_axes = res.row.coord.shape[1]
+    out: dict[int, dict[str, pd.DataFrame]] = {}
+    for k in axes:
+        if k < 0 or k >= n_axes:
+            raise IndexError(f"axis out of range: {k}")
+        out[k] = {
+            "row": row_coord.iloc[:, k].sort_values().to_frame(name="coord"),
+            "col": col_coord.iloc[:, k].sort_values().to_frame(name="coord"),
+        }
     return out

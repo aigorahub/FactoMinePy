@@ -31,7 +31,7 @@
   "current_batch": {
     "id": "B5",
     "name": "dimdesc CA/MCA",
-    "status": "pending"
+    "status": "in_progress"
   },
   "phases": [
     {
@@ -175,10 +175,10 @@
     {
       "id": "B5",
       "name": "dimdesc CA/MCA",
-      "status": "pending",
+      "status": "in_progress",
       "rollback_tag": "elves/pre-batch-b5",
       "commit": null,
-      "started_at": null,
+      "started_at": "2026-06-01",
       "completed_at": null
     }
   ],

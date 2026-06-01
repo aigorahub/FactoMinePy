@@ -244,6 +244,9 @@ def MCA(  # noqa: N802 — mirrors R
             "cat_labels": cat_labels,
             "var_of_cat": var_of_cat,
             "cat_counts_per_var": cat_counts_per_var,
+            # Original active categorical data, so dimdesc(MCA) can describe each
+            # axis via condes (R dimdesc routes MCA through the condes branch).
+            "active_frame": X_active.copy(),
         },
         ind=ind_block,
         var=var_block,

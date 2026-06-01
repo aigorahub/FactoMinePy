@@ -67,6 +67,30 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
+## Batch B5 — dimdesc CA/MCA — 2026-06-01 (IN PROGRESS: code done, awaiting CI fixture)
+
+**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Rollback tag:** `elves/pre-batch-b5` (pushed).
+
+**Contract:** wire `dimdesc` for CA and MCA results (previously only PCA; CA/MCA raised). Per R
+`dimdesc.r` (49 lines): **MCA uses the SAME condes-based path as PCA** (`condes(ind.coord[,k], X)`
+per axis) — so it's free once MCA's call carries the original data; **CA has its own branch** — per
+axis, the sorted row + column coordinates (active + supplementary), each a one-column `coord` frame.
+
+**Build on:** added `active_frame` to MCA's call dict → dimdesc(MCA) routes through the existing
+parity-verified condes path. New `_dimdesc_ca` helper for the CA branch. No change to the PCA path.
+
+**Local checks (pre-CI):** ruff clean; pytest 209 passed / 5 skipped. Smoke: dimdesc(CA) → sorted
+row(18 incl. sup)/col(8) tables; dimdesc(MCA) → quali (eta²) + category (the condes output).
+
+**Fixtures (license-clean):** `dimdesc(CA(children, row.sup, col.sup))` → `dimdesc/ca_children.json`;
+`dimdesc(MCA(tea[,1:6]))` → `dimdesc/mca_tea.json`. CA coords sign-aligned; MCA quali R²/p.value
+sign-invariant (category Estimate sign-dependent → assert p.value set + count).
+
+**Next:** push → trigger CI → verify the dimdesc CA/MCA tests vs fresh R → commit fixtures.
+
+---
+
 ## Batch B4 — row weights (PCA row.w) — 2026-05-31 (COMPLETE — 24/24 PCA parity vs live R)
 
 **Phase:** Implement → Validate → Review → Document, done. Parity-verified, first pass.
