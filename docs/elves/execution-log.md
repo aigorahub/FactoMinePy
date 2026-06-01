@@ -67,6 +67,42 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
+## Batch B3 — GPA edge cases — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+
+**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Rollback tag:** `elves/pre-batch-b3` (pushed).
+
+**Contract:** (1) **unequal-width configurations** — lift the equal-width restriction in `gpa.py`
+(pad each calibrated config to `max(group)`; `_procrustes_H` generalized to the semi-orthogonal map
+for the unequal-width `similarite`); `invgC=C/K` stays exact with no NAs. (2) Add **`correlations`**
+(per-config `group[i]` original vars vs consensus; `averagecor` only when equal-width) and **PANOVA**
+(the sansvm objet/config/dimension SS tables, percent-of-total).
+
+**Scope decision:** GPA **missing values** (the VMQTE path) DEFERRED to B4 (missing values + row
+weights) — it needs `M`/`Cj` 0/1-diagonal metrics, `invgC=pinv(Cc)≠C/K`, and pairwise-deleted RV/simi,
+which belong with B4's missing-value work. The NaN NotImplementedError stays for now (points to B4).
+
+**Build on:** the existing deterministic single-start `algogpa` core (unchanged for shape) + the
+two-tier parity (RV/RVs/simi exact; consensus/Xfin rotation-invariant via pdist). PANOVA objet/config
+tables sum over consensus dims → rotation-invariant → Tier-1; the per-dimension table is Tier-2.
+
+**Local checks (pre-CI):** ruff clean; sphinx -W; pytest 198 passed / 9 skipped. Equal-width GPA
+regression unchanged (7/7). Unequal-width smoke: consensus width 3, RV symmetric/diag-1, simi diag~1,
+PANOVA SStotal sums to exactly 100%.
+
+**Fixtures (license-clean, synthetic):** new frozen `gpa_synth_uneven.csv` (`group=[2,3,2]`, derived
+deterministically from `gpa_synth.csv`); extended the GPA dump with correlations + PANOVA; new
+`gpa/synth_uneven.json`. Provenance documented.
+
+**Hardest parity point:** the `procrustesbis` rank-deficient branch is stochastic in R (rnorm basis
+completion) → unequal-width consensus/Xfin stay Tier-2; RV/RVs/simi + PANOVA objet/config totals are
+the exact (Tier-1) assertions.
+
+**Next:** push → trigger CI → verify the GPA edge-case tests vs fresh R → commit fixtures → confirm
+the equal-width synth.json active data is unchanged.
+
+---
+
 ## Batch B2 — MCA sup-block parity + Burt — 2026-05-31 (COMPLETE — 20/20 MCA parity vs live R)
 
 **Phase:** Implement → Validate → Review → Document, done. Parity-verified, first pass.

@@ -64,3 +64,14 @@ def load_gpa_synth() -> pd.DataFrame:
     parity fixture (``group=[2, 2, 2]``).
     """
     return _load_csv("gpa_synth.csv")
+
+
+def load_gpa_synth_uneven() -> pd.DataFrame:
+    """8 × 7 synthetic GPA dataset with unequal-width configurations.
+
+    Derived deterministically from :func:`load_gpa_synth` by giving the middle
+    configuration a third (rank-increasing) variable, yielding ``group=[2, 3, 2]``.
+    Exercises GPA's general (unequal-width) Procrustes path. Frozen to CSV; MIT,
+    no third-party licensing.
+    """
+    return _load_csv("gpa_synth_uneven.csv")

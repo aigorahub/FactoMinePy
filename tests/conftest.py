@@ -106,6 +106,11 @@ def r_gpa_synth() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_gpa_synth_uneven() -> dict:
+    return _load_r_fixture("gpa", "synth_uneven")
+
+
+@pytest.fixture(scope="session")
 def r_hcpc_decathlon() -> dict:
     return _load_r_fixture("hcpc", "decathlon_plain_k4")
 

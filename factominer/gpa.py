@@ -56,6 +56,7 @@ class GPAResult:
     simi: pd.DataFrame
     scaling: pd.Series
     correlations: dict[str, pd.DataFrame] = field(default_factory=dict)
+    panova: dict[str, pd.DataFrame] = field(default_factory=dict)
     call: dict[str, Any] = field(default_factory=dict)
 
     def __repr__(self) -> str:
@@ -93,9 +94,7 @@ def GPA(  # noqa: N802 — mirrors R's function name
         raise NotImplementedError("GPA with missing values is not yet supported")
     n = X.shape[0]
     K = len(group)
-    if len(set(group)) != 1:
-        raise NotImplementedError("GPA currently requires equal-width configurations")
-    p = group[0]
+    p = max(group)  # common working width; narrower configs are zero-padded
     if name_group is None:
         name_group = [f"group.{i + 1}" for i in range(K)]
 
@@ -107,8 +106,17 @@ def GPA(  # noqa: N802 — mirrors R's function name
         off += g
 
     # calibre: per-configuration PCA pre-rotation (center + rotate to principal
-    # axes; scale.unit=FALSE → centering only, no standardization).
-    calib = [_calibre(Xk) for Xk in raw]
+    # axes; scale.unit=FALSE → centering only, no standardization). Narrower
+    # configurations are zero-padded to the common width max(group), mirroring
+    # R, which repads each calibrated config to nbcolonne = max rank (GPA.R's
+    # `calibre`). With no missing values every per-config metric is the same
+    # idempotent C, so `invgC = C/K` stays exact for unequal widths too.
+    calib = []
+    for Xk in raw:
+        Ck = _calibre(Xk)
+        if Ck.shape[1] < p:
+            Ck = np.hstack([Ck, np.zeros((n, p - Ck.shape[1]))])
+        calib.append(Ck)
 
     # Centering projector C = I − (1/N) 11ᵀ (idempotent). All configs share it.
     C = np.eye(n) - np.ones((n, n)) / n
@@ -188,21 +196,64 @@ def GPA(  # noqa: N802 — mirrors R's function name
             sij = _similarite(raw[i], raw[j])
             sim[i, j] = sim[j, i] = sij
 
-    # Per-configuration correlations of original variables with the consensus.
+    # Per-configuration correlations of the original (centered) variables with
+    # the consensus axes — `cor(scale(config_i, scale=FALSE), consensus)` per R
+    # (GPA.R L816-821). Each config contributes its own `group[i]` variables.
+    df_cols = list(df.columns)
+    dim_cols = [f"Dim.{b + 1}" for b in range(fina)]
     correlations: dict[str, pd.DataFrame] = {}
+    col_off = 0
+    cor_mats: list[np.ndarray] = []
     for i in range(K):
+        gi = group[i]
+        cfg_cols = df_cols[col_off : col_off + gi]
+        col_off += gi
         Xc = raw[i] - raw[i].mean(axis=0)
-        cor = np.zeros((p, fina))
-        for a in range(p):
+        cor = np.zeros((gi, fina))
+        for a in range(gi):
             for b in range(fina):
                 cor[a, b] = _safe_corr(Xc[:, a], consensus[:, b])
-        correlations[name_group[i]] = pd.DataFrame(
-            cor, index=[f"{name_group[i]}.v{a + 1}" for a in range(p)],
-            columns=[f"Dim.{b + 1}" for b in range(fina)],
+        cor_mats.append(cor)
+        correlations[f"cor {name_group[i]}"] = pd.DataFrame(
+            cor, index=[str(c) for c in cfg_cols], columns=dim_cols
+        )
+    # R appends an elementwise-mean "averagecor" only when all configs are the
+    # same width (GPA.R L824-836).
+    if len(set(group)) == 1:
+        correlations["averagecor"] = pd.DataFrame(
+            np.mean(cor_mats, axis=0),
+            index=[f"V{a + 1}" for a in range(group[0])],
+            columns=dim_cols,
         )
 
+    # --- PANOVA (Procrustes ANOVA, the no-missing "sansvm" branch, GPA.R
+    #     L110-230): per-object / per-config / per-dimension sum-of-squares
+    #     tables as percent of total SS. The SStotal columns and the summary
+    #     rows are rotation/reflection-invariant (Tier-1 exact); the per-axis
+    #     splits are gauge-dependent (Tier-2). ---
+    cons = consensus
+    xfin_arr = np.stack(Xfin, axis=2)  # (n × fina × K)
+    ss_fit_obj = K * (cons**2).sum(axis=1)
+    ss_res_obj = ((xfin_arr - cons[:, :, None]) ** 2).sum(axis=(1, 2))
+    ss_tot_obj = (xfin_arr**2).sum(axis=(1, 2))
+    panova_objet = _panova_table(
+        ss_fit_obj, ss_res_obj, ss_tot_obj, list(df.index), ("SSfit", "SSresidual", "SStotal"), K
+    )
+    ss_fit_cfg = np.zeros(K)  # R hardcodes SSfit = 0 in the sansvm config table
+    ss_res_cfg = ((xfin_arr - cons[:, :, None]) ** 2).sum(axis=(0, 1))
+    ss_tot_cfg = (xfin_arr**2).sum(axis=(0, 1))
+    panova_config = _panova_table(
+        ss_fit_cfg, ss_res_cfg, ss_tot_cfg, list(name_group), ("SSfit", "SSresidual", "SStotal"), K
+    )
+    ss_cons_dim = K * (cons**2).sum(axis=0)
+    ss_res_dim = ((xfin_arr - cons[:, :, None]) ** 2).sum(axis=(0, 2))
+    ss_tot_dim = (xfin_arr**2).sum(axis=(0, 2))
+    panova_dim = _panova_table(
+        ss_cons_dim, ss_res_dim, ss_tot_dim, dim_cols, ("Consensus", "residus", "Total"), K
+    )
+    panova = {"objet": panova_objet, "config": panova_config, "dimension": panova_dim}
+
     idx = list(df.index)
-    dim_cols = [f"Dim.{b + 1}" for b in range(fina)]
     return GPAResult(
         consensus=pd.DataFrame(consensus, index=idx, columns=dim_cols),
         Xfin=[pd.DataFrame(xf, index=idx, columns=dim_cols) for xf in Xfin],
@@ -211,8 +262,25 @@ def GPA(  # noqa: N802 — mirrors R's function name
         simi=pd.DataFrame(sim, index=name_group, columns=name_group),
         scaling=pd.Series(pds, index=name_group, name="scaling"),
         correlations=correlations,
+        panova=panova,
         call={"group": list(group), "scale": scale, "name_group": list(name_group)},
     )
+
+
+def _panova_table(
+    c0: np.ndarray,
+    c1: np.ndarray,
+    c2: np.ndarray,
+    row_labels: list[str],
+    col_labels: tuple[str, str, str],
+    nbj: int,
+) -> pd.DataFrame:
+    """One PANOVA sub-table: stack the three sum-of-squares columns, append a
+    column-sum summary row, then express as percent of total SS (÷ nbj · 100)."""
+    mat = np.column_stack([np.asarray(c0), np.asarray(c1), np.asarray(c2)])
+    mat = np.vstack([mat, mat.sum(axis=0)])
+    mat = mat / nbj * 100.0
+    return pd.DataFrame(mat, index=[*row_labels, "sum"], columns=list(col_labels))
 
 
 def _calibre(Xk: np.ndarray) -> np.ndarray:
@@ -225,13 +293,17 @@ def _calibre(Xk: np.ndarray) -> np.ndarray:
 
 
 def _procrustes_H(X1: np.ndarray, X2: np.ndarray) -> np.ndarray:
-    """Orthogonal Procrustes rotation H (reflections allowed) mapping centered
-    X1 toward X2: H = U Vᵀ from the SVD of X1cᵀ X2c. Applied as X1 @ H."""
+    """(Semi-)orthogonal Procrustes mapping H of centered X1 toward X2 from the
+    SVD of ``X1cᵀ X2c = U Σ Vᵀ``: ``H = U[:, :k] Vᵀ`` with ``k = min(p1, p2)``,
+    applied as ``X1 @ H``. For equal widths this is the square ``U Vᵀ`` rotation;
+    for configurations of different widths (GPA `similarite` on raw configs) it
+    is the ``p1 × p2`` semi-orthogonal map."""
     X1c = X1 - X1.mean(axis=0)
     X2c = X2 - X2.mean(axis=0)
     A = X1c.T @ X2c
     U, _, Vt = np.linalg.svd(A)
-    return U @ Vt
+    k = min(U.shape[1], Vt.shape[0])
+    return U[:, :k] @ Vt[:k, :]
 
 
 def _coeff_rv(X: np.ndarray, Y: np.ndarray) -> tuple[float, float]:

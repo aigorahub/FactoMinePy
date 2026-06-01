@@ -70,6 +70,16 @@ sources cited below.
 - **Licensing.** MIT, same as the package code (it is original synthetic data).
 - **Use.** GPA parity fixture (`group=[2, 2, 2]`).
 
+## gpa_synth_uneven.csv
+
+- **Origin.** Synthetic, derived deterministically from `gpa_synth.csv` by
+  giving the middle configuration a third (rank-increasing) variable
+  (`g2_d3 = 0.6·g2_d1 − 0.4·g2_d2 + seeded noise`, frozen). NOT from any third
+  party.
+- **Shape.** 8 rows × 7 columns (`g1_*` ×2, `g2_*` ×3, `g3_*` ×2).
+- **Licensing.** MIT, same as the package code (original synthetic data).
+- **Use.** GPA unequal-width parity fixture (`group=[2, 3, 2]`).
+
 ## On licensing
 
 All code in this package is MIT. The bundled CSV data above are convenience

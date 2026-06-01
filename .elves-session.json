@@ -31,7 +31,7 @@
   "current_batch": {
     "id": "B3",
     "name": "GPA edge cases",
-    "status": "pending"
+    "status": "in_progress"
   },
   "phases": [
     {
@@ -155,10 +155,10 @@
     {
       "id": "B3",
       "name": "GPA edge cases",
-      "status": "pending",
+      "status": "in_progress",
       "rollback_tag": "elves/pre-batch-b3",
       "commit": null,
-      "started_at": null,
+      "started_at": "2026-05-31",
       "completed_at": null
     }
   ],

@@ -263,8 +263,18 @@ set.seed(42)
 res_gpa <- GPA(gpa_df, group = c(2, 2, 2), scale = TRUE, graph = FALSE)
 xfin_list <- lapply(seq_len(dim(res_gpa$Xfin)[3]),
                     function(k) as.data.frame(res_gpa$Xfin[, , k]))
-write_json(
+dump_gpa_extra <- function(res) {
   list(
+    correlations = lapply(res$correlations, as.data.frame),
+    PANOVA = list(
+      objet     = as.data.frame(res$PANOVA$objet),
+      config    = as.data.frame(res$PANOVA$config),
+      dimension = as.data.frame(res$PANOVA$dimension)
+    )
+  )
+}
+write_json(
+  c(list(
     RV        = as.data.frame(res_gpa$RV),
     RVs       = as.data.frame(res_gpa$RVs),
     simi      = as.data.frame(res_gpa$simi),
@@ -272,10 +282,30 @@ write_json(
     consensus = as.data.frame(res_gpa$consensus),
     Xfin      = xfin_list,
     group     = c(2L, 2L, 2L)
-  ),
+  ), dump_gpa_extra(res_gpa)),
   file.path(out_dir("gpa"), "synth.json")
 )
 cat("[fixtures] gpa/synth.json\n")
+
+# ---- GPA unequal-width: group = c(2, 3, 2) ---------------------------------
+gpa_u_csv <- file.path(root, "factominer", "datasets", "data", "gpa_synth_uneven.csv")
+gpa_u_df <- read.csv(gpa_u_csv, row.names = 1, check.names = FALSE)
+set.seed(42)
+res_gpa_u <- GPA(gpa_u_df, group = c(2, 3, 2), scale = TRUE, graph = FALSE)
+xfin_u <- lapply(seq_len(dim(res_gpa_u$Xfin)[3]), function(k) as.data.frame(res_gpa_u$Xfin[, , k]))
+write_json(
+  c(list(
+    RV        = as.data.frame(res_gpa_u$RV),
+    RVs       = as.data.frame(res_gpa_u$RVs),
+    simi      = as.data.frame(res_gpa_u$simi),
+    scaling   = as.numeric(res_gpa_u$scaling),
+    consensus = as.data.frame(res_gpa_u$consensus),
+    Xfin      = xfin_u,
+    group     = c(2L, 3L, 2L)
+  ), dump_gpa_extra(res_gpa_u)),
+  file.path(out_dir("gpa"), "synth_uneven.json")
+)
+cat("[fixtures] gpa/synth_uneven.json\n")
 
 # ---- plot data: coord.ellipse on PCA(decathlon) individuals ----------------
 # The only genuinely-derived plot quantity not already covered by the analysis
