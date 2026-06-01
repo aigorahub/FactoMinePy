@@ -57,6 +57,9 @@ def PCA(  # noqa: N802 — mirrors R's function name
         if row_w_arr.size != X.shape[0]:
             raise ValueError("row_w must have length == nrow(X)")
         active_row_w = row_w_arr[active_rows]
+        # FactoMineR normalizes the row weights to a probability vector
+        # (PCA.R: row.w <- row.w/sum(row.w)); the eigenvalues live on that scale.
+        active_row_w = active_row_w / active_row_w.sum()
     else:
         active_row_w = np.full(n_active, 1.0 / n_active)
     if col_w is not None:

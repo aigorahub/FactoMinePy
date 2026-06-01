@@ -46,6 +46,11 @@ def r_pca_decathlon_plain() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_pca_decathlon_roww() -> dict:
+    return _load_r_fixture("pca", "decathlon_roww")
+
+
+@pytest.fixture(scope="session")
 def r_ca_children() -> dict:
     return _load_r_fixture("ca", "children")
 

@@ -67,6 +67,38 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
+## Batch B4 — row weights (PCA row.w) — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+
+**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Rollback tag:** `elves/pre-batch-b4` (pushed).
+
+**Scope decision — B4 split.** The plan's B4 ("missing values + row weights") is large and spans
+several methods with DIFFERENT NA semantics. This batch (B4) does the **row-weights** half — the
+clean, bounded, high-value piece — and defers the missing-value handling to **B4b** (recorded below).
+
+**Contract (B4):** fix and parity-verify PCA's `row_w`. **Bug found:** the port's PCA did NOT
+normalize `row_w` (it used the raw weights in the SVD, so `row_w=ones` gave eigenvalues n× too big);
+R normalizes `row.w/sum(row.w)` (PCA.R). Fixed: normalize `active_row_w` to a probability vector.
+All current callers (FAMD/MFA/HMFA/DMFA) pass uniform/None, so they are unaffected (full suite 205
+passed — no regression; `row_w=ones` now matches the default exactly).
+
+**Local checks (pre-CI):** ruff clean; pytest 205 passed / 6 skipped (4 PCA row.w tests await the
+fixture). Smoke: non-uniform `row_w` runs; `row_w=ones == default`.
+
+**Fixture (license-clean):** `PCA(decathlon[,1:10], row.w=rep(c(1,2,3), length.out=n))` →
+`pca/decathlon_roww.json` (deterministic 1/2/3 weights). Tests assert eig/var.coord/ind.coord/contrib.
+
+**B4b — DEFERRED (recorded for a later batch):** missing-value handling for PCA (iterative imputation
+vs complete-case), MCA (NA→`.NA` category), and GPA (the VMQTE path); plus FAMD `ind_sup`
+(supplementary individuals — needs active-only row weighting through the FAMD scaling). Specs captured
+in the B1 (FAMD) and B3 (GPA) research summaries. R's NA semantics differ per method — verify each
+before implementing.
+
+**Next:** push → trigger CI → verify the 4 PCA row.w tests vs fresh R → commit fixture → confirm the
+existing PCA fixtures are unchanged (the fix only affects non-uniform weights).
+
+---
+
 ## Batch B3 — GPA edge cases — 2026-05-31 (COMPLETE — 16/16 GPA parity vs live R)
 
 **Phase:** Implement → Validate → Review → Document, done. Parity-verified.

@@ -30,8 +30,8 @@
   },
   "current_batch": {
     "id": "B4",
-    "name": "missing values + row weights",
-    "status": "pending"
+    "name": "row weights (PCA row.w); B4b missing-values deferred",
+    "status": "in_progress"
   },
   "phases": [
     {
@@ -164,11 +164,11 @@
     },
     {
       "id": "B4",
-      "name": "missing values + row weights",
-      "status": "pending",
+      "name": "row weights (PCA row.w) \u2014 B4b missing-values deferred",
+      "status": "in_progress",
       "rollback_tag": "elves/pre-batch-b4",
       "commit": null,
-      "started_at": null,
+      "started_at": "2026-05-31",
       "completed_at": null
     }
   ],

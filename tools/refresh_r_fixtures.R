@@ -165,6 +165,13 @@ res_pca_plain <- PCA(decathlon[, 1:10], scale.unit = TRUE, ncp = 5, graph = FALS
 write_json(dump_pca(res_pca_plain), file.path(out_dir("pca"), "decathlon_plain.json"))
 cat("[fixtures] pca/decathlon_plain.json\n")
 
+# PCA with non-uniform row weights (deterministic 1/2/3 repeating pattern), to
+# verify the row.w path. R normalizes row.w/sum(row.w) internally.
+deca_rw <- rep(c(1, 2, 3), length.out = nrow(decathlon))
+res_pca_rw <- PCA(decathlon[, 1:10], scale.unit = TRUE, ncp = 5, row.w = deca_rw, graph = FALSE)
+write_json(dump_pca(res_pca_rw), file.path(out_dir("pca"), "decathlon_roww.json"))
+cat("[fixtures] pca/decathlon_roww.json\n")
+
 # ---- CA on children --------------------------------------------------------
 data(children)
 res_ca <- CA(children, row.sup = 15:18, col.sup = 6:8, graph = FALSE)
