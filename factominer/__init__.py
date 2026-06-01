@@ -9,7 +9,7 @@ from __future__ import annotations
 
 # Deferred methods. Imported so ``from factominer import HMFA`` works,
 # but the implementations raise NotImplementedError when called.
-from ._deferred import DMFA, HMFA, MFA
+from ._deferred import DMFA, HMFA
 from ._result import Result
 from .ca import CA
 from .desc import catdes, condes, dimdesc
@@ -17,6 +17,7 @@ from .famd import FAMD
 from .gpa import GPA
 from .hcpc import HCPC
 from .mca import MCA
+from .mfa import MFA
 from .pca import PCA
 
 __all__ = [

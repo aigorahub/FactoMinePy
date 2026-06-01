@@ -65,3 +65,52 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch A1 — MFA core — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+
+**Phase:** Implement complete; Validate (local green) done; rpy2-parity CI loop pending.
+**Rollback tag:** `elves/pre-batch-a1` (pushed).
+
+**Contract (behaviors):**
+- `factominer/mfa.py` implements `MFA(X, group, type, ncp, name_group)` for active
+  groups, uniform row weights, types `"s"`/`"c"`/`"n"` (frequency `"f"` / mixed `"m"`
+  raise `NotImplementedError` — no fixture exercises them; deferred).
+- Outputs: `eig`, `ind` (coord/cos2/contrib/dist), `quanti.var` (coord/cos2/contrib/cor),
+  `quali.var` (coord/cos2/contrib/v.test), `group` (coord/contrib/cos2/dist2 + the
+  `(K+1)×(K+1)` Lg/RV matrices), `svd`.
+- `group$correlation`, `ind$coord.partiel`, `partial.axes`, `inertia.ratio`,
+  `summary.quanti`, and supplementary groups (`num.group.sup`) are **A2 scope** —
+  not implemented here (num_group_sup raises NotImplementedError).
+
+**Build on (reuse, verified):**
+- Global eigen-step delegated to `factominer.PCA(scale_unit=False, col_w=ponderation,
+  quali_sup=raw_factors)` — exactly as R delegates to `FactoMineR::PCA`. This gives
+  ind, var→quanti.var, quali.sup→quali.var(coord/cos2/v.test), eig, svd for free, all
+  already parity-tested. Per-group λ₁ via `PCA`(s/c) / `MCA`(n) separate analyses.
+- New container `MFAGroup` in `_result.py`; `Result.group` field added.
+
+**Acceptance criteria:**
+- [x] ruff clean; sphinx -W builds; local pytest green (124 passed, 23 skipped).
+- [x] MFA runs on canonical poison `group=c(2,2,5,6) type=c("s","n","n","n")`;
+      internal check: group$coord sums to the eigenvalue per axis (Dim.1 = 3.0897 = eig₁).
+- [ ] **rpy2-parity zero drift** vs live R (eig 1e-10; coord/cos2/cor 1e-9; contrib 1e-8;
+      v.test 1e-6) — PENDING CI fixture generation.
+
+**Pre-implementation survey / source verification:**
+- Read R `MFA.R` (master) L1-40 (funcLg/moy.p/ec), L180-320 (data assembly + ponderation),
+  L340-500 (global PCA, eig slice, group/Lg/RV). Two research agents (R-source + literature
+  triangulation) converged on the keystone: group weight = 1/λ₁ (eigenvalue, not singular
+  value); categorical column = standardized centered indicator `(1[i∈k]−p)/√(p(1−p))` with
+  col.w `(1−p)/(λ₁·J)`; group$coord = contrib-fraction × eigenvalue.
+- Dataset decision: **canonical poison MFA** (already-bundled, provenance-documented) — the
+  license-clean reshape the plan preferred over bundling `wine`. No new dataset → the
+  licensing non-negotiable is satisfied with nothing to surface.
+
+**Fixture loop:** added `dump_mfa` + the poison MFA block to `tools/refresh_r_fixtures.R`,
+`r_mfa_poison` conftest fixture, `tests/test_mfa.py` (22 column-by-column tests, skip until
+fixture lands). Next: push → `gh workflow run ci.yml --ref feat/full-parity` → download
+`r-outputs-fresh` → commit `tests/fixtures/r_outputs/mfa/poison.json` → confirm zero drift.
+
+**Commit:** _pending (mid-implementation push to trigger CI)_
+
+---

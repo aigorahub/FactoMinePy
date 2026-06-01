@@ -34,6 +34,26 @@ class Block:
 
 
 @dataclass(frozen=True)
+class MFAGroup:
+    """MFA's ``res$group`` slot — the groups-of-variables block.
+
+    ``coord``/``contrib``/``cos2`` are ``K × ncp`` (one row per active group);
+    ``dist2`` is a length-``K`` Series; ``correlation`` is ``K × ncp`` (partial
+    group axes vs the global axes, A2 scope). ``Lg`` and ``RV`` are
+    ``(K+1) × (K+1)`` matrices whose last row/column is the global ``"MFA"``
+    configuration. Mirrors FactoMineR ``MFA(...)$group``.
+    """
+
+    coord: pd.DataFrame
+    contrib: pd.DataFrame | None = None
+    cos2: pd.DataFrame | None = None
+    dist2: pd.Series | None = None
+    correlation: pd.DataFrame | None = None
+    Lg: pd.DataFrame | None = None
+    RV: pd.DataFrame | None = None
+
+
+@dataclass(frozen=True)
 class SVD:
     vs: np.ndarray  # singular values
     U: np.ndarray   # left singular vectors (rows × ncp)
@@ -68,6 +88,8 @@ class Result:
     # the combined summary (squared loadings for quanti, eta² for quali).
     quanti_var: Block | None = None
     quali_var: Block | None = None
+    # MFA's groups-of-variables block (coord/contrib/cos2/dist2/correlation/Lg/RV).
+    group: MFAGroup | None = None
     # Method tag for ``summary()``: "PCA", "CA", "MCA", ...
     method: str = ""
 

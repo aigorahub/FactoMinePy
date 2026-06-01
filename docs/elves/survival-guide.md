@@ -60,10 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 22
+- **Planned batches remaining:** 22 (A1 in progress)
 - **Stop allowed right now:** no
-- **Why:** staging just completed; no batch implemented.
-- **Next required action:** in a fresh Claude Code session, launch with the prompt at the bottom of this file. The launch session starts Batch A1 (MFA core).
+- **Why:** A1 implementation done but not parity-verified; 21 more batches after it.
+- **Next required action:** run the rpy2-parity CI loop for A1's MFA fixture, confirm zero
+  drift, finish A1 review/docs, then proceed to A2.
 
 ---
 
@@ -118,13 +119,19 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Staging — launch-ready
+**Status:** Batch A1 (MFA core) — implementation complete, in the rpy2-parity CI loop
 
-**Active batch:** Batch 0 (session setup)
+**Active batch:** A1 — MFA core
 
-**What was just finished:** Created the `feat/full-parity` worktree + branch off the run-1+plan baseline, generated the run-2 survival guide / execution log / session JSON, carried forward run-1 learnings, ran preflight.
+**What was just finished:** Implemented `factominer/mfa.py` (MFA via the weighted-PCA
+engine; group/Lg/RV block); added `MFAGroup` to `_result.py`; un-stubbed MFA in
+`__init__.py`/`_deferred.py`; wrote `tests/test_mfa.py` + `dump_mfa` + the canonical poison
+MFA block in `tools/refresh_r_fixtures.R`. Local: ruff clean, sphinx -W ok, pytest 124
+passed / 23 skipped (21 MFA tests skip until the R fixture lands).
 
-**Single next action:** in a fresh session, paste the launch prompt (bottom) and start Batch A1 (MFA core).
+**Single next action:** push, then `gh workflow run ci.yml --repo aigorahub/FactoMinePy
+--ref feat/full-parity`; watch; download `r-outputs-fresh`; commit
+`tests/fixtures/r_outputs/mfa/poison.json`; run pytest; iterate to zero drift.
 
 ---
 

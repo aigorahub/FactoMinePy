@@ -1,7 +1,7 @@
 {
   "session_id": "elves-2026-05-31-factominepy-full-parity",
   "version": "1.11.0",
-  "status": "staged",
+  "status": "in_progress",
   "branch": "feat/full-parity",
   "worktree": "/Users/johnennis/aigora/dev/FactoMinePy-full-parity",
   "baseline_ref": "origin/docs/run-2-full-parity-plan",
@@ -19,7 +19,7 @@
     "remaining_batches": 22,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "Launch in a fresh Claude Code session from the worktree; start Batch A1 (MFA core). Work only on feat/full-parity in /Users/johnennis/aigora/dev/FactoMinePy-full-parity."
+    "next_required_action": "Batch A1 (MFA core): run the rpy2-parity CI loop to generate tests/fixtures/r_outputs/mfa/poison.json, confirm zero drift, finish A1 review/docs, then start A2."
   },
   "test_baseline": {
     "passed": 123,
@@ -28,7 +28,7 @@
     "status": "captured",
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
-  "current_batch": null,
+  "current_batch": {"id": "A1", "name": "MFA core", "status": "in_progress"},
   "phases": [
     {"id": "A", "name": "MFA family", "batches": ["A1 MFA core", "A2 MFA completeness", "A3 HMFA", "A4 DMFA"]},
     {"id": "B", "name": "Completeness in shipped methods", "batches": ["B1 FAMD sup vars", "B2 MCA sup-block parity + Burt", "B3 GPA edge cases", "B4 missing values + row weights", "B5 dimdesc CA/MCA"]},
@@ -38,7 +38,7 @@
     {"id": "F", "name": "Release", "batches": ["F1 version cut + publish"]}
   ],
   "batches": [
-    {"id": "A1", "name": "MFA core", "status": "pending", "rollback_tag": "elves/pre-batch-a1", "commit": null, "started_at": null, "completed_at": null}
+    {"id": "A1", "name": "MFA core", "status": "in_progress", "rollback_tag": "elves/pre-batch-a1", "commit": null, "started_at": "2026-05-31", "completed_at": null}
   ],
   "review_comments": []
 }

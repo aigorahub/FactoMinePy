@@ -6,8 +6,8 @@ import pandas as pd
 import pytest
 
 import factominer
-from factominer import CA, HCPC, MCA, PCA, catdes, condes, dimdesc
-from factominer.datasets import load_children, load_decathlon, load_tea
+from factominer import CA, HCPC, MCA, MFA, PCA, catdes, condes, dimdesc
+from factominer.datasets import load_children, load_decathlon, load_poison, load_tea
 
 
 def test_version_string():
@@ -67,7 +67,22 @@ def test_condes_runs():
     assert "quanti" in res or "quali" in res
 
 
-@pytest.mark.parametrize("name", ["MFA", "HMFA", "DMFA"])
+def test_mfa_runs():
+    poison = load_poison()
+    res = MFA(
+        poison,
+        group=[2, 2, 5, 6],
+        type=["s", "n", "n", "n"],
+        name_group=["desc", "desc2", "symptom", "eat"],
+    )
+    assert res.method == "MFA"
+    assert res.ind.coord.shape == (poison.shape[0], 5)
+    assert list(res.quanti_var.coord.index) == ["Age", "Time"]
+    assert res.group.coord.shape == (4, 5)
+    assert res.group.Lg.shape == (5, 5)  # K groups + the global "MFA" row/col
+
+
+@pytest.mark.parametrize("name", ["HMFA", "DMFA"])
 def test_deferred_methods_raise(name):
     fn = getattr(factominer, name)
     with pytest.raises(NotImplementedError):

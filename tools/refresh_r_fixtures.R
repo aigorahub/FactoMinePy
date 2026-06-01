@@ -88,6 +88,25 @@ dump_famd <- function(res) {
   )
 }
 
+dump_mfa <- function(res) {
+  grp <- res$group
+  list(
+    eig        = as.data.frame(res$eig),
+    ind        = dump_block(res$ind),
+    quanti.var = dump_block(res$quanti.var),
+    quali.var  = dump_block(res$quali.var),
+    group = list(
+      coord       = if (!is.null(grp$coord))       as.data.frame(grp$coord)       else NULL,
+      contrib     = if (!is.null(grp$contrib))     as.data.frame(grp$contrib)     else NULL,
+      cos2        = if (!is.null(grp$cos2))        as.data.frame(grp$cos2)        else NULL,
+      dist2       = if (!is.null(grp$dist2))       as.numeric(grp$dist2)          else NULL,
+      Lg          = if (!is.null(grp$Lg))          as.data.frame(grp$Lg)          else NULL,
+      RV          = if (!is.null(grp$RV))          as.data.frame(grp$RV)          else NULL
+    ),
+    svd        = list(vs = as.numeric(res$svd$vs))
+  )
+}
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -127,6 +146,21 @@ poison <- read.csv(poison_csv, row.names = 1, check.names = FALSE, stringsAsFact
 res_famd <- FAMD(poison, ncp = 5, graph = FALSE)
 write_json(dump_famd(res_famd), file.path(out_dir("famd"), "poison.json"))
 cat("[fixtures] famd/poison.json\n")
+
+# ---- MFA on poison ---------------------------------------------------------
+# Canonical FactoMineR poison MFA example, all groups active (no num.group.sup),
+# reusing the byte-identical `poison` read above. group=c(2,2,5,6):
+#   desc    = Age, Time                            (type "s", standardized quanti)
+#   desc2   = Sick, Sex                            (type "n", categorical)
+#   symptom = Nausea, Vomiting, Abdominals, Fever, Diarrhae   (type "n")
+#   eat     = Potato, Fish, Mayo, Courgette, Cheese, Icecream (type "n")
+res_mfa <- MFA(poison,
+               group      = c(2L, 2L, 5L, 6L),
+               type       = c("s", "n", "n", "n"),
+               name.group = c("desc", "desc2", "symptom", "eat"),
+               graph      = FALSE)
+write_json(dump_mfa(res_mfa), file.path(out_dir("mfa"), "poison.json"))
+cat("[fixtures] mfa/poison.json\n")
 
 # ---- GPA on the synthetic K=3 configuration dataset ------------------------
 # R's GPA is stochastic (random multi-start + rnorm basis completion), so we

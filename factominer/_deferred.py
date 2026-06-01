@@ -24,10 +24,6 @@ def _deferred(name: str, hint: str) -> Any:
     return stub
 
 
-MFA = _deferred(
-    "MFA",
-    "Multiple Factor Analysis is planned for the next iteration.",
-)
 HMFA = _deferred(
     "HMFA",
     "Hierarchical Multiple Factor Analysis is planned for the next iteration.",
