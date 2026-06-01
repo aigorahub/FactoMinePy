@@ -107,13 +107,15 @@ def plot_pca_ind(
             ax.annotate(str(label), (x, y), fontsize=8, alpha=0.85)
     if ellipse and habillage is not None:
         _draw_confidence_ellipses(ax, coord, habillage, res, level=ellipse_level, colors=colors)
-    if "ind.sup" not in invisible and res.ind_sup is not None:
-        sup_coord = res.ind_sup.coord.iloc[:, list(axes)]
+    ind_sup = getattr(res, "ind_sup", None)
+    if "ind.sup" not in invisible and ind_sup is not None:
+        sup_coord = ind_sup.coord.iloc[:, list(axes)]
         ax.scatter(sup_coord.iloc[:, 0], sup_coord.iloc[:, 1], marker="^", c="dimgray", s=40)
         for label, (x, y) in zip(sup_coord.index, sup_coord.to_numpy(), strict=True):
             ax.annotate(str(label), (x, y), fontsize=8, alpha=0.85, color="dimgray")
-    if "quali.sup" not in invisible and res.quali_sup is not None:
-        qs = res.quali_sup.coord.iloc[:, list(axes)]
+    quali_sup = getattr(res, "quali_sup", None)
+    if "quali.sup" not in invisible and quali_sup is not None:
+        qs = quali_sup.coord.iloc[:, list(axes)]
         ax.scatter(qs.iloc[:, 0], qs.iloc[:, 1], marker="s", c="darkred", s=50)
         for label, (x, y) in zip(qs.index, qs.to_numpy(), strict=True):
             ax.annotate(str(label), (x, y), fontsize=8, color="darkred", weight="bold")
@@ -132,7 +134,11 @@ def plot_pca_var(
         import matplotlib.pyplot as plt
         _, ax = plt.subplots(figsize=(6, 6))
     invisible = invisible or set()
-    coord = res.var.coord.iloc[:, list(axes)]
+    # FAMD/PCA expose ``var``; MFA/HMFA/DMFA/CaGalt expose ``quanti_var`` instead.
+    var_block = res.var if getattr(res, "var", None) is not None else getattr(res, "quanti_var", None)
+    if var_block is None:
+        raise ValueError(f"{res.method} has no variable block to plot for choix='var'")
+    coord = var_block.coord.iloc[:, list(axes)]
     # Correlation circle
     theta = np.linspace(0, 2 * np.pi, 256)
     ax.plot(np.cos(theta), np.sin(theta), color="lightgray", lw=1)
@@ -143,8 +149,9 @@ def plot_pca_var(
             ax.annotate("", xy=(x, y), xytext=(0, 0),
                         arrowprops=dict(arrowstyle="->", color="#1f77b4", lw=1.0))
             ax.annotate(str(label), (x, y), fontsize=9, color="#1f77b4")
-    if "quanti.sup" not in invisible and res.quanti_sup is not None:
-        qs = res.quanti_sup.coord.iloc[:, list(axes)]
+    quanti_sup = getattr(res, "quanti_sup", None)
+    if "quanti.sup" not in invisible and quanti_sup is not None:
+        qs = quanti_sup.coord.iloc[:, list(axes)]
         for label, (x, y) in zip(qs.index, qs.to_numpy(), strict=True):
             ax.annotate("", xy=(x, y), xytext=(0, 0),
                         arrowprops=dict(arrowstyle="->", color="darkgreen", lw=1.0, linestyle="--"))
