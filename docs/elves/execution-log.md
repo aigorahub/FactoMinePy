@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-06-01 (E1 plots-for-new-methods complete, structural)
-- **Current phase:** Phases A–D done (all analytic parity); E1 done; E2 (plot helpers) + F1 (release) remain
-- **Active batch:** E1 → done; next E2 (plot helpers — autoLab/plotellipses/partial; structural). B4b deferred.
-- **Last completed batch:** E1 (structural plots for FAMD/MFA/HMFA/DMFA/CaGalt, both backends)
-- **Next exact batch:** E2 (plot helpers — structural) → then F1 (release prep, HAND OFF tag/publish)
+- **Last updated:** 2026-06-01 (E2 plot helpers complete, structural)
+- **Current phase:** Phases A–D done (all analytic parity); E1 + E2 done; **F1 (release prep) is the last batch**
+- **Active batch:** E2 → done; next F1 (release prep + HAND OFF tag/publish + merge). B4b deferred.
+- **Last completed batch:** E2 (MFA partial-individuals plot; ellipses already work on new methods)
+- **Next exact batch:** F1 (confirm README all-✅, version=dev release, finalize CHANGELOG, final review; HAND OFF)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `ea0902f` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→266 passed, 2 skipped (+143 tests incl. 31 plot smoke; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `25fb541` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→267 passed, 2 skipped (+144 tests; skips unchanged)
 
 ---
 
@@ -66,6 +66,23 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch E2 — plot helpers — 2026-06-01 (COMPLETE — structural)
+
+**Phase:** Complete (structural; no R fixture). **Rollback tag:** `elves/pre-batch-e2`. Commit `25fb541`.
+
+- **MFA partial-individuals plot** (`plot_mfa_partial`, `choix="partial"`): global point + one partial
+  point per group joined by a line, from the parity-verified `res.ind.coord_partiel`. Raises cleanly
+  for methods without partial coords.
+- **Confidence ellipses** already work on the new methods' `ind` maps (the generalized `plot_pca_ind`
+  handles `ellipse=True`) — verified, no change needed. `coord.ellipse` vertex-parity-verified in run #1.
+- **`autoLab` deferred** (cosmetic non-overlapping label placement — no clean parity target; the
+  `adjustText` analogue would be a new dependency). **`plotGPApartial`** also deferred (GPA `Xfin`).
+- 32 plot smoke tests; 267 passed / 2 skipped.
+
+**This completes Phase E** (E3 ggplot is out of scope). Only F1 (release prep) remains.
+
+---
 
 ## Batch E1 — plots for the new methods — 2026-06-01 (COMPLETE — structural)
 

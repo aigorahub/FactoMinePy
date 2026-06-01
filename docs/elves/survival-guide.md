@@ -60,13 +60,14 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 2 (18 of 20 enumerated batches done; + B4b deferred work)
-- **Stop allowed right now:** no
-- **Why:** 18 done (Phases A–D + E1); 2 remain (E2 plot helpers [structural], F1 release) + B4b.
-  E3 (ggplot) is out of scope (recorded).
-- **Next required action:** start E2 (plot helpers — structural) → then F1 (release prep). Deferred:
-  B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise,
-  textual stacked multi-spec, simule/write.infile, E3 ggplot.
+- **Planned batches remaining:** 1 (19 of 20 done; + B4b deferred work). **F1 is the last batch.**
+- **Stop allowed right now:** no (F1 release prep remains). After F1's prep, **STOP + hand off** —
+  do NOT tag/publish/merge (those are the user's).
+- **Why:** 19 done (Phases A–E; E3 ggplot out of scope); 1 remains (F1 release prep) + B4b.
+- **Next required action:** start F1 (release prep — confirm README all-✅, version=dev release,
+  finalize CHANGELOG, final review). Deferred: B4b + the option-level items (Burt+quali_sup, MFA
+  reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise, textual multi-spec,
+  simule/write.infile, autoLab, E3 ggplot).
 
 ---
 
@@ -125,57 +126,59 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 Remaining: Phase E (plots — structural) + F1 (release). Everything analytic is parity-verified at the
 deterministic / supplementary bar.
 
-**Active batch:** E1 done → E2 (plot helpers — structural). B4b deferred.
+**Active batch:** E2 done → **F1 (release prep — the LAST batch)**. B4b deferred.
 
-**What was just finished:** E1 — structural plots for FAMD/MFA/HMFA/DMFA/CaGalt on both backends
-(`choix="var"` → `quanti_var` fallback; getattr-guarded optional sup blocks for the custom HMFA/DMFA
-result dataclasses). 30 plot smoke tests; 266 passed / 2 skipped. Commit `ea0902f`. Earlier: Phases
-A–D (all analytic parity).
+**What was just finished:** E2 — MFA partial-individuals plot (`choix="partial"`, from the
+parity-verified `coord_partiel`); ellipses already work on the new methods. autoLab/plotGPApartial
+deferred (cosmetic). 267 passed / 2 skipped. Commit `25fb541`. **Phases A–E complete** (all analytic
+parity + structural plots). Earlier: Phases A–D, E1.
 
-**Single next action:** tag `elves/pre-batch-e2`, then start E2 (plot helpers) — spec in the Next
-Exact Batch below. **NOTE: the run's core mission (all analytic-method parity) is COMPLETE; E2 is
-structural plot polish and F1 is release prep + hand-off.**
+**Single next action:** tag `elves/pre-batch-f1`, then start F1 (release prep) — spec in the Next
+Exact Batch below. **NOTE: F1 is PREP ONLY — confirm releasable state, finalize docs/version. The git
+tag → PyPI publish and the PR #5 merge are the USER's actions; never do them autonomously. After F1
+prep, the run is COMPLETE — leave a reactivation handoff and stop.**
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** E2 — plot helpers (**structural**; coords already parity-verified, no R numeric fixture —
-verify with smoke tests). Plot layer = `factominer/plot/` (`_data.py` + matplotlib/plotly backends).
-**Lower-value polish — the core analytic-parity mission is already complete.** Keep scope tight.
+**Batch:** F1 — release prep (the LAST batch). **PREP ONLY — never tag/publish/merge autonomously.**
 
-**Scope (smallest-first; do what's cheap, defer the rest):**
-1. **Partial-axis plot for MFA** — MFA's `res.ind.coord_partiel` (the per-(individual,group) partial
-   coords, already parity-verified) → a `plotMFApartial`-style overlay: for each individual, draw a
-   point per group + a line to the global point. Add as `choix="partial"` (or a small helper). Use the
-   existing `_data.py` geometry. `plotGPApartial` is the GPA analogue (GPA has `Xfin` per config).
-2. **`plotellipses` / `ellipseCA`** — `coord.ellipse` (the ellipse vertex generator) is ALREADY
-   shipped + vertex-parity-verified (run #1); `plot(..., ellipse=True, habillage=...)` already draws
-   them for PCA/MCA. Check it works for the new methods' ind maps; if a small generalization makes
-   ellipses available there, do it. Don't re-port `coord.ellipse`.
-3. **`autoLab` (smart non-overlapping label placement)** — a geometric label-repulsion algorithm.
-   **Highest effort, lowest value** for a parity port (it's a cosmetic layout heuristic with no clean
-   parity target). **Recommend DEFER/skip** unless trivial; record the decision. (Matplotlib's
-   `adjustText` is the analogue but is a new dep — don't add it.)
-4. **Smoke tests** in `tests/test_plot_newmethods.py` (extend it) for any new plot path added.
+**Steps:**
+1. **Confirm releasable state:** run `pytest -q` (expect 267 passed / 2 skipped) + `ruff check` +
+   `python -m sphinx -W -b html docs docs/_build/html` (docs build clean). Trigger ONE final
+   `rpy2-parity` CI (`gh workflow run ci.yml --ref feat/full-parity`) and confirm green (the GPA
+   fixture intrinsically "drifts" — that's expected per [[L22]]; tests stay green).
+2. **README:** confirm the status table is all-✅ for every analytic method with honest tiers (GPA
+   ⚠️ rotation-invariant; plots structural). Keep the "experimental" warning (maintainer's standing
+   ask — soften only with explicit user approval). Optionally add a short "Newly added in this run"
+   line listing MFA family / CaGalt / regression / textual / predict / reconst / estim_ncp / descfreq
+   / utilities.
+3. **Version:** likely a **dev release** (e.g. bump `__version__` in `factominer/__init__.py` +
+   `pyproject.toml` from `0.2.0.dev0` → `0.3.0.dev0`) since the experimental warning stays — do NOT
+   cut 1.0.0 without explicit approval. Decide + apply the bump, note it in CHANGELOG.
+4. **CHANGELOG:** finalize the `[Unreleased]` section (it already lists every addition); consider
+   renaming it to the chosen version with today's date, or leave `[Unreleased]` for the user to stamp.
+5. **Final review:** optionally a review fan-out (parity claims, CHANGELOG accuracy, version, docs
+   xrefs). Then write the **reactivation handoff** in the execution log (branch/PR, final status,
+   remaining deferred items, the exact resume prompt).
 
-**Parity bar:** structural only. No deterministic R fixture (so no rpy2-parity round — lint-and-test
-CI runs the smoke tests).
+**THEN STOP — Final Completion / hand-off:**
+- **NEVER** `git tag` / trigger `release.yml` / publish to PyPI — that is the USER's call.
+- **NEVER** merge PR #5 — the user merges.
+- Per process note P2, at Final Completion `git rm` the `docs/elves/*` + `.elves-session.json`
+  operational artifacts from the branch so the merged PR diff is product-code only (keep
+  `docs/plans/...`). Do this as the LAST commit, only when truly finishing — OR leave them and tell
+  the user, since removing them loses the resume state if more work is wanted. **Default: leave them
+  and flag for the user** unless you are certain the run is fully done.
 
-**Rollback tag:** `elves/pre-batch-e2` (create before starting).
+**Rollback tag:** `elves/pre-batch-f1` (create before starting).
 
-**Deferred (carry forward):** B4b; Burt + `quali_sup`; MFA `reconst` (all-quanti); CaGalt `type="n"`
-+ `conf_ellip`; `meansComp`; LinearModel Type-II/AIC-BIC selection; textual stacked multi-spec;
-`simule`/`write.infile` (out of scope); `autoLab` (cosmetic); **E3 ggplot (OUT OF SCOPE — record).**
-
-**After E2 → F1 (release prep):** confirm README status table all-✅ + honest tiers (GPA
-rotation-invariant; plots structural); decide the version (the maintainer's standing ask keeps the
-"experimental" warning — soften only with explicit approval, so likely a dev release like
-`0.3.0.dev0`, NOT 1.0.0); finalize CHANGELOG; run the full suite + a final rpy2-parity green. **Then
-STOP and hand off: F1's git tag → `release.yml` auto-publishes to PyPI — that publish is the USER's
-call, NEVER do it autonomously. NEVER merge PR #5 — the user merges.** At Final Completion, `git rm`
-the `docs/elves/*` + `.elves-session.json` operational artifacts from the PR (per process note P2)
-so the merged diff is product-code only.
+**Deferred (record in the handoff — option-level, not whole methods):** B4b (missing values +
+FAMD `ind_sup`); Burt + `quali_sup`; MFA `reconst` (all-quanti); CaGalt `type="n"` + `conf_ellip` +
+`level_ventil`; `meansComp`; LinearModel Type-II SS + aic/bic stepwise; textual stacked multi-spec;
+`tab.disjonctif.prop`; `simule`/`write.infile` (out of scope); `autoLab` + `plotGPApartial`
+(cosmetic plots); E3 ggplot (out of scope).
 
 ---
 

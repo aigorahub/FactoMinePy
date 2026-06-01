@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 2,
+    "remaining_batches": 1,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "Phases A-D + E1 done (all analytic parity + structural plots for new methods). Start E2 (plot helpers — STRUCTURAL polish, no R fixture; partial plots / ellipses; autoLab likely skip). Then F1 (release prep — confirm README, version=dev release, final review). HAND OFF tag/publish + merge to the user. Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise, simule/write.infile, autoLab, E3 ggplot."
+    "next_required_action": "Phases A-E done (ALL analytic parity + structural plots). LAST batch = F1 (release PREP ONLY: confirm pytest/ruff/sphinx green + 1 final rpy2-parity, confirm README all-checkmark, decide version=dev release e.g. 0.3.0.dev0, finalize CHANGELOG, write reactivation handoff). THEN STOP: never tag/publish/merge autonomously (user's call). Deferred option-level items recorded in survival guide."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,8 +29,8 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "E2",
-    "name": "plot helpers (structural polish)",
+    "id": "F1",
+    "name": "release prep (hand-off; never tag/publish/merge)",
     "status": "not_started"
   },
   "phases": [
@@ -261,6 +261,16 @@
       "started_at": "2026-06-01",
       "completed_at": "2026-06-01",
       "parity": "structural (no R fixture) — plot() handles FAMD/MFA/HMFA/DMFA/CaGalt on matplotlib+plotly; 30 smoke tests green."
+    },
+    {
+      "id": "E2",
+      "name": "plot helpers (MFA partial plot)",
+      "status": "complete",
+      "rollback_tag": "elves/pre-batch-e2",
+      "commit": "25fb541",
+      "started_at": "2026-06-01",
+      "completed_at": "2026-06-01",
+      "parity": "structural — MFA partial-individuals plot (choix='partial' from coord_partiel); ellipses already work on new methods. autoLab/plotGPApartial deferred (cosmetic). PHASE E DONE (E3 ggplot out of scope)."
     }
   ],
   "review_comments": [
