@@ -21,6 +21,7 @@ from .mfa import MFA
 from .pca import PCA
 from .predict import predict
 from .reconst import estim_ncp, reconst
+from .reg_best import RegBest
 
 __all__ = [
     "PCA",
@@ -40,6 +41,7 @@ __all__ = [
     "predict",
     "reconst",
     "estim_ncp",
+    "RegBest",
     "Result",
 ]
 

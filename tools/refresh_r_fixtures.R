@@ -200,6 +200,16 @@ dump_cagalt <- function(res) {
   )
 }
 
+# RegBest: the per-size R2/Pvalue summary, plus the chosen best model's R2 +
+# coefficient table (Estimate/Std. Error/t value/Pr(>|t|)).
+dump_regbest <- function(res) {
+  list(
+    summary   = as.data.frame(res$summary),
+    best.r2   = as.numeric(res$best$r.squared),
+    best.coef = as.data.frame(res$best$coefficients)
+  )
+}
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -559,5 +569,14 @@ res_cagalt_s <- CaGalt(Y = cagalt_df[, 1:6], X = cagalt_df[, 7:9],
                        type = "s", conf.ellip = FALSE, graph = FALSE)
 write_json(dump_cagalt(res_cagalt_s), file.path(out_dir("cagalt"), "synth_s.json"))
 cat("[fixtures] cagalt/synth_s.json\n")
+
+# ---- RegBest on decathlon (predict Rank from the 10 events) -----------------
+# Rank ~ events is non-degenerate (R^2 0.36->0.73) and the three criteria pick
+# different best sizes (r2/Cp -> 6 vars, adjr2 -> 7), exercising each rule.
+for (meth in c("r2", "Cp", "adjr2")) {
+  rb <- RegBest(y = decathlon[, "Rank"], x = decathlon[, 1:10], method = meth)
+  write_json(dump_regbest(rb), file.path(out_dir("regbest"), paste0("decathlon_", tolower(meth), ".json")))
+  cat(sprintf("[fixtures] regbest/decathlon_%s.json\n", tolower(meth)))
+}
 
 cat("\ndone.\n")

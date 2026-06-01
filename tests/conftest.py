@@ -198,3 +198,18 @@ def r_descfreq_children() -> dict:
 @pytest.fixture(scope="session")
 def r_cagalt_synth_s() -> dict:
     return _load_r_fixture("cagalt", "synth_s")
+
+
+@pytest.fixture(scope="session")
+def r_regbest_decathlon_r2() -> dict:
+    return _load_r_fixture("regbest", "decathlon_r2")
+
+
+@pytest.fixture(scope="session")
+def r_regbest_decathlon_cp() -> dict:
+    return _load_r_fixture("regbest", "decathlon_cp")
+
+
+@pytest.fixture(scope="session")
+def r_regbest_decathlon_adjr2() -> dict:
+    return _load_r_fixture("regbest", "decathlon_adjr2")
