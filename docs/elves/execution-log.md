@@ -17,7 +17,7 @@
 - **Active batch:** Batch 0 (session setup)
 - **Last completed batch:** none (run #2)
 - **Next exact batch:** A1 (MFA core)
-- **Active PR:** _created with the Batch 0 push_
+- **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
 - **Collision tripwire:** `19c448b`
 
 ---

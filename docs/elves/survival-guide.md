@@ -168,7 +168,7 @@ first and verify hard.
 - **Execution log:** `docs/elves/execution-log.md`
 - **Session JSON:** `.elves-session.json`
 - **Branch:** `feat/full-parity` | **Worktree:** `/Users/johnennis/aigora/dev/FactoMinePy-full-parity`
-- **PR:** _filled after creation_
+- **PR:** #5 — https://github.com/aigorahub/FactoMinePy/pull/5
 - **Collision tripwire:** `19c448b`
 
 ---
