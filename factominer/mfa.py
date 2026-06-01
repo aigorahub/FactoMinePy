@@ -49,24 +49,13 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
+from ._corr import weighted_corr
 from ._result import Block, MFAGroup, Result
 from .mca import MCA
 from .pca import PCA
 
 _QUANTI_TYPES = {"s", "c"}
 _SUPPORTED_TYPES = {"s", "c", "n"}
-
-
-def _weighted_corr(a: np.ndarray, b: np.ndarray, w: np.ndarray) -> float:
-    """Weighted (ML / population) Pearson correlation — matches R's
-    ``cov.wt(cbind(a, b), wt, method="ML", cor=TRUE)$cor[1,2]``."""
-    w = w / w.sum()
-    da = a - float((a * w).sum())
-    db = b - float((b * w).sum())
-    cov = float((w * da * db).sum())
-    va = float((w * da * da).sum())
-    vb = float((w * db * db).sum())
-    return cov / np.sqrt(va * vb) if va > 0 and vb > 0 else 0.0
 
 
 def _modality_label(var: str, level: str) -> str:
@@ -366,7 +355,7 @@ def MFA(  # noqa: N802 — mirrors R's function name
     cor_grpe = np.zeros((nbre_group, ncp_eff))
     for g in range(nbre_group):
         for k in range(ncp_eff):
-            cor_grpe[g, k] = _weighted_corr(partial_coords[g][:, k], global_coord[:, k], rw)
+            cor_grpe[g, k] = weighted_corr(partial_coords[g][:, k], global_coord[:, k], rw)
 
     group_block = MFAGroup(
         coord=pd.DataFrame(coord_group, index=name_group, columns=dim_names),

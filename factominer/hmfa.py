@@ -46,6 +46,7 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
+from ._corr import weighted_corr
 from ._result import SVD, Block
 from .mfa import MFA
 from .pca import PCA
@@ -126,14 +127,6 @@ def _hweight(
         cw = np.asarray(niv2.call["col_w"], dtype=np.float64) * cw
         cw_partiel.append(cw.copy())
     return cw_partiel
-
-
-def _corr(a: np.ndarray, b: np.ndarray) -> float:
-    """Unweighted Pearson correlation (R's ``cor`` default)."""
-    ac = a - a.mean()
-    bc = b - b.mean()
-    denom = np.sqrt(float((ac * ac).sum()) * float((bc * bc).sum()))
-    return float((ac * bc).sum() / denom) if denom > 0 else 0.0
 
 
 def HMFA(  # noqa: N802 — mirrors R's function name
@@ -259,7 +252,9 @@ def HMFA(  # noqa: N802 — mirrors R's function name
         nbgroup = len(H[h])
         for g in range(nbgroup):
             pg = partial[h][:, :, g]
-            canon_rows.append(np.array([_corr(ind_coord[:, k], pg[:, k]) for k in range(nb_vp)]))
+            canon_rows.append(
+                np.array([weighted_corr(ind_coord[:, k], pg[:, k]) for k in range(nb_vp)])
+            )
         canon_labels += _level_labels(h, nbgroup)
     group_canonical = pd.DataFrame(np.vstack(canon_rows), index=canon_labels, columns=dim_names)
 

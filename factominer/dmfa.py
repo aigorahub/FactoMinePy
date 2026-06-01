@@ -40,6 +40,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from ._corr import corr_matrix
 from ._result import SVD, Block
 from ._scaling import column_indices
 from .pca import PCA
@@ -81,17 +82,6 @@ def _scale(block: np.ndarray, scale_unit: bool) -> np.ndarray:
         sd = np.where(sd == 0, 1.0, sd)
         return centered / sd
     return centered
-
-
-def _corr_cols(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    """Column-wise Pearson correlation matrix between the columns of ``a`` and
-    ``b`` (unweighted, R's ``cor(a, b)``)."""
-    ac = a - a.mean(axis=0)
-    bc = b - b.mean(axis=0)
-    sa = np.sqrt((ac**2).sum(axis=0))
-    sb = np.sqrt((bc**2).sum(axis=0))
-    out = (ac.T @ bc) / np.outer(sa, sb)
-    return out
 
 
 def DMFA(  # noqa: N802 — mirrors R's function name
@@ -183,10 +173,10 @@ def DMFA(  # noqa: N802 — mirrors R's function name
         fs_lv = ind_block.coord.loc[don2.index[mask]].to_numpy()
         fs[lv] = fs_lv
         var_partiel[lv] = pd.DataFrame(
-            _corr_cols(Xc[lv].to_numpy(), fs_lv), index=xc_labels, columns=dim_names
+            corr_matrix(Xc[lv].to_numpy(), fs_lv), index=xc_labels, columns=dim_names
         )
         cor_dim_gr[lv] = pd.DataFrame(
-            _corr_cols(fs_lv, fs_lv), index=dim_names, columns=dim_names
+            corr_matrix(fs_lv, fs_lv), index=dim_names, columns=dim_names
         )
 
     # Group block: coord[j,s] = v_sᵀ Cov_active_j v_s / λ_s (R/DMFA.R:65-82).
