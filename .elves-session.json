@@ -1,7 +1,7 @@
 {
   "session_id": "elves-2026-05-31-factominepy-full-parity",
   "version": "1.11.0",
-  "status": "in_progress",
+  "status": "complete",
   "branch": "feat/full-parity",
   "worktree": "/Users/johnennis/aigora/dev/FactoMinePy-full-parity",
   "baseline_ref": "origin/docs/run-2-full-parity-plan",
@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 1,
-    "stop_allowed": false,
+    "remaining_batches": 0,
+    "stop_allowed": true,
     "checkpoint_is_stop": false,
-    "next_required_action": "Phases A-E done (ALL analytic parity + structural plots). LAST batch = F1 (release PREP ONLY: confirm pytest/ruff/sphinx green + 1 final rpy2-parity, confirm README all-checkmark, decide version=dev release e.g. 0.3.0.dev0, finalize CHANGELOG, write reactivation handoff). THEN STOP: never tag/publish/merge autonomously (user's call). Deferred option-level items recorded in survival guide."
+    "next_required_action": "RUN COMPLETE — all 20 batches (Phases A-F) done; every analytic FactoMineR 2.14 method ported + parity-verified vs live R; version bumped to 0.3.0.dev0. Hand off: the user merges PR #5 and tags/publishes (never autonomously). Deferred option-level items + a resume prompt are in the F1 reactivation handoff (execution log)."
   },
   "test_baseline": {
     "passed": 123,
@@ -31,7 +31,7 @@
   "current_batch": {
     "id": "F1",
     "name": "release prep (hand-off; never tag/publish/merge)",
-    "status": "not_started"
+    "status": "complete"
   },
   "phases": [
     {
@@ -271,6 +271,16 @@
       "started_at": "2026-06-01",
       "completed_at": "2026-06-01",
       "parity": "structural — MFA partial-individuals plot (choix='partial' from coord_partiel); ellipses already work on new methods. autoLab/plotGPApartial deferred (cosmetic). PHASE E DONE (E3 ggplot out of scope)."
+    },
+    {
+      "id": "F1",
+      "name": "release prep (hand-off)",
+      "status": "complete",
+      "rollback_tag": "elves/pre-batch-f1",
+      "commit": "1651c9a",
+      "started_at": "2026-06-01",
+      "completed_at": "2026-06-01",
+      "parity": "release PREP only: version 0.3.0.dev0, README/CHANGELOG refreshed, 267 passed/2 skipped, ruff+sphinx clean, final rpy2-parity green. RUN COMPLETE - user merges PR #5 + tags/publishes (never autonomous)."
     }
   ],
   "review_comments": [

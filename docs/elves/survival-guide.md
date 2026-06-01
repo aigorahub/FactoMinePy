@@ -60,14 +60,13 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 1 (19 of 20 done; + B4b deferred work). **F1 is the last batch.**
-- **Stop allowed right now:** no (F1 release prep remains). After F1's prep, **STOP + hand off** —
-  do NOT tag/publish/merge (those are the user's).
-- **Why:** 19 done (Phases A–E; E3 ggplot out of scope); 1 remains (F1 release prep) + B4b.
-- **Next required action:** start F1 (release prep — confirm README all-✅, version=dev release,
-  finalize CHANGELOG, final review). Deferred: B4b + the option-level items (Burt+quali_sup, MFA
-  reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise, textual multi-spec,
-  simule/write.infile, autoLab, E3 ggplot).
+- **Planned batches remaining:** 0. **ALL 20 batches done (Phases A–F). RUN COMPLETE.**
+- **Stop allowed right now:** YES (finite mode, all phases complete → Final Completion). Pending only
+  the final readiness rpy2-parity CI confirming green; once green the run is fully done — **hand off**.
+- **Why:** every analytic FactoMineR 2.14 method ported + parity-verified; F1 release prep done.
+- **Next required action:** NONE — confirm the final CI is green, then STOP. The user merges PR #5 and
+  tags/publishes. **Never merge/tag/publish autonomously.** Deferred option-level items are listed in
+  the F1 reactivation handoff (execution log).
 
 ---
 

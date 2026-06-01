@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-06-01 (E2 plot helpers complete, structural)
-- **Current phase:** Phases A–D done (all analytic parity); E1 + E2 done; **F1 (release prep) is the last batch**
-- **Active batch:** E2 → done; next F1 (release prep + HAND OFF tag/publish + merge). B4b deferred.
-- **Last completed batch:** E2 (MFA partial-individuals plot; ellipses already work on new methods)
-- **Next exact batch:** F1 (confirm README all-✅, version=dev release, finalize CHANGELOG, final review; HAND OFF)
+- **Last updated:** 2026-06-01 (F1 release prep complete — RUN COMPLETE, awaiting user hand-off)
+- **Current phase:** **ALL 6 phases (A–F) done.** Full FactoMineR 2.14 analytic parity achieved.
+- **Active batch:** F1 → done (release PREP). **Run complete — user merges PR #5 + tags/publishes.**
+- **Last completed batch:** F1 (bump 0.3.0.dev0; README/CHANGELOG refreshed; final CI green)
+- **Next exact batch:** NONE — run complete. See the **Reactivation handoff** in the F1 entry below.
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `25fb541` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→267 passed, 2 skipped (+144 tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `1651c9a` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→267 passed, 2 skipped (full A–F build)
 
 ---
 
@@ -66,6 +66,48 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch F1 — release prep — 2026-06-01 (COMPLETE — RUN COMPLETE, awaiting user hand-off)
+
+**Phase:** Complete (prep only). **Rollback tag:** `elves/pre-batch-f1`. Commit `1651c9a`.
+
+**Done:** version `0.2.0.dev0` → `0.3.0.dev0` (dev release; experimental warning kept per the
+maintainer's standing ask — NOT 1.0.0) in `pyproject.toml` / `__init__.py` / `docs/conf.py`;
+CHANGELOG `[Unreleased]` stamped `[0.3.0.dev0] - 2026-06-01`; README Status + Known-limitations
+rewritten (the stale "MFA/HMFA/DMFA are stubs" text removed) and the experimental warning made
+accurate (option-level gaps, not whole methods). Final checks: **267 passed / 2 skipped**, ruff clean,
+`sphinx -W` builds clean, final rpy2-parity CI green.
+
+### ⛔ Hand-off — the run is COMPLETE. The maintainer (day manager) does the rest:
+- **Merge:** the user merges PR #5 — https://github.com/aigorahub/FactoMinePy/pull/5. (Baseline note:
+  PR #5 stacks on `origin/docs/run-2-full-parity-plan` because run #1's PR #3 is unmerged; it
+  retargets to `main` as PR #3 → #4 merge — correct regardless of merge order.) **Never merge
+  autonomously.**
+- **Release:** the user tags `v0.3.0.dev0` → `release.yml` auto-publishes to PyPI (trusted publisher
+  already bound). **Never tag/publish autonomously.**
+- **Artifact cleanup (optional, at merge time):** per process note P2, `git rm` `docs/elves/*` +
+  `.elves-session.json` so the merged diff is product-code only (keep `docs/plans/...`). Left in place
+  here so the run stays resumable if more work is wanted.
+
+### Reactivation handoff (to resume in a fresh chat)
+- **Branch:** `feat/full-parity`, tip `1651c9a`. **Worktree:** `/Users/johnennis/aigora/dev/FactoMinePy-full-parity`.
+- **Final status:** all 20 enumerated batches done (A1–A4, B1–B5, C1–C3, D1–D4, E1–E2, F1; E3 ggplot
+  out of scope). Every analytic FactoMineR 2.14 method ported + parity-verified vs live R.
+- **Deferred (option-level, NOT whole methods)** — pick up any of these as a new mini-run:
+  B4b (missing values across PCA/CA/MCA/GPA + FAMD `ind_sup`); MCA Burt + `quali_sup`; MFA `reconst`
+  (all-quanti); CaGalt `type="n"` + `conf_ellip` + `level_ventil`; `meansComp` (needs emmeans/
+  multcompView); LinearModel Type-II SS + aic/bic stepwise; `textual` stacked multi-spec;
+  `tab.disjonctif.prop`; `simule`/`write.infile` (out of scope); `autoLab`/`plotGPApartial` (cosmetic);
+  E3 ggplot (out of scope).
+- **Resume prompt (deferred work):** "Resume the FactoMinePy parity work in the worktree
+  /Users/johnennis/aigora/dev/FactoMinePy-full-parity on branch feat/full-parity. The main run is
+  complete (PR #5). Pick up the deferred B4b missing-value handling: implement R's NA paths for
+  PCA/MCA + FAMD ind_sup, fixtures via the rpy2-parity CI loop. Survival guide + learnings have the
+  context."
+
+**🎉 This completes elves run #2: complete R FactoMineR 2.14 feature parity.**
+
+---
 
 ## Batch E2 — plot helpers — 2026-06-01 (COMPLETE — structural)
 
