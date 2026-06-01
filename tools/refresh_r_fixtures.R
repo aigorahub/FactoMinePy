@@ -84,6 +84,10 @@ dump_famd <- function(res) {
     var        = dump_block(res$var),
     quanti.var = dump_block(res$quanti.var),
     quali.var  = dump_block(res$quali.var),
+    quanti.sup = dump_block(res$quanti.sup),   # NULL (dropped) for the active-only fixture
+    quali.sup  = dump_block(res$quali.sup),
+    var.coord.sup = if (!is.null(res$var$coord.sup)) as.data.frame(res$var$coord.sup) else NULL,
+    var.cos2.sup  = if (!is.null(res$var$cos2.sup))  as.data.frame(res$var$cos2.sup)  else NULL,
     svd        = list(vs = as.numeric(res$svd$vs))
   )
 }
@@ -186,6 +190,13 @@ poison <- read.csv(poison_csv, row.names = 1, check.names = FALSE, stringsAsFact
 res_famd <- FAMD(poison, ncp = 5, graph = FALSE)
 write_json(dump_famd(res_famd), file.path(out_dir("famd"), "poison.json"))
 cat("[fixtures] famd/poison.json\n")
+
+# ---- FAMD on poison with supplementary variables ---------------------------
+# Time (quanti) and Sex (quali) are supplementary; reuses the byte-identical
+# poison read above. Exercises FAMD's sup-quanti + sup-quali machinery.
+res_famd_sup <- FAMD(poison, ncp = 5, sup.var = c("Time", "Sex"), graph = FALSE)
+write_json(dump_famd(res_famd_sup), file.path(out_dir("famd"), "poison_sup.json"))
+cat("[fixtures] famd/poison_sup.json\n")
 
 # ---- MFA on poison ---------------------------------------------------------
 # Canonical FactoMineR poison MFA example, all groups active (no num.group.sup),

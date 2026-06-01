@@ -67,6 +67,42 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
+## Batch B1 — FAMD supplementary variables — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+
+**Phase:** Implement complete; local green; rpy2-parity CI loop pending. First Phase-B batch.
+**Rollback tag:** `elves/pre-batch-b1` (pushed).
+
+**Contract:** add `sup_var` to `factominer/famd.py` — supplementary quantitative + qualitative
+variables, routed through the inner PCA's `quanti_sup` / `quali_sup` (R FAMD does the same). sup-quanti
+pre-scaled like active quanti (center + pop sd) → PCA quanti.sup correlations; sup-quali appended as
+RAW factor → PCA quali.sup barycenters (coord/cos2/v.test/eta2) — NO active-quali transform (the trap).
+Adds `var$coord.sup`/`cos2.sup` (sq loadings + eta²; FAMD.R:176-184) via new `Block.coord_sup`/`cos2_sup`.
+
+**Scope decision:** `ind_sup` (supplementary individuals) DEFERRED to B4 (missing values + row
+weights) — it needs active-only row weighting threaded through every FAMD scaling formula
+(q_center/q_sd/prop/bary/eta2/vtest), a delicate change to parity-verified code best done alongside
+B4's row-weight work. `FAMD(..., ind_sup=...)` raises a clear NotImplementedError pointing there.
+
+**Build on:** PCA's existing `quanti_sup`/`quali_sup` blocks (already parity-verified). The active
+FAMD path is UNCHANGED when `sup_var=None` (column partition reduces to all-active) — active FAMD
+regression stays 18/18 green.
+
+**Local checks (pre-CI):** ruff clean; sphinx -W; pytest 179 passed / 10 skipped (8 FAMD-sup tests
+await the fixture). Smoke: `FAMD(poison, sup_var=["Time","Sex"])` → active quanti=Age, quanti_sup=Time,
+quali_sup=Sex categories, var.coord_sup=[Time,Sex].
+
+**Fixture (license-clean):** `FAMD(poison, sup.var=c("Time","Sex"))` — already-bundled poison.
+Extended `dump_famd` (NULL sup blocks drop out, so the active `poison.json` stays byte-identical);
+new `famd/poison_sup.json`.
+
+**Hardest parity point:** sup-quali v.test (PCA barycenter form vs FAMD raw-coord form — algebraically
+equal, verify numerically) and the bare-vs-prefixed category labels (test normalizes by suffix).
+
+**Next:** push → trigger CI → verify the 8 FAMD-sup tests vs fresh R + confirm the active poison.json
+is unchanged (zero drift) → commit fixture.
+
+---
+
 ## Batch A4 — DMFA — 2026-05-31 (COMPLETE — 15/15 parity vs live R; PHASE A DONE)
 
 **Phase:** Implement → Validate → Review → Document, done. Parity-verified. **MFA family complete.**

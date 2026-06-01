@@ -34,6 +34,10 @@ class Block:
     # MFA's per-group partial coordinates (``res$ind$coord.partiel``): an
     # ``(n·K) × ncp`` frame with one row per (individual, group) pair.
     coord_partiel: pd.DataFrame | None = None
+    # FAMD's combined supplementary-variable summary (``var$coord.sup`` /
+    # ``var$cos2.sup``): squared loadings for sup-quanti, eta² for sup-quali.
+    coord_sup: pd.DataFrame | None = None
+    cos2_sup: pd.DataFrame | None = None
 
 
 @dataclass(frozen=True)

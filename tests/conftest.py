@@ -66,6 +66,11 @@ def r_famd_poison() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_famd_poison_sup() -> dict:
+    return _load_r_fixture("famd", "poison_sup")
+
+
+@pytest.fixture(scope="session")
 def r_mfa_poison() -> dict:
     return _load_r_fixture("mfa", "poison")
 
