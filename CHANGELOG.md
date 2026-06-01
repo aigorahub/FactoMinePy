@@ -9,6 +9,20 @@ out of pre-release.
 
 ### Added
 
+- **`HMFA` (Hierarchical Multiple Factor Analysis)** is now implemented
+  (`factominer/hmfa.py` + an `HMFAResult` container). HMFA generalizes MFA to a
+  hierarchy of groups (`H`, a list of per-level group counts): each hierarchy
+  level multiplies in another `1/λ₁` normalization, then a single weighted PCA
+  on the level-1-standardized matrix yields the analysis. Outputs `eig`, `ind`,
+  `quanti.var`, `quali.var`, `group.coord` (one matrix per hierarchy level),
+  `group.canonical` (canonical correlations), and the per-level partial
+  coordinate arrays. Parity-verified column-by-column against live R FactoMineR
+  2.14 on a categorical 2-level poison hierarchy and a pure-quantitative
+  decathlon hierarchy. Group types `"s"`/`"c"`/`"n"`, active groups, uniform
+  row weights. As part of this, `MFA` gained a `weight_col_mfa` argument and
+  exposes its internal data matrix / column weights / expanded group sizes,
+  which HMFA reuses per level.
+
 - **`MFA` (Multiple Factor Analysis)** is now implemented
   (`factominer/mfa.py` + an `MFAGroup` result container). MFA runs a single
   global weighted PCA on the per-group-normalized (`1/λ₁`) concatenation of the

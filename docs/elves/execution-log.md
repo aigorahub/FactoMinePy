@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-31 (A2 complete, parity-verified)
-- **Current phase:** Batch A2 (MFA completeness) complete; Batch A3 (HMFA) next
-- **Active batch:** A2 → done; next A3 (HMFA)
-- **Last completed batch:** A2 (MFA completeness) — 27/27 parity tests green vs live R
-- **Next exact batch:** A3 (HMFA — hierarchical MFA on the existing MFA primitives)
+- **Last updated:** 2026-05-31 (A3 complete, parity-verified)
+- **Current phase:** Batch A3 (HMFA) complete; Batch A4 (DMFA) next — last Phase-A method
+- **Active batch:** A3 → done; next A4 (DMFA)
+- **Last completed batch:** A3 (HMFA) — 14/14 parity tests green vs live R (first pass)
+- **Next exact batch:** A4 (DMFA — dual MFA; per-group standardized PCA + group trace)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `b69e136` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→150 passed, 2 skipped (the +27 are MFA parity tests; skip count unchanged)
+- **Collision tripwire (latest own HEAD):** `d0cf12d` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→164 passed, 2 skipped (the +41 are MFA/HMFA parity tests; skips unchanged)
 
 ---
 
@@ -67,10 +67,30 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
-## Batch A3 — HMFA — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+## Batch A3 — HMFA — 2026-05-31 (COMPLETE — 14/14 parity vs live R, first pass)
 
-**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Phase:** Implement → Validate → Review → Document, done. Parity-verified, no iteration.
 **Rollback tag:** `elves/pre-batch-a3` (pushed).
+**Commits:** `71b0212` (impl + MFA extension + harness), `d0cf12d` (R fixtures).
+
+**Validation (final):** ruff clean; sphinx -W builds; pytest **164 passed / 2 skipped** (back to
+the 2-skip baseline — all 14 HMFA tests run and pass). CI run 26732009122 **green on both jobs,
+first attempt** — every channel matched live R FactoMineR 2.14 with zero fixes: eig, ind
+(coord/cos2/contrib/dist), quanti.var (coord/cor/cos2/contrib), quali.var (coord/contrib),
+group.coord (per hierarchy level), group.canonical. Two fixtures: poison categorical hierarchy +
+decathlon pure-quanti sanity.
+
+**Self-review:** the keystone `hweight` per-level `1/λ₁` accumulation is implicitly validated by
+the clean eig/group$coord parity — and by the invariant that the top-level group coords sum to the
+eigenvalue per axis (L2 Dim.1 = 1.8799 = eig₁). The MFA `weight_col_mfa` extension kept MFA's 27
+channels unchanged (regression green).
+
+**Regression attestation:** new `factominer/hmfa.py`, `tests/test_hmfa.py`, `hmfa/*.json`; additive
+edits to `mfa.py` (new optional `weight_col_mfa` defaulting to ones → identical behavior; additive
+call-dict keys), `__init__.py`/`_deferred.py` (HMFA stub→live), `refresh_r_fixtures.R`,
+`conftest.py`, `test_smoke.py`. No product changed outside MFA-family scope; MFA's 27 + the rest of
+the suite stay green. Test baseline 150→164 passed, skips 2→2. **Confidence: HIGH** — first-pass
+parity on a complex method via maximal reuse of the already-verified MFA/PCA engines.
 
 **Contract:** `factominer/hmfa.py` implements Hierarchical MFA on the MFA primitives. `H` =
 list of per-level group counts (`H[0]` elementary sizes, `H[h≥1]` #prev-level groups per node);
@@ -99,8 +119,12 @@ decathlon[:,1:10] `H=[[4,3,3],[1,2]]` all `s` (pure-quanti sanity). New `dump_hm
 **Deferred (recorded):** `quali.var$partial`, `ind$within.inertia`, the full `partial`-array dump
 (validated indirectly via `canonical`), DMFA stays stubbed.
 
-**Next:** push → trigger CI (dump_hmfa generates hmfa/poison.json + hmfa/decathlon.json) → verify
-the 13 HMFA tests vs fresh R → commit fixtures → confirm zero drift.
+**Docs updated:** README (HMFA ✅/✅, status prose, stub note → DMFA), ROADMAP, CHANGELOG, learnings
+L16–L17.
+
+**Next:** confirm zero-drift CI, then A4 (DMFA — last Phase-A method). DMFA spec captured (per-group
+standardized PCA + `group$coord = v_sᵀ Cov_j v_s / λ_s`; decathlon/Competition fixture). Note DMFA
+does NOT use MFA's `1/λ₁` weighting (see [[L16]]).
 
 ---
 

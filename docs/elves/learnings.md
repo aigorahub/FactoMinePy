@@ -208,6 +208,32 @@ coord/contrib/cos2/within.inertia/coord.partiel), `as.numeric(NULL)` →
 `np.asarray(..., float)`. **Don't assert a channel R doesn't actually emit.**
 Check the R result's real field list before writing the per-channel test.
 
+### L16 — HMFA/DMFA reuse the MFA/PCA engines; expose internals via the call dict
+
+HMFA is MFA with a per-hierarchy-level `1/λ₁` accumulation, then one weighted
+`PCA(XTDC, col.w=poids_top, scale_unit=False)`. The clean first-pass parity
+(14/14, no iteration) came from **reusing the already-verified MFA + PCA**: MFA
+gained a `weight_col_mfa` arg (threaded into the separate quantitative analyses,
+not the data matrix) and exposes `call["XTDC"]` / `["col_w"]` / `["group_mod"]`,
+which HMFA's `hweight` re-enters per level (`cw = niv2.col_w * cw`). Lesson for
+the MFA family generally: when a method is "built on MFA primitives", expose the
+needed internals on the result `call` dict and add narrow optional params rather
+than re-implementing — the parity comes for free. **Self-check that generalizes:
+the top-level group$coord sums to the eigenvalue per axis** (HMFA, like MFA).
+DMFA (A4) is different — it does *per-group standardization* (`scale()` per
+level), NOT `1/λ₁` weighting, and its `group$coord` is a trace form
+`v_sᵀ Cov_j v_s / λ_s` — so don't assume the MFA weighting pattern there.
+
+### L17 — Doubly sign-ambiguous matrices (rows AND columns) need 2-D alignment
+
+`MFA partial.axes` coord/cor are indexed by each group's *separate*-analysis
+axes (rows) and the global axes (columns); both carry arbitrary SVD signs, so a
+column-only `align_to_reference` leaves per-row flips (e.g. a group's smallest
+separate axis). Fix: align columns, then flip any row whose dot with the
+reference is negative (`_align_2d` in `tests/test_mfa.py`). Tell-tale that it's a
+benign sign issue and not a bug: the pre-alignment ratio `py/ref` is exactly
+±1 across each affected row. Same principle as [[L5]], extended to 2-D.
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch

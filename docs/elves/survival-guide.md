@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 20 (A1 + A2 complete + parity-verified)
+- **Planned batches remaining:** 19 (A1+A2+A3 complete + parity-verified)
 - **Stop allowed right now:** no
-- **Why:** A1+A2 done; 20 batches remain (A3–A4, B1–B5, C1–C3, D1–D4, E1–E3, F1).
-- **Next required action:** confirm A2 zero-drift CI green, then start A3 (HMFA) — first extend
-  `mfa.py` with `weight_col_mfa` + `call["XTDC"/"col_w"/"group_mod"]`.
+- **Why:** A1–A3 done; 19 batches remain (A4, B1–B5, C1–C3, D1–D4, E1–E3, F1).
+- **Next required action:** confirm A3 zero-drift CI green, then start A4 (DMFA, last Phase-A
+  method). Entropy check due after A4 (3 batches since last).
 
 ---
 
@@ -119,55 +119,54 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Batches A1 + A2 COMPLETE — MFA fully parity-verified (27/27 vs live R). A3 (HMFA) next.
+**Status:** Batches A1+A2+A3 COMPLETE — MFA + HMFA parity-verified (41 channels vs live R). A4 next.
 
-**Active batch:** A2 done → A3 (HMFA)
+**Active batch:** A3 done → A4 (DMFA), the last Phase-A method.
 
-**What was just finished:** A1 (MFA core, 21 channels) + A2 (MFA completeness: coord.partiel,
-group.correlation, partial.axes, inertia.ratio — 6 more channels). 150 passed / 2 skipped; ruff +
-sphinx clean. Commits `8607b69`/`81c94be`/`caebd01` (A1), `0e5aaae`/`b69e136` (A2). Docs updated
-(README/ROADMAP/CHANGELOG/learnings L12–L15). HMFA (A3) research spec captured.
+**What was just finished:** A1 (MFA core), A2 (MFA completeness), A3 (HMFA — 14/14 first-pass parity;
+extended `mfa.py` with `weight_col_mfa` + call exposure, built `hmfa.py` on the MFA/PCA engines).
+164 passed / 2 skipped; ruff + sphinx clean. Commits through `d0cf12d`. Docs updated
+(README/ROADMAP/CHANGELOG/learnings L16–L17). DMFA (A4) research spec captured.
 
-**Single next action:** confirm A2 zero-drift CI green, then start A3 (HMFA). **A3 prerequisite:**
-extend `mfa.py` to accept `weight_col_mfa` and expose `call["XTDC"]` / `["col_w"]` / `["group_mod"]`
-(HMFA's `hweight` re-enters MFA per hierarchy level passing `weight.col.mfa`, multiplying in one
-`1/λ₁` per level). Fixture: poison `H=[[2,2,5,6],[2,2]]`, type `[s,n,n,n]` (license-clean reshape).
+**Single next action:** confirm A3 zero-drift CI green, then start A4 (DMFA). DMFA =
+per-group-standardized stacked data → `PCA(quali_sup=grouping factor)` → DMFA-specific group block
+`group$coord[j,s] = v_sᵀ Cov_j v_s / λ_s`, `coord.n` (÷ group's λ₁), `cos2`, plus `var.partiel` /
+`cor.dim.gr` / `Cov`. Reuses PCA wholesale (~50-60 new lines). NOT MFA's `1/λ₁` weighting.
+Fixture: `DMFA(decathlon, num.fact=13, quanti.sup=c(11,12))` (Competition factor) — license-clean.
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** A3 — HMFA (Hierarchical MFA)
+**Batch:** A4 — DMFA (Dual MFA)
 
-**Scope:** `factominer/hmfa.py` (or extend MFA). HMFA = MFA with per-hierarchy-level `1/λ₁`
-accumulation, then one weighted `PCA(scale_unit=False)` on the level-1-normalized `XTDC` with the
-accumulated column weights. `H = list of per-level group counts` (`H[[1]]` = elementary group sizes
-like MFA's `group`; `H[[h≥2]]` = #groups-of-previous-level per node). Ported helpers: `htabdes`
-(expand group-of-groups → XTDC column counts), `hdil`, `hweight` (HMFA.R L41-56 — the keystone).
-Outputs: `eig`, `ind` (+ `coord.partiel` per level), `quanti.var`, `quali.var`, `group$coord`
-(LIST, one matrix per level), `group$canonical` (canonical correlations), `partial` (per-level
-arrays). Remove the HMFA stub.
+**Scope:** `factominer/dmfa.py`. `DMFA(don, num_fact, scale_unit=True, ncp=5, quanti_sup, quali_sup)`.
+`num_fact` = column index of the grouping factor; it splits individuals into `ng` groups. Algorithm
+(DMFA.R): (1) per-group center+scale each level's sub-table with that group's own mean/sd
+(`scale()`), build `Cov[[j]]` = `cor`(scale_unit) or `cov` of the per-group sub-table; (2) vertically
+stack the per-group-centered data, prepend the factor; (3) `res.pca = PCA(stacked, quali_sup=[factor],
+quanti_sup=...)` — a plain unweighted PCA (PCA's own `scale_unit` stays True, decoupled from DMFA's);
+(4) **reorder `ind` back to original row order** (DMFA.R L49-52); (5) DMFA group block:
+`group$coord[j,s] = v_sᵀ Cov_j v_s / λ_s` where `v_s` = `res.pca.var.coord[:,s]` (the LOADINGS, not
+V_tilde) and `λ_s` = global eig; `group$coord.n[j,s] = coord/λ₁(Cov_j)`; `group$cos2 = coord²/Σλ(Cov_j)²·100`;
+plus `var.partiel[[j]]=cor(Xc_j, FS_j)`, `cor.dim.gr[[j]]=cor(FS_j)`, `Cov`, `Xc`. Remove the DMFA stub.
 
-**A3 PREREQUISITE (do first):** extend `factominer/mfa.py` to (1) accept `weight_col_mfa` and thread
-it into BOTH the separate-group analyses (multiply col weights before computing λ₁) AND the final
-`ponderation`; (2) store `XTDC` (the `data` matrix), `col_w` (ponderation), and `group_mod` (expanded
-per-group col counts) in the result `call` dict. HMFA's `hweight` re-calls `MFA(XTDC,
-group=Hinter[[n]], type="c", weight.col.mfa=cw)` at each level ≥ 2 and reads `call$col.w` /
-`call$group.mod` / `call$XTDC`. This is the single hardest parity point.
+**Reuse:** PCA wholesale for eig/ind/var/quanti.sup/svd; ~50-60 new lines for the per-group
+centering + the group trace block. New `DMFAResult` (or extend) with `group.coord/coord_n/cos2`,
+`var_partiel`, `cor_dim_gr`, `Cov`, `Xc`.
 
-**Fixture (license-clean):** poison `H=list(c(2,2,5,6), c(2,2))`, type `c("s","n","n","n")`
-(level-2 super-groups: description={desc,desc2}, signs={symptom,eat}); plus a pure-quanti sanity:
-decathlon[:,1:10] `H=list(c(4,3,3), c(1,2))`, type all `"s"`. Needs a new `dump_hmfa` (group$coord is
-a list-per-level, partial is a list-per-level of per-node arrays). Full research spec in the A3 entry
-of the execution log / the HMFA research summary.
+**Hardest parity point:** `group$coord` trace `v_sᵀ Cov_j v_s / λ_s` — `V` is `var.coord` (loadings),
+`Cov_j` uses n−1 (`scale()`/`cor`/`cov`), and three different normalizers (global λ_s, group λ₁,
+Σλ²). DMFA does NOT use MFA's `1/λ₁` group weighting — per-group standardization instead ([[L16]]).
 
-**Acceptance:** eig/ind/quanti.var/quali.var/group$coord(per level)/canonical to the deterministic
-bar; ruff clean; rpy2-parity green.
+**Fixture (license-clean):** `DMFA(decathlon, num.fact=13, scale.unit=TRUE, quanti.sup=c(11,12))`
+(Competition factor: Decastar n=13 / OlympicG n=28; 10 events active, Rank/Points sup). Optional
+active-only sanity: `DMFA(decathlon[,c(1:10,13)], num.fact=11)`. New `dump_dmfa`.
 
-**Risk:** the `hweight` per-level `1/λ₁` accumulation via `weight.col.mfa` (HMFA.R L51-52). Verify
-`poids[[1]]`/`poids[[2]]` before trusting the full fixture. See [[L12]].
+**Acceptance:** eig/ind/var/group(coord/coord.n/cos2)/cor.dim.gr to the deterministic bar; ruff
+clean; rpy2-parity green.
 
-**Rollback tag:** `elves/pre-batch-a3` (create before starting).
+**Rollback tag:** `elves/pre-batch-a4` (create before starting).
 
 ---
 
