@@ -292,6 +292,24 @@ from R's *predict* source, not by extending the fit scaling; and always test
 predict with **held-out** rows, because the in-sample check (predict(train) ==
 `ind$coord`) holds for *any* self-consistent extension and won't catch this.
 
+### L21 — `estim_ncp` picks the FIRST local minimum, and `reconst(CA)` needs no original table
+
+`estim_ncp` does NOT return `which.min(criterion)`. R returns
+`which(diff(crit)>0)[1]` — the first component count where the criterion stops
+decreasing (the first local minimum), falling back to the global min only if the
+criterion never increases. Index carefully: with `ncp.min==0` the criterion
+vector is prepended with the 0-component value, so the chosen position maps to
+`idx + ncp.min` either way. estim_ncp runs a **plain** SVD of the centred /
+sd-scaled (ddof=1) table — not FactoMineR's row/col-weighted PCA — so don't route
+it through the `PCA` engine. The GCV denominator is
+`(n-1)(p-pquali) - q(n+p-pquali-q-1)`; `pquali>0` only for the all-categorical
+(disjunctive) path.
+
+`reconst(CA)` reconstructs the contingency table purely from the stored row/col
+margins (`marge_row`/`marge_col`) and grand total (`N`) plus the coords/eig — the
+original table is never needed (`hatX = N·(√Rr·S·√Rc + Rr·Rcᵀ)`). Full-rank
+reconstruction reproduces the active table to ~1e-14, a strong self-check.
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch

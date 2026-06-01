@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 9 (10 of 20 enumerated batches done; + B4b deferred work)
+- **Planned batches remaining:** 8 (11 of 20 enumerated batches done; + B4b deferred work)
 - **Stop allowed right now:** no
-- **Why:** 10 done (A1–A4, B1–B5, C1); 9 remain (C2–C3, D1–D4, E1–E3, F1) + B4b.
-- **Next required action:** start C2 (reconst + estim_ncp). Deferred: B4b (missing values + FAMD
-  ind_sup), Burt+quali_sup. Entropy check done at C1 boundary (tree clean, logs OK).
+- **Why:** 11 done (A1–A4, B1–B5, C1, C2); 8 remain (C3, D1–D4, E1–E3, F1) + B4b.
+- **Next required action:** start C3 (descfreq). Deferred: B4b (missing values + FAMD ind_sup),
+  Burt+quali_sup, MFA reconst (all-quanti only). Entropy check done at C1 boundary.
 
 ---
 
@@ -119,62 +119,65 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Phase A + B done; Phase C started. **C1 (predict.*) complete.** 10 of 20 batches;
+**Status:** Phase A + B done; Phase C in progress. **C1 + C2 complete.** 11 of 20 batches;
 everything parity-verified at the deterministic / supplementary bar.
 
-**Active batch:** C1 done → C2 (reconst + estim_ncp). B4b (missing values + FAMD ind_sup) deferred.
+**Active batch:** C2 done → C3 (descfreq). B4b (missing values + FAMD ind_sup) deferred.
 
-**What was just finished:** C1 — `predict.PCA/MCA/FAMD/MFA` (`factominer.predict`). One shared
-`_project_scaled` helper; per-method training-stat scaling. MFA needed R's idiosyncratic categorical
-predict scaling (`(1[cat]-2·marge.col)/ec`, centred at 2p/J), distinct from the fit parametrization
-([[L20]]). PCA's `ind_sup` refactored onto the shared helper. 216 passed / 2 skipped; rpy2-parity
-green (run 26735782046). Commits `bfa74a8`, `17dada0` + close-out. Earlier: Phase A, B1–B5.
+**What was just finished:** C2 — `reconst` (PCA + CA low-rank reconstruction) + `estim_ncp`
+(GCV/Smooth component estimation), new `factominer/reconst.py`. Both verbatim from R; reconst
+reproduces the active table at full rank (~1e-14); estim_ncp matches R's criterion + chosen ncp
+([[L21]]). 220 passed / 2 skipped; rpy2-parity green (run 26736100357). Commit `da48f88` + close-out.
+Earlier: Phase A, B1–B5, C1 (predict.*).
 
-**Single next action:** tag `elves/pre-batch-c2`, then start C2 (reconst + estim_ncp).
+**Single next action:** tag `elves/pre-batch-c3`, then start C3 (descfreq).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** C2 — `reconst` + `estim_ncp`
+**Batch:** C3 — `descfreq` (describe frequency-table rows by their columns)
 
-**Scope (from the plan):**
-- **`reconst(res, ncp)`** — low-rank reconstruction of the original table from a PCA / CA / MFA
-  result, using the first `ncp` axes. R `reconst.R` (~41 lines). For PCA:
-  `Xhat = (ind.coord[,1:ncp] %*% t(var.coord[,1:ncp]) / sqrt(eig)... )` then un-scale by
-  `ecart.type` and add back `centre` — i.e. `Xhat[i,j] = centre_j + ecart.type_j · Σ_{d≤ncp}
-  F_id·G_jd/λ_d`? **Read R `reconst.R` for the exact rank-`ncp` formula and which coords it uses**
-  (it likely reuses `svd$U`/`svd$V`/`svd$vs` directly: `Xhat = U[,1:ncp] diag(vs[1:ncp]) V[,1:ncp]'`
-  then un-whiten by `/sqrt(row.w)/sqrt(col.w)`, un-scale, re-centre). CA's reconstruction is in the
-  chi-square metric. The port stores `res.svd` (U_tilde/vs/V_tilde) + `call` centre/scale/row_w/col_w
-  for PCA — everything needed. Returns a DataFrame the shape of the active table.
-- **`estim_ncp(X, ncp.min, ncp.max, scale, method)`** — estimate the number of PCA components by
-  GCV / generalized cross-validation (the "Smooth" / "GCV" criteria). R `estim_ncp.R`. Returns the
-  chosen `ncp` + the criterion curve. This is a model-selection routine over PCA reconstructions.
+**Scope (from the plan):** `descfreq(donnee, by.quali=NULL, proba=0.05)` — the CA analogue of
+`catdes`. For each ROW of a contingency/frequency table, find the COLUMNS whose cell count is
+significantly over- or under-represented vs the marginals (two-sided hypergeometric test), returning
+per row a frame of significant columns sorted by descending `v.test`. R `descfreq.R` is captured
+below; **the implementation is already drafted in `factominer/desc/descfreq.py`** (uncommitted) —
+verify it, wire exports + fixture + test, run the CI loop.
 
-**Build on:** `res.svd` (already `U_tilde`/`vs_full`/`V_tilde`), `res.call` (`mean`/`scale`/`row_w`/
-`col_w`/`active_frame`). `reconst` is essentially `_project_scaled` run backwards — a low-rank
-`U diag(vs) V'` un-whitened/un-scaled. `estim_ncp` loops `reconst` over candidate `ncp`. Likely a
-new `factominer/reconst.py` (+ maybe `estim_ncp` alongside, or in a small `_ncp.py`). Export both.
+**R algorithm (verbatim from `descfreq.R`):** per row `j`, column `k`, cell `n_jk`:
+- `aux2 = n_jk/marge.col[k]`, `aux3 = marge.li[j]/sum(marge.li)`.
+- over (`aux2>aux3`): `p = phyper(n_jk-1, marge.col[k], total-marge.col[k], marge.li[j],
+  lower.tail=FALSE)*2` = `2·P(X≥n_jk)`. under: `p = phyper(n_jk, ...)*2` = `2·P(X≤n_jk)`.
+  (scipy: `rv=hypergeom(M=total, n=marge.col[k], N=marge.li[j])`; over=`sf(n_jk-1)*2`,
+  under=`cdf(n_jk)*2`.) If `p>1`: `p = 2-p`.
+- keep if `p<proba`; `v.test = (1-2·[aux2>aux3])·qnorm(p/2)` (over→+, under→−);
+  row = `[n_jk/marge.li[j]·100, marge.col[k]/total·100, n_jk, marge.col[k], p, v.test]`.
+- Per row, sort by `v.test` desc; columns = `["Intern %","glob %","Intern freq","Glob freq ",
+  "p.value","v.test"]` (note the trailing space in "Glob freq "); rownames = the column names.
+- `by.quali`: first aggregate rows by summing within each factor level.
 
-**Fixtures (license-clean):** `reconst(PCA(decathlon[,1:10]), ncp=2)` → `reconst/pca_decathlon.json`
-(the n×p reconstructed matrix); `reconst(CA(children), ncp=2)` if CA reconst is in scope;
-`estim_ncp(decathlon[,1:10], ...)` → `estim_ncp/decathlon.json` (the chosen ncp + criterion vector).
-Add a `dump_reconst`/`dump_estim_ncp` to `tools/refresh_r_fixtures.R`.
+**Build on:** the hypergeometric + `±qnorm(p/2)` v.test machinery already in `desc/catdes.py`
+(`scipy.stats.hypergeom`, `stats.norm.ppf`). NOTE descfreq uses the **plain** `phyper×2` test, NOT
+catdes's mid-p — keep them distinct. New module `factominer/desc/descfreq.py`; export via
+`desc/__init__.py` + top `__init__.py`.
 
-**Parity bar:** reconst is a deterministic linear map → **1e-9** on the reconstructed entries (it's
-just coords × loadings). estim_ncp's criterion curve → 1e-7 relative; the chosen integer `ncp` must
-match exactly.
+**Fixture (license-clean):** `descfreq(children[1:14, 1:5])` → `descfreq/children.json` (the active
+children contingency table; reuse the already-bundled dataset). R returns a per-row named list of
+matrices — dump each row's matrix (drop/keep the trailing-space column name carefully). Add a
+`dump_descfreq` to `tools/refresh_r_fixtures.R`.
 
-**Risk:** R's `reconst` may reconstruct in the *scaled* space vs the original units — check whether
-it re-adds `centre` and multiplies by `ecart.type` (PCA) or works in the CA chi-square metric. For
-`estim_ncp`, R has multiple criteria (`"GCV"`, `"Smooth"`) — verify which is the default and match
-its exact GCV formula (the residual-variance / penalty expression). Read both R sources first.
+**Parity bar:** p.value 1e-5 relative (hypergeometric); v.test 1e-6; the Intern/glob %/freq columns
+exact (1e-9). The set of significant columns per row must match exactly.
 
-**Rollback tag:** `elves/pre-batch-c2` (create before starting).
+**Risk:** the column-name with the trailing space (`"Glob freq "`); the over/under tail selection
+(strict `>` for over, else under — ties go to the under/cdf branch); two-sided doubling + the `p>1 →
+2-p` clamp. The per-row sort order (descending v.test). Match R's exact phyper arguments.
+
+**Rollback tag:** `elves/pre-batch-c3` (create before starting).
 
 **Deferred (carry forward):** B4b = missing-value handling (PCA/CA/MCA/GPA) + FAMD `ind_sup`;
-Burt + `quali_sup` combination. Slot into the long tail (Phase D).
+Burt + `quali_sup`; MFA `reconst` (all-quanti only). Slot into the long tail (Phase D).
 
 ---
 

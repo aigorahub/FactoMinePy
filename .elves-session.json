@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 9,
+    "remaining_batches": 8,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "A1-A4 + B1-B5 + C1 done (all CI-green, zero drift). Start C2 (reconst + estim_ncp). Deferred: B4b (missing values + FAMD ind_sup), Burt+quali_sup."
+    "next_required_action": "A1-A4 + B1-B5 + C1 + C2 done (all CI-green, zero drift). Start C3 (descfreq). Deferred: B4b (missing values + FAMD ind_sup), Burt+quali_sup, MFA reconst."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,8 +29,8 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "C2",
-    "name": "reconst + estim_ncp",
+    "id": "C3",
+    "name": "descfreq",
     "status": "not_started"
   },
   "phases": [
@@ -191,6 +191,16 @@
       "started_at": "2026-06-01",
       "completed_at": "2026-06-01",
       "parity": "predict.PCA/MCA/FAMD/MFA all parity-verified vs live R (run 26735782046, zero drift); supplementary tier 1e-7"
+    },
+    {
+      "id": "C2",
+      "name": "reconst + estim_ncp",
+      "status": "complete",
+      "rollback_tag": "elves/pre-batch-c2",
+      "commit": "da48f88",
+      "started_at": "2026-06-01",
+      "completed_at": "2026-06-01",
+      "parity": "reconst PCA/CA + estim_ncp GCV/Smooth parity vs live R (run 26736100357, zero drift); reconst 1e-9, criterion 1e-7"
     }
   ],
   "review_comments": [

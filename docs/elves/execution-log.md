@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-06-01 (C1 complete, parity-verified)
-- **Current phase:** Phase A + B done; Phase C started — C1 (predict.*) done, C2 (reconst + estim_ncp) next
-- **Active batch:** C1 → done; next C2 (reconst + estim_ncp). B4b (missing values + FAMD ind_sup) deferred.
-- **Last completed batch:** C1 (predict.PCA/MCA/FAMD/MFA) — all four parity-verified vs live R
-- **Next exact batch:** C2 (reconst low-rank reconstruction + estim_ncp component estimation)
+- **Last updated:** 2026-06-01 (C2 complete, parity-verified)
+- **Current phase:** Phase A + B done; Phase C — C1 + C2 done, C3 (descfreq) next
+- **Active batch:** C2 → done; next C3 (descfreq). B4b (missing values + FAMD ind_sup) deferred.
+- **Last completed batch:** C2 (reconst + estim_ncp) — PCA/CA reconst + GCV/Smooth estim_ncp parity vs live R
+- **Next exact batch:** C3 (descfreq — describe frequency-table rows by their columns; CA analogue of catdes)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `17dada0` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→216 passed, 2 skipped (+93 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `da48f88` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→220 passed, 2 skipped (+97 parity tests; skips unchanged)
 
 ---
 
@@ -66,6 +66,44 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch C2 — reconst + estim_ncp — 2026-06-01 (COMPLETE — parity vs live R)
+
+**Phase:** Complete. rpy2-parity CI green (run 26736100357); 4 fixtures generated + zero drift.
+**Rollback tag:** `elves/pre-batch-c2` (pushed).
+
+**Contract:** `reconst(res, ncp)` — low-rank reconstruction of the active table from the first `ncp`
+axes; `estim_ncp(X, ncp.min, ncp.max, scale, method)` — estimate the PCA component count by GCV /
+smoothing. New `factominer/reconst.py`; both exported.
+
+**Implementation (verbatim from R `reconst.R` / `estim_ncp.r`, fetched via the GitHub API):**
+- **reconst PCA:** `hatX = coord.ind[,1:ncp] @ (coord.var[,1:ncp]/√eig)ᵀ`, then `× ecart.type`,
+  `+ centre`. **CA:** chi-square reconstruction `sum(X)·(√Rr · S · √Rc + Rr·Rcᵀ)` with
+  `S = (U√eig)Vᵀ`, `U = row.coord·√Rr/√eig`, `V = col.coord·√Rc/√eig` — needs only the stored
+  `marge_row`/`marge_col`/`N` (not the original table). Full-rank reconstruction reproduces the
+  active table to ~1e-14. **MFA reconst deferred** (needs per-group separate-analysis scales; only
+  defined for all-quanti groups) — recorded.
+- **estim_ncp:** plain SVD of the centred (+ optionally sd-scaled, ddof=1) table; incremental
+  rank-q reconstructions; GCV criterion `mean((n·p·(X-rec)/((n-1)(p-pquali) - q(n+p-pquali-q-1)))²)`;
+  Smooth criterion via the `(1-1/n-a)` / `(1-b)` leverage normalization. Chooses the **first local
+  minimum** of the criterion (`which(diff(crit)>0)[1]`), not the global min ([[L21]]).
+
+**Fixtures (license-clean):** `reconst/pca_decathlon` (PCA(decathlon[,1:10]), ncp=2),
+`reconst/ca_children` (CA(children, sup), ncp=2), `estim_ncp/decathlon_gcv` +
+`estim_ncp/decathlon_smooth` (ncp.max=6). Added `dump_reconst`/`dump_estim_ncp`.
+
+**Checks:** ruff clean; **220 passed / 2 skipped**; rpy2-parity green; reconst entries match R to
+1e-9, estim_ncp criterion to 1e-7 rel and the chosen `ncp` exactly (GCV→3, Smooth→2 on decathlon).
+
+**Regression attestation:** additive — new `reconst.py`, new `test_reconst.py`, two new exports. No
+existing code touched besides `__init__`. **Confidence: HIGH.**
+
+**Docs updated:** README (reconst + estim_ncp rows), ROADMAP (C2 ✅), CHANGELOG, learnings L21,
+survival guide + `.elves-session.json` advanced to C3.
+
+**Commits:** `da48f88` (impl), + this close-out.
+
+---
 
 ## Batch C1 — predict.* family — 2026-06-01 (COMPLETE — all four parity vs live R)
 

@@ -18,6 +18,14 @@ out of pre-release.
 
 ### Added
 
+- **`reconst` + `estim_ncp`.** `factominer.reconst(res, ncp)` rebuilds the
+  active table from the first `ncp` axes of a fitted `PCA` (un-scaled to the
+  original units) or `CA` (chi-square reconstruction from the stored margins);
+  full-rank reconstruction reproduces the original table. `factominer.estim_ncp`
+  estimates the number of PCA dimensions by generalized cross-validation
+  (`method="GCV"`, default) or the smoothing criterion (`method="Smooth"`),
+  returning the chosen `ncp` and the criterion curve. Both parity-verified
+  against live R FactoMineR 2.14.
 - **`predict.*` — project new individuals onto a fitted model.** New
   `factominer.predict(res, newdata)` (dispatching on the model type) projects
   held-out individuals onto a fitted `PCA`, `MCA`, `FAMD`, or `MFA`, returning
