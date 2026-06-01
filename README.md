@@ -26,7 +26,7 @@ source of truth for exactly what works and at what parity bar.
 | --- | --- | --- | --- | --- |
 | `PCA` | `factominer.PCA` | ✅ | ✅ | active + supplementary individuals, quanti.sup, quali.sup |
 | `CA` | `factominer.CA` | ✅ | ✅ | symmetric biplot, supplementary rows/columns |
-| `MCA` | `factominer.MCA` | ✅ | ✅ | indicator matrix (parity-verified); a Burt option exists but is not parity-verified |
+| `MCA` | `factominer.MCA` | ✅ | ✅ | indicator + Burt methods (both parity-verified); active + supplementary variables (`quanti_sup` correlations, `quali_sup` category barycenters with v.test/eta²). Burt is not yet combined with `quali_sup` |
 | `HCPC` | `factominer.HCPC` | ✅ | ✅ | hierarchical clustering on PCA/CA/MCA, k-means consolidation |
 | `dimdesc` | `factominer.dimdesc` | ✅ | ✅ | quantitative + categorical description per axis |
 | `catdes` | `factominer.catdes` | ✅ | ✅ | `Cla/Mod`, `Mod/Cla`, `Global`, hypergeometric v-test; `quanti_var` Eta²; per-level `quanti` with `sd in category` / `Overall sd` / `n` |

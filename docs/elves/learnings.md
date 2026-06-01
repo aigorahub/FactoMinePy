@@ -234,6 +234,21 @@ reference is negative (`_align_2d` in `tests/test_mfa.py`). Tell-tale that it's 
 benign sign issue and not a bug: the pre-alignment ratio `py/ref` is exactly
 ±1 across each affected row. Same principle as [[L5]], extended to 2-D.
 
+### L18 — MCA sup blocks route through CA col.sup; Burt is a post-transform
+
+R MCA = `CA(Ztot, col.sup=quali_sup_categories)`, so **quali.sup coord/cos2 are
+the CA col.sup projection directly — NO `/√λ` rescale** (the same principal-CA
+convention as the active `var$coord`; do not apply the PCA-style barycenter
+`/√eig` v.test). quali.sup v.test reuses the active multiplier
+`√(n_c(N-1)/(N-n_c))`; quali.sup eta² is the per-variable weighted correlation
+ratio of the *individual* coords ([[weighted_eta2]] in `_corr.py`, shared with
+FAMD). quanti.sup is the weighted correlation of the sup numeric var with the
+individual coords (R uses `svd$U`; scale-invariant). **Burt** is a pure
+post-transform of the indicator decomposition: `eig = λ_ind²`, category coord
+`= ψ·√λ_ind`, cos² vs the all-axes Burt distance-to-centroid (`auxil`);
+`ind`/`contrib`/`eta²` unchanged. Strong checks: `eig_burt == eig_indicator²`
+exactly; Burt var coord / indicator var coord `= √λ_ind` per axis.
+
 ## Process notes
 
 ### P1 — One PR for the whole run, not one per batch

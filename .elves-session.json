@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 17,
+    "remaining_batches": 13,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "Phase A + entropy check + B1 (FAMD sup vars) done, all CI-green + zero-drift. Confirm B1 zero-drift, then start B2 (MCA supplementary-block parity + Burt). B4 will pick up FAMD ind_sup."
+    "next_required_action": "Phase A + B1 + B2 done (MFA family + FAMD sup + MCA sup/Burt, all CI-green). Confirm B2 zero-drift, then start B3 (GPA edge cases: missing values + unequal-width configs; assert correlations/PANOVA). Deferred: FAMD ind_sup -> B4; Burt+quali_sup."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,9 +29,9 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "B2",
-    "name": "MCA sup-block parity + Burt",
-    "status": "in_progress"
+    "id": "B3",
+    "name": "GPA edge cases",
+    "status": "pending"
   },
   "phases": [
     {
@@ -145,10 +145,20 @@
     {
       "id": "B2",
       "name": "MCA sup-block parity + Burt",
-      "status": "in_progress",
+      "status": "complete",
       "rollback_tag": "elves/pre-batch-b2",
-      "commit": null,
+      "commit": "0d61192",
       "started_at": "2026-05-31",
+      "completed_at": "2026-05-31",
+      "parity": "20/20 MCA tests vs live R FactoMineR 2.14"
+    },
+    {
+      "id": "B3",
+      "name": "GPA edge cases",
+      "status": "pending",
+      "rollback_tag": "elves/pre-batch-b3",
+      "commit": null,
+      "started_at": null,
       "completed_at": null
     }
   ],

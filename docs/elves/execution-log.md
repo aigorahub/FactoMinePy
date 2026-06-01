@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-31 (B1 complete, parity-verified)
-- **Current phase:** Phase A done + entropy check done; Phase B underway (B1 done, B2 next)
-- **Active batch:** B1 → done; next B2 (MCA sup-block parity + Burt)
-- **Last completed batch:** B1 (FAMD sup vars) — 26/26 parity tests green vs live R
-- **Next exact batch:** B2 (MCA supplementary-block parity + Burt)
+- **Last updated:** 2026-05-31 (B2 complete, parity-verified)
+- **Current phase:** Phase A + B1 + B2 done; B3 (GPA edge cases) next
+- **Active batch:** B2 → done; next B3 (GPA edge cases)
+- **Last completed batch:** B2 (MCA sup blocks + Burt) — 20/20 MCA parity tests green vs live R
+- **Next exact batch:** B3 (GPA missing values + unequal-width configs; correlations/PANOVA)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `d00e6cd` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→187 passed, 2 skipped (+64 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `0d61192` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→196 passed, 2 skipped (+73 parity tests; skips unchanged)
 
 ---
 
@@ -67,10 +67,31 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
-## Batch B2 — MCA sup-block parity + Burt — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+## Batch B2 — MCA sup-block parity + Burt — 2026-05-31 (COMPLETE — 20/20 MCA parity vs live R)
 
-**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Phase:** Implement → Validate → Review → Document, done. Parity-verified, first pass.
 **Rollback tag:** `elves/pre-batch-b2` (pushed).
+**Commits:** `901f411` (impl + harness), `0d61192` (R fixtures + refreshed tea.json).
+
+**Validation (final):** ruff clean; sphinx -W; pytest **196 passed / 2 skipped** (back to the 2-skip
+baseline). CI green on both jobs, first attempt: the active MCA blocks + the new sup blocks
+(quanti.sup coord; quali.sup coord/cos2/v.test/eta2) + the Burt blocks (eig/var coord/cos2, ind) all
+match live R. The L1 standard-coord trap was handled correctly (quali.sup coord = CA col.sup, no
+/√λ); Burt eig = indicator eig² exact.
+
+**Regression attestation:** `mca.py` sup/Burt code gated on the sup args / method (indicator-no-sup =
+prior code; active MCA unchanged). `_corr.py` gained `weighted_eta2` (relocated from famd.py — identical
+math; FAMD still 26/26). The refreshed `tea.json` gained quanti.sup/quali.sup keys but the active
+numeric data is byte-identical (eig diff 0.0). Test baseline 187→196 passed, skips 2→2.
+**Confidence: HIGH** — sup blocks reuse the parity-verified CA col.sup + the active v.test multiplier;
+Burt is a verified post-transform.
+
+**Scope/deferred:** Burt + `quali_sup` raises NotImplementedError (not yet combined — recorded).
+
+**Docs updated:** README (MCA sup + Burt ✅), ROADMAP, CHANGELOG, learnings L18.
+
+**Next:** confirm zero-drift CI, then B3 (GPA edge cases — missing values / unequal-width configs;
+assert correlations + PANOVA).
 
 **Contract:** (1) implement MCA `quanti.sup` + `quali.sup` blocks (run #1 shipped the args but never
 computed/asserted the blocks); (2) implement the `method="Burt"` transform.

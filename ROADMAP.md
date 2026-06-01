@@ -13,7 +13,7 @@ For status of an *individual* method, the source of truth is the table in
 
 | Class | Live | Parity verified | Notes |
 | --- | --- | --- | --- |
-| `PCA`, `CA`, `MCA` | ✅ | ✅ | active + supplementary blocks (MCA sup blocks not yet asserted) |
+| `PCA`, `CA`, `MCA` | ✅ | ✅ | active + supplementary blocks; MCA quanti.sup/quali.sup + Burt parity-verified |
 | `FAMD` | ✅ | ✅ | active + supplementary variables (`sup_var`); sup individuals (`ind_sup`) pending → B4 |
 | `HCPC` | ✅ | ✅ | k-means consolidation, desc.var via catdes |
 | `GPA` | ✅ | ⚠️ rotation-invariant | RV/RVs/simi exact; consensus/Xfin up to rotation (R's GPA is stochastic) |

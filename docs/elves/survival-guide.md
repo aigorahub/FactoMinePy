@@ -60,11 +60,12 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 17 (Phase A + B1 done, parity-verified)
+- **Planned batches remaining:** 13 (A1–A4 + B1 + B2 done = 6 of 20 enumerated batches)
 - **Stop allowed right now:** no
-- **Why:** A1–A4 + B1 done; 17 batches remain (B2–B5, C1–C3, D1–D4, E1–E3, F1).
-- **Next required action:** confirm B1 zero-drift CI green, then start B2 (MCA sup-block parity +
-  Burt). Note: B4 will pick up FAMD `ind_sup` (deferred from B1). Entropy check next due after ~B4.
+- **Why:** 6 batches done; 13 remain (B3–B5, C1–C3, D1–D4, E1–E3, F1). (Plan said "~22"; the
+  enumerated list is 20.)
+- **Next required action:** confirm B2 zero-drift CI green, then start B3 (GPA edge cases). Deferred
+  items to fold in later: FAMD `ind_sup` → B4; Burt+quali_sup. Entropy check due ~after B4/B5.
 
 ---
 
@@ -119,23 +120,39 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Phase A complete + entropy check done; Phase B underway — B1 (FAMD sup vars) parity-verified.
+**Status:** Phase A + entropy check + B1 + B2 done. MFA family + FAMD sup + MCA sup/Burt all parity-verified.
 
-**Active batch:** B1 done → B2 (MCA supplementary-block parity + Burt).
+**Active batch:** B2 done → B3 (GPA edge cases).
 
-**What was just finished:** B1 — FAMD supplementary variables (`sup_var`), routed through PCA's
-quanti_sup/quali_sup; 26/26 parity (18 active + 8 sup) vs live R. Active FAMD path untouched. 187
-passed / 2 skipped. Commits through `d00e6cd`. README/ROADMAP/CHANGELOG updated. `ind_sup` deferred to
-B4. Phase A (MFA family) + entropy check (shared `_corr.py`) done earlier.
+**What was just finished:** B2 — MCA quanti.sup/quali.sup blocks + the Burt method; 20/20 MCA parity
+vs live R. Active MCA + FAMD unchanged; `weighted_eta2` relocated to `_corr.py`. 196 passed / 2
+skipped. Commits through `0d61192`. README/ROADMAP/CHANGELOG/learnings L18 updated. Burt+quali_sup
+deferred. Earlier: Phase A (MFA family), entropy check, B1 (FAMD sup vars).
 
-**Single next action:** confirm B1 zero-drift CI green (both jobs success), then start B2 (MCA
-sup-block parity + Burt).
+**Single next action:** confirm B2 zero-drift CI green, then start B3 (GPA edge cases).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** B2 — MCA supplementary-block parity + Burt
+**Batch:** B3 — GPA edge cases
+
+**Scope (from the plan):** in `factominer/gpa.py`, handle the two
+`NotImplementedError` branches — (1) **missing values** (the VMQTE path), (2)
+**unequal-width configurations** (groups of different column counts). Plus
+**assert `correlations` and `PANOVA`** against R (currently computed/loosely
+checked but not fully parity-asserted). Lift the GPA "no-missing, equal-width"
+caveat from the README once verified. R's GPA is stochastic — keep the
+established two-tier parity (RV/RVs/simi exact; consensus/Xfin rotation-invariant,
+see test_gpa.py / learnings on GPA). Fixture: extend `tools/refresh_r_fixtures.R`
+GPA dump (maybe a second synthetic dataset with unequal widths and/or an NA).
+
+**Risk:** the multi-config Procrustes with unequal widths needs the general
+centering/projection (not the equal-width shortcut `invgC = C/K`); R's GPA
+stochastic multi-start means consensus/Xfin stay rotation-invariant-tier. PANOVA
+is the Procrustes ANOVA table — verify its exact schema against R.
+
+**Rollback tag:** `elves/pre-batch-b3` (create before starting).
 
 **Scope (from the run-2 plan):**
 1. **Assert MCA's sup blocks.** Run #1 shipped MCA `quanti.sup` / `quali.sup` code (`factominer/mca.py`

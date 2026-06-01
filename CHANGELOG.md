@@ -9,6 +9,15 @@ out of pre-release.
 
 ### Added
 
+- **`MCA` supplementary blocks + Burt method.** MCA now computes the
+  supplementary-variable blocks (`quanti_sup` correlations with the axes;
+  `quali_sup` category barycenters with cos²/v.test and per-variable eta²) — the
+  arguments were previously accepted but the blocks were never produced. The
+  `method="Burt"` option is now a true Burt analysis (eigenvalues squared,
+  coordinates rescaled by √λ, cos² against the all-axes Burt distance) rather
+  than silently returning the indicator result. Both are parity-verified against
+  live R FactoMineR 2.14 on the tea dataset. Burt is not yet combined with
+  `quali_sup`.
 - **`FAMD` supplementary variables** (`sup_var`): FAMD now projects
   supplementary quantitative variables (correlations with the axes) and
   supplementary qualitative variables (category barycenters with cos²/v.test/
