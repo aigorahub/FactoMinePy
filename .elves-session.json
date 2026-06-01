@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 3,
+    "remaining_batches": 2,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "Phases A-D complete (ALL analytic parity done, all CI-green). Start E1 (plots for new methods — STRUCTURAL, no R fixture; make plot() handle FAMD/MFA/HMFA/DMFA/CaGalt). Then E2 (plot helpers), F1 (release prep — HAND OFF tag/publish, never merge). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise, simule/write.infile, E3 ggplot."
+    "next_required_action": "Phases A-D + E1 done (all analytic parity + structural plots for new methods). Start E2 (plot helpers — STRUCTURAL polish, no R fixture; partial plots / ellipses; autoLab likely skip). Then F1 (release prep — confirm README, version=dev release, final review). HAND OFF tag/publish + merge to the user. Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise, simule/write.infile, autoLab, E3 ggplot."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,8 +29,8 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "E1",
-    "name": "plots for the new methods (structural)",
+    "id": "E2",
+    "name": "plot helpers (structural polish)",
     "status": "not_started"
   },
   "phases": [
@@ -251,6 +251,16 @@
       "started_at": "2026-06-01",
       "completed_at": "2026-06-01",
       "parity": "svd_triplet (vs/U/V 1e-9) + tab_disjonctif (exact) parity vs live R (run 26738742953, zero drift). PHASE D DONE - all analytic parity complete. simule/write.infile out of scope."
+    },
+    {
+      "id": "E1",
+      "name": "plots for the new methods (structural)",
+      "status": "complete",
+      "rollback_tag": "elves/pre-batch-e1",
+      "commit": "ea0902f",
+      "started_at": "2026-06-01",
+      "completed_at": "2026-06-01",
+      "parity": "structural (no R fixture) — plot() handles FAMD/MFA/HMFA/DMFA/CaGalt on matplotlib+plotly; 30 smoke tests green."
     }
   ],
   "review_comments": [

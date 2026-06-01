@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-06-01 (D4 utility exports complete — PHASE D DONE, parity-verified)
-- **Current phase:** Phase A + B + C + D done; Phase E (plots) next, then F1 (release)
-- **Active batch:** D4 → done; next E1 (plots for the new methods — structural). B4b deferred.
-- **Last completed batch:** D4 (svd_triplet + tab_disjonctif) — parity vs live R
-- **Next exact batch:** E1 (extend the plot data layer to FAMD/MFA/HMFA/DMFA/CaGalt — structural)
+- **Last updated:** 2026-06-01 (E1 plots-for-new-methods complete, structural)
+- **Current phase:** Phases A–D done (all analytic parity); E1 done; E2 (plot helpers) + F1 (release) remain
+- **Active batch:** E1 → done; next E2 (plot helpers — autoLab/plotellipses/partial; structural). B4b deferred.
+- **Last completed batch:** E1 (structural plots for FAMD/MFA/HMFA/DMFA/CaGalt, both backends)
+- **Next exact batch:** E2 (plot helpers — structural) → then F1 (release prep, HAND OFF tag/publish)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `e336ba5` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→235 passed, 2 skipped (+112 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `ea0902f` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→266 passed, 2 skipped (+143 tests incl. 31 plot smoke; skips unchanged)
 
 ---
 
@@ -66,6 +66,32 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch E1 — plots for the new methods — 2026-06-01 (COMPLETE — structural)
+
+**Phase:** Complete. Structural (no R numeric fixture — coords already parity-verified). lint-and-test
+CI runs the smoke tests. **Rollback tag:** `elves/pre-batch-e1`.
+
+**Contract:** make `plot()` accept FAMD/MFA/HMFA/DMFA/CaGalt on both backends. Two fixes in
+`plot/matplotlib_backend.py` + `plot/plotly_backend.py`:
+1. `choix="var"` falls back to `res.quanti_var` when `res.var is None` (MFA/HMFA/DMFA/CaGalt expose
+   `quanti_var`, not `var`).
+2. Guard the optional sup blocks (`ind_sup`/`quali_sup`/`quanti_sup`) with `getattr(..., None)` so the
+   custom `HMFAResult`/`DMFAResult` dataclasses (which lack those fields) plot ind/var/scree cleanly.
+
+**Verification:** `tests/test_plot_newmethods.py` — 5 methods × {ind, var, scree} × {matplotlib,
+plotly} = 30 smoke tests + a point-count check, all green. 266 passed / 2 skipped; ruff clean.
+
+**Regression attestation:** additive/guard-only — no PCA/CA/MCA/HCPC plot path changed (the var
+fallback only triggers when `var is None`; the getattr guards are no-ops when the attribute exists).
+
+**Deferred to E2 (recorded):** `autoLab` (smart label placement), `plotellipses`/`ellipseCA`
+(`coord.ellipse` already vertex-verified in run #1), the partial-axis plots (`plotMFApartial`,
+`plotGPApartial`), `plot.CaGalt` ellipse overlays. **E3 (ggplot) = out of scope.**
+
+**Commit:** `ea0902f`.
+
+---
 
 ## Batch D4 — utility exports — 2026-06-01 (COMPLETE — parity vs live R; PHASE D DONE)
 

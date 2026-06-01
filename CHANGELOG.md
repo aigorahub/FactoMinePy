@@ -18,6 +18,10 @@ out of pre-release.
 
 ### Added
 
+- **Plotting the newer methods.** `factominer.plot.plot()` now accepts `FAMD`,
+  `MFA`, `HMFA`, `DMFA`, and `CaGalt` results for the `ind` / `var` / `scree`
+  factor maps on both the matplotlib and plotly backends (the variable map falls
+  back to the `quanti_var` block when a method has no `var` block).
 - **Utility exports: `svd_triplet`, `tab_disjonctif`.**
   `factominer.svd_triplet(X, row_w, col_w, ncp)` exposes the row/column-weighted
   SVD primitive (R's `svd.triplet`); `factominer.tab_disjonctif(tab)` exposes the

@@ -60,13 +60,13 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 3 (17 of 20 enumerated batches done; + B4b deferred work)
+- **Planned batches remaining:** 2 (18 of 20 enumerated batches done; + B4b deferred work)
 - **Stop allowed right now:** no
-- **Why:** 17 done (A1–A4, B1–B5, C1–C3, D1–D4 = Phases A–D complete, ALL analytic parity done);
-  3 remain (E1–E3 plots [structural], F1 release) + B4b. E3 (ggplot) likely out of scope.
-- **Next required action:** start E1 (plots for new methods — structural). Deferred: B4b,
-  Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise,
-  textual stacked multi-spec, simule/write.infile.
+- **Why:** 18 done (Phases A–D + E1); 2 remain (E2 plot helpers [structural], F1 release) + B4b.
+  E3 (ggplot) is out of scope (recorded).
+- **Next required action:** start E2 (plot helpers — structural) → then F1 (release prep). Deferred:
+  B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise,
+  textual stacked multi-spec, simule/write.infile, E3 ggplot.
 
 ---
 
@@ -125,63 +125,57 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 Remaining: Phase E (plots — structural) + F1 (release). Everything analytic is parity-verified at the
 deterministic / supplementary bar.
 
-**Active batch:** D4 done → E1 (plots for the new methods — structural). B4b deferred.
+**Active batch:** E1 done → E2 (plot helpers — structural). B4b deferred.
 
-**What was just finished:** D4 — `svd_triplet` + `tab_disjonctif` (`utils.py`), the weighted-SVD
-primitive + the one-hot coder, parity-verified. 235 passed / 2 skipped; rpy2-parity green (run
-26738742953). Commits `5bdf6bb`, `e336ba5` + close-out. Earlier: Phases A–C, D1 (CaGalt), D2
-(regression family), D3 (textual).
+**What was just finished:** E1 — structural plots for FAMD/MFA/HMFA/DMFA/CaGalt on both backends
+(`choix="var"` → `quanti_var` fallback; getattr-guarded optional sup blocks for the custom HMFA/DMFA
+result dataclasses). 30 plot smoke tests; 266 passed / 2 skipped. Commit `ea0902f`. Earlier: Phases
+A–D (all analytic parity).
 
-**E1 scope already scouted (plot API uses `choix=`, not `kind=`):** `plot(res, choix="ind")` works
-generically (via `plot_pca_ind`) for FAMD/MFA/CaGalt; `choix="var"` fails for MFA/CaGalt (they have
-`quanti_var`, not `.var` → `plot_pca_var` hits `res.var=None`); HMFA/DMFA use custom result dataclasses
-(`HMFAResult`/`DMFAResult`) that `plot()` doesn't accept. Parity here is **structural** (coords already
-parity-verified) — no R numeric fixture; verify with smoke tests that `plot()` runs + draws the right
-blocks.
-
-**Single next action:** tag `elves/pre-batch-e1`, then start E1 — spec in the Next Exact Batch below.
+**Single next action:** tag `elves/pre-batch-e2`, then start E2 (plot helpers) — spec in the Next
+Exact Batch below. **NOTE: the run's core mission (all analytic-method parity) is COMPLETE; E2 is
+structural plot polish and F1 is release prep + hand-off.**
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** E1 — plots for the new methods (**structural** — the coords are already parity-verified;
-no R numeric fixture, verify with smoke tests that `plot()` runs + draws the right blocks). The plot
-layer is `factominer/plot/` (`_data.py` + `matplotlib_backend.py` + `plotly_backend.py`); API is
-`plot(res, choix="ind"|"var"|"biplot"|"scree"|"contrib", ...)`.
+**Batch:** E2 — plot helpers (**structural**; coords already parity-verified, no R numeric fixture —
+verify with smoke tests). Plot layer = `factominer/plot/` (`_data.py` + matplotlib/plotly backends).
+**Lower-value polish — the core analytic-parity mission is already complete.** Keep scope tight.
 
-**Scope (smallest-first):**
-1. **MFA / CaGalt `choix="var"`** — they have `quanti_var` (+ CaGalt `freq`), not `.var`. In
-   `matplotlib_backend.plot()` / `plotly_backend.plot_plotly()`, when `res.var is None` and
-   `res.quanti_var is not None`, route `choix="var"` to a quanti-var correlation circle using
-   `res.quanti_var.coord`/`.cor`. (`plot_pca_var` reads `res.var.coord` — generalize it or branch.)
-   `choix="ind"` already works generically for FAMD/MFA/CaGalt via `plot_pca_ind`.
-2. **HMFA / DMFA** use custom dataclasses (`HMFAResult`/`DMFAResult`) that carry `ind`/`quanti_var`
-   etc. but `plot()` is typed `Result | HCPCResult` and routes on `res.method`. Either (a) make those
-   dataclasses expose the same `.method`/`.ind`/`.quanti_var` attributes plot reads (check
-   `factominer/hmfa.py`, `dmfa.py`), or (b) add isinstance handling. `ind`/`scree` should then work.
-3. **Smoke tests** `tests/test_plot_newmethods.py`: for FAMD/MFA/HMFA/DMFA/CaGalt, assert
-   `plot(res, choix="ind")`, `"var"`, `"scree"` return an Axes/Figure without error and the scatter
-   has the right point count (= n individuals / n variables). matplotlib `Agg` backend. No R fixture.
+**Scope (smallest-first; do what's cheap, defer the rest):**
+1. **Partial-axis plot for MFA** — MFA's `res.ind.coord_partiel` (the per-(individual,group) partial
+   coords, already parity-verified) → a `plotMFApartial`-style overlay: for each individual, draw a
+   point per group + a line to the global point. Add as `choix="partial"` (or a small helper). Use the
+   existing `_data.py` geometry. `plotGPApartial` is the GPA analogue (GPA has `Xfin` per config).
+2. **`plotellipses` / `ellipseCA`** — `coord.ellipse` (the ellipse vertex generator) is ALREADY
+   shipped + vertex-parity-verified (run #1); `plot(..., ellipse=True, habillage=...)` already draws
+   them for PCA/MCA. Check it works for the new methods' ind maps; if a small generalization makes
+   ellipses available there, do it. Don't re-port `coord.ellipse`.
+3. **`autoLab` (smart non-overlapping label placement)** — a geometric label-repulsion algorithm.
+   **Highest effort, lowest value** for a parity port (it's a cosmetic layout heuristic with no clean
+   parity target). **Recommend DEFER/skip** unless trivial; record the decision. (Matplotlib's
+   `adjustText` is the analogue but is a new dep — don't add it.)
+4. **Smoke tests** in `tests/test_plot_newmethods.py` (extend it) for any new plot path added.
 
-**Defer to E2/E3 (record, don't block E1):** the partial-axis plots (`plotMFApartial`,
-`plotGPApartial`), `plot.CaGalt` ellipse overlays, `autoLab` smart label placement, `plotellipses`/
-`ellipseCA` (run #1 already vertex-parity-verified `coord.ellipse`). **E3 (ggplot) = OUT OF SCOPE**
-(no Python ggplot2; plotly is the analogue — record the decision).
+**Parity bar:** structural only. No deterministic R fixture (so no rpy2-parity round — lint-and-test
+CI runs the smoke tests).
 
-**Parity bar:** structural only (plot runs, right blocks/counts). No deterministic R fixture.
+**Rollback tag:** `elves/pre-batch-e2` (create before starting).
 
-**Rollback tag:** `elves/pre-batch-e1` (create before starting).
+**Deferred (carry forward):** B4b; Burt + `quali_sup`; MFA `reconst` (all-quanti); CaGalt `type="n"`
++ `conf_ellip`; `meansComp`; LinearModel Type-II/AIC-BIC selection; textual stacked multi-spec;
+`simule`/`write.infile` (out of scope); `autoLab` (cosmetic); **E3 ggplot (OUT OF SCOPE — record).**
 
-**Deferred (carry forward):** B4b = missing values (PCA/CA/MCA/GPA) + FAMD `ind_sup`; Burt +
-`quali_sup`; MFA `reconst` (all-quanti); CaGalt `type="n"` + `conf_ellip`; `meansComp`; LinearModel
-Type-II/AIC-BIC selection; textual stacked multi-spec; `simule` (stochastic) / `write.infile` (I/O,
-out of scope); E2 partial/helper plots; E3 ggplot (out of scope).
-
-**After E1:** E2 (plot helpers — autoLab/plotellipses/ellipseCA/partial plots; structural), then F1
-(release: confirm README all-✅, decide version bump, final-review fan-out, update CHANGELOG). **F1's
-tag → PyPI publish is a HAND-OFF — never tag/publish autonomously. Never merge — hand off PR #5 for
-the user.**
+**After E2 → F1 (release prep):** confirm README status table all-✅ + honest tiers (GPA
+rotation-invariant; plots structural); decide the version (the maintainer's standing ask keeps the
+"experimental" warning — soften only with explicit approval, so likely a dev release like
+`0.3.0.dev0`, NOT 1.0.0); finalize CHANGELOG; run the full suite + a final rpy2-parity green. **Then
+STOP and hand off: F1's git tag → `release.yml` auto-publishes to PyPI — that publish is the USER's
+call, NEVER do it autonomously. NEVER merge PR #5 — the user merges.** At Final Completion, `git rm`
+the `docs/elves/*` + `.elves-session.json` operational artifacts from the PR (per process note P2)
+so the merged diff is product-code only.
 
 ---
 
