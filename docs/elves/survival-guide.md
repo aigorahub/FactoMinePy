@@ -60,11 +60,13 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 4 (16 of 20 enumerated batches done; + B4b deferred work)
+- **Planned batches remaining:** 3 (17 of 20 enumerated batches done; + B4b deferred work)
 - **Stop allowed right now:** no
-- **Why:** 16 done (A1–A4, B1–B5, C1–C3, D1–D3); 4 remain (D4, E1–E3, F1) + B4b.
-- **Next required action:** start D4 (utility exports). Deferred: B4b, Burt+quali_sup, MFA reconst,
-  CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise, textual stacked multi-spec.
+- **Why:** 17 done (A1–A4, B1–B5, C1–C3, D1–D4 = Phases A–D complete, ALL analytic parity done);
+  3 remain (E1–E3 plots [structural], F1 release) + B4b. E3 (ggplot) likely out of scope.
+- **Next required action:** start E1 (plots for new methods — structural). Deferred: B4b,
+  Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise,
+  textual stacked multi-spec, simule/write.infile.
 
 ---
 
@@ -119,63 +121,67 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Phase A + B + C done; Phase D nearly done. **D1–D3 complete.** 16 of 20 batches;
-everything parity-verified at the deterministic / supplementary bar.
+**Status:** **Phases A–D complete — ALL analytic-method parity is done.** 17 of 20 batches.
+Remaining: Phase E (plots — structural) + F1 (release). Everything analytic is parity-verified at the
+deterministic / supplementary bar.
 
-**Active batch:** D3 done → D4 (utility exports). B4b (missing values + FAMD ind_sup) deferred.
+**Active batch:** D4 done → E1 (plots for the new methods — structural). B4b deferred.
 
-**What was just finished:** D3 — `textual` (`textual.py`), free text → document×word contingency
-table, verbatim from R; exact integer parity. Found R's misnamed `nb.words` frame ([[L25]]). 233
-passed / 2 skipped; rpy2-parity green (run 26738229192). Commit `54952b9` + nb.words fix + close-out.
-Earlier: Phase A, B1–B5, C1–C3, D1 (CaGalt), D2 (regression family).
+**What was just finished:** D4 — `svd_triplet` + `tab_disjonctif` (`utils.py`), the weighted-SVD
+primitive + the one-hot coder, parity-verified. 235 passed / 2 skipped; rpy2-parity green (run
+26738742953). Commits `5bdf6bb`, `e336ba5` + close-out. Earlier: Phases A–C, D1 (CaGalt), D2
+(regression family), D3 (textual).
 
-**Single next action:** tag `elves/pre-batch-d4`, then start D4 (utility exports) — spec in the Next
-Exact Batch section below.
+**E1 scope already scouted (plot API uses `choix=`, not `kind=`):** `plot(res, choix="ind")` works
+generically (via `plot_pca_ind`) for FAMD/MFA/CaGalt; `choix="var"` fails for MFA/CaGalt (they have
+`quanti_var`, not `.var` → `plot_pca_var` hits `res.var=None`); HMFA/DMFA use custom result dataclasses
+(`HMFAResult`/`DMFAResult`) that `plot()` doesn't accept. Parity here is **structural** (coords already
+parity-verified) — no R numeric fixture; verify with smoke tests that `plot()` runs + draws the right
+blocks.
+
+**Single next action:** tag `elves/pre-batch-e1`, then start E1 — spec in the Next Exact Batch below.
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** D4 — utility exports. Mostly **expose + verify existing primitives**. Recommended scope:
-`svd.triplet` + `tab.disjonctif` (+ `.prop`). Assess `simule`/`write.infile` (likely defer — see
-below). R sources fetched (`svd.triplet.R`, `tab.disjonctif.R`, `tab.disjonctif.prop.R`, `simule.r`,
-`write.infile.R`); decode via `gh api repos/cran/FactoMineR/contents/R/<name> --jq '.content' | base64 -d`.
+**Batch:** E1 — plots for the new methods (**structural** — the coords are already parity-verified;
+no R numeric fixture, verify with smoke tests that `plot()` runs + draws the right blocks). The plot
+layer is `factominer/plot/` (`_data.py` + `matplotlib_backend.py` + `plotly_backend.py`); API is
+`plot(res, choix="ind"|"var"|"biplot"|"scree"|"contrib", ...)`.
 
-**`svd_triplet(X, row_w=None, col_w=None, ncp=Inf)` — the weighted-SVD primitive (R `svd.triplet`):**
-- `row.w <- row.w/sum(row.w)`; `ncp <- min(ncp, nrow-1, ncol)`; `Xw = t(t(X)·√col.w)·√row.w`.
-- SVD of `Xw` (with the `ncol<nrow` vs transpose branch — for parity just `np.linalg.svd`).
-- **Sign convention:** `mult = sign(colSums(V))` (0→1), applied to BOTH U and V (only when ncp>1).
-- **Un-whiten:** `U <- U/√row.w`, `V <- V/√col.w`. Return `vs` (=d[1:ncp]), `U`, `V`.
-- Build on `factominer/_svd.py` (`standard_svd` already does the SVD + a sign align — but check its
-  sign rule matches `colSums(V)`; the port stores WHITENED U/V on results, so `svd_triplet` must
-  return the UN-whitened R-convention U/V = whitened/√w, the same conversion used in CaGalt [[L23]]).
-  Likely a thin new `factominer/_svd.py` public `svd_triplet` (or a small module) + export. Verify
-  vs an R fixture (decathlon, with and without non-uniform row.w/col.w).
+**Scope (smallest-first):**
+1. **MFA / CaGalt `choix="var"`** — they have `quanti_var` (+ CaGalt `freq`), not `.var`. In
+   `matplotlib_backend.plot()` / `plotly_backend.plot_plotly()`, when `res.var is None` and
+   `res.quanti_var is not None`, route `choix="var"` to a quanti-var correlation circle using
+   `res.quanti_var.coord`/`.cor`. (`plot_pca_var` reads `res.var.coord` — generalize it or branch.)
+   `choix="ind"` already works generically for FAMD/MFA/CaGalt via `plot_pca_ind`.
+2. **HMFA / DMFA** use custom dataclasses (`HMFAResult`/`DMFAResult`) that carry `ind`/`quanti_var`
+   etc. but `plot()` is typed `Result | HCPCResult` and routes on `res.method`. Either (a) make those
+   dataclasses expose the same `.method`/`.ind`/`.quanti_var` attributes plot reads (check
+   `factominer/hmfa.py`, `dmfa.py`), or (b) add isinstance handling. `ind`/`scree` should then work.
+3. **Smoke tests** `tests/test_plot_newmethods.py`: for FAMD/MFA/HMFA/DMFA/CaGalt, assert
+   `plot(res, choix="ind")`, `"var"`, `"scree"` return an Axes/Figure without error and the scatter
+   has the right point count (= n individuals / n variables). matplotlib `Agg` backend. No R fixture.
 
-**`tab_disjonctif(df)` + `tab_disjonctif_prop(df)` — the indicator builders (R `tab.disjonctif.R`):**
-- `tab.disjonctif`: the 0/1 disjunctive (one-hot) table with R's column naming. Already built inline
-  in `mca.py`/`famd.py` and `predict.py:_build_indicator` — centralize a public version that matches
-  R's column-label rule (the `y/n`/`Y/N` → `var.level` prefixing; read `tab.disjonctif.R` for the
-  exact naming). `tab.disjonctif.prop` fills NAs with the column proportion (read the source).
-- Fixture: `tab.disjonctif(tea[,1:4])` or a small factor frame; exact match (0/1 ints) + column names.
+**Defer to E2/E3 (record, don't block E1):** the partial-axis plots (`plotMFApartial`,
+`plotGPApartial`), `plot.CaGalt` ellipse overlays, `autoLab` smart label placement, `plotellipses`/
+`ellipseCA` (run #1 already vertex-parity-verified `coord.ellipse`). **E3 (ggplot) = OUT OF SCOPE**
+(no Python ggplot2; plotly is the analogue — record the decision).
 
-**`simule` / `write.infile` — ASSESS, likely DEFER:** `simule` (R `simule.r`) simulates data from a
-PCA result — likely **stochastic** (rnorm) → would need a weaker tier or exclusion; read it and if
-stochastic, defer like GPA/ellipses. `write.infile` writes a result to a text file (I/O formatting,
-not analytic) → **out of scope** (record the decision, don't implement). Confirm by reading both.
+**Parity bar:** structural only (plot runs, right blocks/counts). No deterministic R fixture.
 
-**Parity bar:** `svd_triplet` vs (1e-9 coord-like); `tab.disjonctif` exact (integer + labels). License-
-clean: reuse bundled `decathlon` (svd) and `tea`/`poison` (disjonctif).
-
-**Rollback tag:** `elves/pre-batch-d4` (create before starting).
+**Rollback tag:** `elves/pre-batch-e1` (create before starting).
 
 **Deferred (carry forward):** B4b = missing values (PCA/CA/MCA/GPA) + FAMD `ind_sup`; Burt +
 `quali_sup`; MFA `reconst` (all-quanti); CaGalt `type="n"` + `conf_ellip`; `meansComp`; LinearModel
-Type-II/AIC-BIC selection; textual stacked multi-spec; D4 `simule`/`write.infile` (assess).
+Type-II/AIC-BIC selection; textual stacked multi-spec; `simule` (stochastic) / `write.infile` (I/O,
+out of scope); E2 partial/helper plots; E3 ggplot (out of scope).
 
-**After D4:** E1–E3 (plots for the new methods — plot data-layer parity; E3 ggplot likely out of
-scope), then F1 (release: README all-✅, version cut, final-review fan-out, tag → PyPI). **Never
-merge — hand off PR #5 for the user.**
+**After E1:** E2 (plot helpers — autoLab/plotellipses/ellipseCA/partial plots; structural), then F1
+(release: confirm README all-✅, decide version bump, final-review fan-out, update CHANGELOG). **F1's
+tag → PyPI publish is a HAND-OFF — never tag/publish autonomously. Never merge — hand off PR #5 for
+the user.**
 
 ---
 

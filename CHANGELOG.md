@@ -18,6 +18,11 @@ out of pre-release.
 
 ### Added
 
+- **Utility exports: `svd_triplet`, `tab_disjonctif`.**
+  `factominer.svd_triplet(X, row_w, col_w, ncp)` exposes the row/column-weighted
+  SVD primitive (R's `svd.triplet`); `factominer.tab_disjonctif(tab)` exposes the
+  disjunctive (one-hot) coder (R's `tab.disjonctif`, including its
+  `y`/`n`/`Y`/`N` column-naming rule). Both parity-verified against live R.
 - **`textual` — free text to a document × word contingency table.** New
   `factominer.textual(tab, num_text, contingence_by, maj_in_min, sep_word)`
   tokenizes a free-text column (faithfully replicating R's separator handling and

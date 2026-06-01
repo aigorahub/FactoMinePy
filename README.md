@@ -45,6 +45,7 @@ source of truth for exactly what works and at what parity bar.
 | `LinearModel` / `AovSum` | `factominer.LinearModel` / `factominer.AovSum` | ✅ | ✅ | linear model with `contr.sum` (sum-to-zero) contrasts: the Type-III/II ANOVA table (`Ftest`) and the per-level coefficient table (`Ttest`), plus `r.squared`/`sigma`/`fstatistic`/`aic`/`bic`. Stepwise `selection` (aic/bic) not yet implemented |
 | `RegBest` | `factominer.RegBest` | ✅ | ✅ | best-subset linear regression: the lowest-RSS subset of each size, with selection by `"r2"` / `"Cp"` / `"adjr2"`. Predictors must be numeric |
 | `textual` | `factominer.textual` | ✅ | ✅ | tokenize a free-text column into a document × word contingency table (`cont_table`) + a word-frequency summary (`nb_words`); feeds `CA` / `descfreq` |
+| `svd.triplet` / `tab.disjonctif` | `factominer.svd_triplet` / `factominer.tab_disjonctif` | ✅ | ✅ | the row/column-weighted SVD primitive and the disjunctive (one-hot) coder, exposed as standalone utilities |
 | Plotly backend | `factominer.plot.plot(..., backend="plotly")` | ✅ | structural | mirrors the matplotlib surface (ind/var/biplot/scree/contrib, CA/MCA maps, HCPC factor map + dendrogram); shares the `_data` geometry layer. Needs `pip install 'factominer[plotly]'` |
 
 Every analytic FactoMineR method in scope is now live and parity-verified; no methods remain stubbed. Remaining gaps are at the option level (noted per row above) rather than whole methods — see [ROADMAP.md](ROADMAP.md).

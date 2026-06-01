@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 4,
+    "remaining_batches": 3,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "A1-A4 + B1-B5 + C1-C3 + D1-D3 done (all CI-green). Start D4 (utility exports: svd.triplet + tab.disjonctif/.prop; assess simule/write.infile). Then E1-E3 (plots), F1 (release). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise."
+    "next_required_action": "Phases A-D complete (ALL analytic parity done, all CI-green). Start E1 (plots for new methods — STRUCTURAL, no R fixture; make plot() handle FAMD/MFA/HMFA/DMFA/CaGalt). Then E2 (plot helpers), F1 (release prep — HAND OFF tag/publish, never merge). Deferred: B4b, Burt+quali_sup, MFA reconst, CaGalt type=n/ellipses, meansComp, LinearModel Type-II/stepwise, simule/write.infile, E3 ggplot."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,8 +29,8 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "D4",
-    "name": "utility exports (svd.triplet, tab.disjonctif)",
+    "id": "E1",
+    "name": "plots for the new methods (structural)",
     "status": "not_started"
   },
   "phases": [
@@ -241,6 +241,16 @@
       "started_at": "2026-06-01",
       "completed_at": "2026-06-01",
       "parity": "textual cont_table + nb_words exact integer parity vs live R (run 26738229192, zero drift)."
+    },
+    {
+      "id": "D4",
+      "name": "utility exports (svd_triplet, tab_disjonctif)",
+      "status": "complete",
+      "rollback_tag": "elves/pre-batch-d4",
+      "commit": "e336ba5",
+      "started_at": "2026-06-01",
+      "completed_at": "2026-06-01",
+      "parity": "svd_triplet (vs/U/V 1e-9) + tab_disjonctif (exact) parity vs live R (run 26738742953, zero drift). PHASE D DONE - all analytic parity complete. simule/write.infile out of scope."
     }
   ],
   "review_comments": [

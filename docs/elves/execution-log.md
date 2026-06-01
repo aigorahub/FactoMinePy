@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-06-01 (D3 textual complete, parity-verified)
-- **Current phase:** Phase A + B + C done; Phase D — D1–D3 done, D4 (utility exports) next
-- **Active batch:** D3 → done; next D4 (svd.triplet/tab.disjonctif/…). B4b + meansComp deferred.
-- **Last completed batch:** D3 (textual) — free text → doc×word contingency table, exact parity vs live R
-- **Next exact batch:** D4 (utility exports — svd.triplet, tab.disjonctif/.prop; assess simule/write.infile)
+- **Last updated:** 2026-06-01 (D4 utility exports complete — PHASE D DONE, parity-verified)
+- **Current phase:** Phase A + B + C + D done; Phase E (plots) next, then F1 (release)
+- **Active batch:** D4 → done; next E1 (plots for the new methods — structural). B4b deferred.
+- **Last completed batch:** D4 (svd_triplet + tab_disjonctif) — parity vs live R
+- **Next exact batch:** E1 (extend the plot data layer to FAMD/MFA/HMFA/DMFA/CaGalt — structural)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `54952b9` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→233 passed, 2 skipped (+110 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `e336ba5` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→235 passed, 2 skipped (+112 parity tests; skips unchanged)
 
 ---
 
@@ -66,6 +66,30 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch D4 — utility exports — 2026-06-01 (COMPLETE — parity vs live R; PHASE D DONE)
+
+**Phase:** Complete. rpy2-parity CI green; fixtures + zero drift. **Rollback tag:** `elves/pre-batch-d4`.
+
+**Contract:** expose `svd_triplet` + `tab_disjonctif` (new `factominer/utils.py`). `tab.disjonctif.prop`,
+`simule` (stochastic bootstrap), `write.infile` (text I/O) **deferred/out-of-scope** (recorded).
+
+**`svd_triplet(X, row_w, col_w, ncp)`** (R `svd.triplet`): decompose
+`diag(√row_w)·X·diag(√col_w)`, normalize `row.w/sum`, orient by `sign(colSums(V_whitened))` (ncp>1),
+un-whiten `U/√row_w`, `V/√col_w`. **`vs` = the full retained spectrum `d[1:min(p,n-1)]`** (NOT
+truncated to ncp — the bug found first CI run), with R's degenerate-scaling of near-zero-σ vectors.
+`vs` matched PCA's √eig in smoke test.
+
+**`tab_disjonctif(tab)`** (R `tab.disjonctif`): 0/1 one-hot per categorical column with R's
+`y`/`n`/`Y`/`N` → `"<var>.<level>"` naming; numerics pass through. Matched R first try.
+
+**Fixtures:** `svd_triplet/decathlon` (raw decathlon, non-uniform row.w/col.w), `tab_disjonctif/tea`.
+**Checks:** ruff clean; **235 passed / 2 skipped**; rpy2-parity green; vs/U/V 1e-9, tab.disjonctif exact.
+
+**Docs:** README (utility row), ROADMAP (Phase D ✅), CHANGELOG, survival guide + `.elves-session.json`
+advanced to E1. **Commits:** `5bdf6bb` (impl), `e336ba5` (vs-length fix) + close-out.
+
+---
 
 ## Batch D3 — textual — 2026-06-01 (COMPLETE — exact parity vs live R)
 
