@@ -90,3 +90,13 @@ def load_cagalt_synth() -> pd.DataFrame:
     this small license-clean table is used as the parity fixture instead.
     """
     return _load_csv("cagalt_synth.csv")
+
+
+def load_textual_synth() -> pd.DataFrame:
+    """6 × 2 synthetic free-text dataset for ``textual``.
+
+    A ``review`` column of short ASCII sentences (mixed case, to exercise the
+    lowercasing) and a ``grp`` two-level grouping factor. Original synthetic data
+    (MIT); no bundled FactoMineR dataset carries free text.
+    """
+    return _load_csv("textual_synth.csv")

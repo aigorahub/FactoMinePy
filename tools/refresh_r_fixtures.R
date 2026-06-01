@@ -227,6 +227,14 @@ dump_regbest <- function(res) {
   )
 }
 
+# textual: the groups x words contingency table + the word-frequency summary.
+dump_textual <- function(res) {
+  list(
+    cont_table = as.data.frame(res$cont.table),
+    nb_words   = as.data.frame(res$nb.words)
+  )
+}
+
 # ---- PCA on decathlon ------------------------------------------------------
 data(decathlon)
 res_pca <- PCA(decathlon, scale.unit = TRUE, ncp = 5,
@@ -614,5 +622,17 @@ cat("[fixtures] linear_model/poison_inter.json\n")
 res_aov_main <- AovSum(Time ~ Sick + Sex + Nausea, data = poison)
 write_json(dump_linearmodel(res_aov_main), file.path(out_dir("aovsum"), "poison_main.json"))
 cat("[fixtures] aovsum/poison_main.json\n")
+
+# ---- textual on the synthetic free-text table -------------------------------
+# Reads the committed license-clean CSV (byte-identical to load_textual_synth).
+txt_csv <- file.path(root, "factominer", "datasets", "data", "textual_synth.csv")
+txt <- read.csv(txt_csv, row.names = 1, check.names = FALSE, stringsAsFactors = FALSE)
+ntext <- which(names(txt) == "review")
+res_txt_grp <- textual(txt, num.text = ntext, contingence.by = which(names(txt) == "grp"))
+write_json(dump_textual(res_txt_grp), file.path(out_dir("textual"), "synth_grp.json"))
+cat("[fixtures] textual/synth_grp.json\n")
+res_txt_doc <- textual(txt, num.text = ntext, contingence.by = ntext)
+write_json(dump_textual(res_txt_doc), file.path(out_dir("textual"), "synth_doc.json"))
+cat("[fixtures] textual/synth_doc.json\n")
 
 cat("\ndone.\n")

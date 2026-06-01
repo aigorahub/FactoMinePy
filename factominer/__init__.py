@@ -23,6 +23,7 @@ from .pca import PCA
 from .predict import predict
 from .reconst import estim_ncp, reconst
 from .reg_best import RegBest
+from .textual import textual
 
 __all__ = [
     "PCA",
@@ -45,6 +46,7 @@ __all__ = [
     "RegBest",
     "LinearModel",
     "AovSum",
+    "textual",
     "Result",
 ]
 

@@ -228,3 +228,13 @@ def r_linear_model_poison_inter() -> dict:
 @pytest.fixture(scope="session")
 def r_aovsum_poison_main() -> dict:
     return _load_r_fixture("aovsum", "poison_main")
+
+
+@pytest.fixture(scope="session")
+def r_textual_synth_grp() -> dict:
+    return _load_r_fixture("textual", "synth_grp")
+
+
+@pytest.fixture(scope="session")
+def r_textual_synth_doc() -> dict:
+    return _load_r_fixture("textual", "synth_doc")
