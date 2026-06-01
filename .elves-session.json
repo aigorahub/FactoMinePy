@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 8,
+    "remaining_batches": 7,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "A1-A4 + B1-B5 + C1 + C2 done (all CI-green, zero drift). Start C3 (descfreq). Deferred: B4b (missing values + FAMD ind_sup), Burt+quali_sup, MFA reconst."
+    "next_required_action": "A1-A4 + B1-B5 + C1-C3 done (Phase A+B+C complete, all CI-green). Start D1 (CaGalt). Deferred: B4b (missing values + FAMD ind_sup), Burt+quali_sup, MFA reconst, CaGalt ellipses/ventilation."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,8 +29,8 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "C3",
-    "name": "descfreq",
+    "id": "D1",
+    "name": "CaGalt",
     "status": "not_started"
   },
   "phases": [
@@ -201,6 +201,16 @@
       "started_at": "2026-06-01",
       "completed_at": "2026-06-01",
       "parity": "reconst PCA/CA + estim_ncp GCV/Smooth parity vs live R (run 26736100357, zero drift); reconst 1e-9, criterion 1e-7"
+    },
+    {
+      "id": "C3",
+      "name": "descfreq",
+      "status": "complete",
+      "rollback_tag": "elves/pre-batch-c3",
+      "commit": "6c77eeb",
+      "started_at": "2026-06-01",
+      "completed_at": "2026-06-01",
+      "parity": "descfreq parity vs live R (children); p.value 1e-5 rel, v.test 1e-6. Also fixed flaky GPA PANOVA to stochastic tier (0b51a00)."
     }
   ],
   "review_comments": [

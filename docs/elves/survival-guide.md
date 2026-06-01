@@ -60,11 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 8 (11 of 20 enumerated batches done; + B4b deferred work)
+- **Planned batches remaining:** 7 (12 of 20 enumerated batches done; + B4b deferred work)
 - **Stop allowed right now:** no
-- **Why:** 11 done (A1–A4, B1–B5, C1, C2); 8 remain (C3, D1–D4, E1–E3, F1) + B4b.
-- **Next required action:** start C3 (descfreq). Deferred: B4b (missing values + FAMD ind_sup),
-  Burt+quali_sup, MFA reconst (all-quanti only). Entropy check done at C1 boundary.
+- **Why:** 12 done (A1–A4, B1–B5, C1–C3 = Phase A+B+C complete); 7 remain (D1–D4, E1–E3, F1) + B4b.
+- **Next required action:** start D1 (CaGalt). Deferred: B4b (missing values + FAMD ind_sup),
+  Burt+quali_sup, MFA reconst (all-quanti only). Entropy check due ~D-phase boundary (archive log).
 
 ---
 
@@ -119,65 +119,77 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Phase A + B done; Phase C in progress. **C1 + C2 complete.** 11 of 20 batches;
-everything parity-verified at the deterministic / supplementary bar.
+**Status:** **Phase A + B + C complete.** 12 of 20 batches; everything parity-verified at the
+deterministic / supplementary bar.
 
-**Active batch:** C2 done → C3 (descfreq). B4b (missing values + FAMD ind_sup) deferred.
+**Active batch:** C3 done → D1 (CaGalt). B4b (missing values + FAMD ind_sup) deferred.
 
-**What was just finished:** C2 — `reconst` (PCA + CA low-rank reconstruction) + `estim_ncp`
-(GCV/Smooth component estimation), new `factominer/reconst.py`. Both verbatim from R; reconst
-reproduces the active table at full rank (~1e-14); estim_ncp matches R's criterion + chosen ncp
-([[L21]]). 220 passed / 2 skipped; rpy2-parity green (run 26736100357). Commit `da48f88` + close-out.
-Earlier: Phase A, B1–B5, C1 (predict.*).
+**What was just finished:** C3 — `descfreq` (hypergeometric description of frequency-table rows),
+new `factominer/desc/descfreq.py`, verbatim from R; parity-verified. Also corrected a flaky GPA
+PANOVA test to its stochastic tier ([[L22]] — R's GPA isn't reproducible across CI runs even with
+set.seed). 221 passed / 2 skipped; rpy2-parity green. Commits `6c77eeb`, `0b51a00` + close-out.
+Earlier: Phase A, B1–B5, C1 (predict.*), C2 (reconst + estim_ncp).
 
-**Single next action:** tag `elves/pre-batch-c3`, then start C3 (descfreq).
+**Single next action:** tag `elves/pre-batch-d1`, then start D1 (CaGalt) — full spec in the Next
+Exact Batch section below (from the D1 research subagent).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** C3 — `descfreq` (describe frequency-table rows by their columns)
+**Batch:** D1 — `CaGalt` (Correspondence Analysis on Generalized Aggregated Lumped Tables)
 
-**Scope (from the plan):** `descfreq(donnee, by.quali=NULL, proba=0.05)` — the CA analogue of
-`catdes`. For each ROW of a contingency/frequency table, find the COLUMNS whose cell count is
-significantly over- or under-represented vs the marginals (two-sided hypergeometric test), returning
-per row a frame of significant columns sorted by descending `v.test`. R `descfreq.R` is captured
-below; **the implementation is already drafted in `factominer/desc/descfreq.py`** (uncommitted) —
-verify it, wire exports + fixture + test, run the CI loop.
+**Scope:** `CaGalt(Y, X, type="s", conf_ellip=False, nb_ellip=100, level_ventil=0, sx=None,
+graph=False, axes=(0,1))`. Y = n×p frequency/lexical table; X = n×k covariates. `type`: `"s"`
+(quanti scaled, default), `"c"` (quanti centred), `"n"` (qualitative → indicator). Full research
+report is in this turn's transcript (D1 subagent). **NOTE the real R args are `nb.ellip` +
+`level.ventil`, NOT nperm/level.conf.**
 
-**R algorithm (verbatim from `descfreq.R`):** per row `j`, column `k`, cell `n_jk`:
-- `aux2 = n_jk/marge.col[k]`, `aux3 = marge.li[j]/sum(marge.li)`.
-- over (`aux2>aux3`): `p = phyper(n_jk-1, marge.col[k], total-marge.col[k], marge.li[j],
-  lower.tail=FALSE)*2` = `2·P(X≥n_jk)`. under: `p = phyper(n_jk, ...)*2` = `2·P(X≤n_jk)`.
-  (scipy: `rv=hypergeom(M=total, n=marge.col[k], N=marge.li[j])`; over=`sf(n_jk-1)*2`,
-  under=`cdf(n_jk)*2`.) If `p>1`: `p = 2-p`.
-- keep if `p<proba`; `v.test = (1-2·[aux2>aux3])·qnorm(p/2)` (over→+, under→−);
-  row = `[n_jk/marge.li[j]·100, marge.col[k]/total·100, n_jk, marge.col[k], p, v.test]`.
-- Per row, sort by `v.test` desc; columns = `["Intern %","glob %","Intern freq","Glob freq ",
-  "p.value","v.test"]` (note the trailing space in "Glob freq "); rownames = the column names.
-- `by.quali`: first aggregate rows by summing within each factor level.
+**Algorithm (CaGalt = a thin orchestrator over PCA, verbatim from R `CaGalt.R`):**
+- `P = Y/sum(Y)`; `PI. = rowSums(P)` (individual masses), `P.J = colSums(P)` (frequency masses).
+- Covariate analysis weighted by `PI.`: for `type≠"n"`, standardize `X` with `PI.`-weighted
+  mean/sd (`_scaling.center_scale(X, scale_unit=type=="s", row_w=PI.)`), and `phi.stand =
+  diag.X$svd$U` where `diag.X = PCA(X, scale_unit=type=="s", ncp, row_w=PI.)`. For `type="n"`,
+  `phi.stand` = whitened left vectors of the `PI.`-weighted centred indicator (build via `_svd.py`
+  primitives — DON'T need MCA row_w, which the port lacks).
+- Build: `L = sweep(P' @ phi.stand, 1, P.J, "/")` (p×ncp), `T = P' @ X`, `C = (X·√PI.)'(X·√PI.)`
+  (Gram), `W = sweep(T @ pinv(C), 1, P.J, "/")` (`ginv` = `np.linalg.pinv`).
+- **Inner decomposition:** `diag.L = PCA(cbind(L, W), quanti_sup=W cols, scale_unit=False, ncp,
+  row_w=P.J)`. Everything re-projects off this:
+  - `eig ← diag.L.eig`; `freq` (coord/cos2/contrib) ← `diag.L.ind`; `quanti.var ←
+    diag.L.quanti_sup` (already has coord/**cor**/cos2 in the port); `quali.var ←
+    diag.L.quanti_sup` coord+cos2 (type="n").
+  - `ind` by transition: `coord.ind = (P' @ diag.L.svd.U) / PI.[:,None]`; `cos2.ind =
+    coord²/rowSum(coord²)`.
 
-**Build on:** the hypergeometric + `±qnorm(p/2)` v.test machinery already in `desc/catdes.py`
-(`scipy.stats.hypergeom`, `stats.norm.ppf`). NOTE descfreq uses the **plain** `phyper×2` test, NOT
-catdes's mid-p — keep them distinct. New module `factominer/desc/descfreq.py`; export via
-`desc/__init__.py` + top `__init__.py`.
+**Build on (reuse, verified worktree paths):** `pca.py` `PCA` already takes `row_w`, `scale_unit`,
+`ncp`, `quanti_sup` (quanti_sup returns coord/cor/cos2 — exactly what quanti.var needs) and exposes
+`res.svd.U`. `_scaling.center_scale` = R's `mean.p`/`sd.p`. `np.linalg.pinv` = R `ginv`.
 
-**Fixture (license-clean):** `descfreq(children[1:14, 1:5])` → `descfreq/children.json` (the active
-children contingency table; reuse the already-bundled dataset). R returns a per-row named list of
-matrices — dump each row's matrix (drop/keep the trailing-space column name carefully). Add a
-`dump_descfreq` to `tools/refresh_r_fixtures.R`.
+**Gaps (additive):** (1) add `freq: Block | None = None` to `Result` (`_result.py`). (2) new
+`factominer/cagalt.py` + export. (3) a shared `_tab_disjonctif` helper with R's column naming (for
+type="n"). (4) **Defer** `level_ventil>0` and `conf_ellip=True` (the ellipses are a **stochastic
+bootstrap** — exclude, like GPA; raise/no-op). Implement `type="s"/"c"` first, then `type="n"`.
 
-**Parity bar:** p.value 1e-5 relative (hypergeometric); v.test 1e-6; the Intern/glob %/freq columns
-exact (1e-9). The set of significant columns per row must match exactly.
+**Fixture (license-clean — NO bundled dataset exists; `health` is GPL + 115 cols):** build a small
+synthetic `datasets/data/cagalt_synth.csv` (n≈12 × [6 freq cols Y | 3 quanti cols X], fixed numpy
+seed, MIT — mirror `gpa_synth` + PROVENANCE). Add `load_cagalt_synth()`. Two R calls:
+`CaGalt(Y, Xs, type="s")` and `CaGalt(Y, factor(round(Xn)), type="n", level.ventil=0)`, both
+`conf.ellip=FALSE`. Dump eig/ind/freq/quanti.var (s) or quali.var (n). **Do NOT dump `ellip`.**
 
-**Risk:** the column-name with the trailing space (`"Glob freq "`); the over/under tail selection
-(strict `>` for over, else under — ties go to the under/cdf branch); two-sided doubling + the `p>1 →
-2-p` clamp. The per-row sort order (descending v.test). Match R's exact phyper arguments.
+**Parity bar:** deterministic blocks (eig/ind/freq/quanti.var/quali.var coord·cor·cos2·contrib) at
+the strict tier (eig 1e-10; coord/cos2/cor 1e-9; contrib 1e-8); coord sign-aligned per axis.
 
-**Rollback tag:** `elves/pre-batch-c3` (create before starting).
+**Sharp edges:** two weight vectors — `PI.` weights the covariate analysis, `P.J` weights the main
+analysis AND row-divides L/W (the double `sweep(…,P.J,"/")` then `row_w=P.J` is intentional). `pinv(C)`
+is load-bearing (C is deliberately rank-deficient). `ind` cos2 = `coord²/rowSum(coord²)` over kept
+axes (NOT a chi-square distance). quali.var labels follow `tab.disjonctif` naming. Signs inherited
+from the inner PCA (already FactoMineR-aligned).
 
-**Deferred (carry forward):** B4b = missing-value handling (PCA/CA/MCA/GPA) + FAMD `ind_sup`;
-Burt + `quali_sup`; MFA `reconst` (all-quanti only). Slot into the long tail (Phase D).
+**Rollback tag:** `elves/pre-batch-d1` (create before starting).
+
+**Deferred (carry forward):** B4b = missing values (PCA/CA/MCA/GPA) + FAMD `ind_sup`; Burt +
+`quali_sup`; MFA `reconst` (all-quanti); CaGalt `level_ventil`>0 + `conf_ellip` bootstrap ellipses.
 
 ---
 

@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-06-01 (C2 complete, parity-verified)
-- **Current phase:** Phase A + B done; Phase C — C1 + C2 done, C3 (descfreq) next
-- **Active batch:** C2 → done; next C3 (descfreq). B4b (missing values + FAMD ind_sup) deferred.
-- **Last completed batch:** C2 (reconst + estim_ncp) — PCA/CA reconst + GCV/Smooth estim_ncp parity vs live R
-- **Next exact batch:** C3 (descfreq — describe frequency-table rows by their columns; CA analogue of catdes)
+- **Last updated:** 2026-06-01 (C3 complete — PHASE C DONE, parity-verified)
+- **Current phase:** Phase A + B + C done; Phase D (D1 CaGalt) next
+- **Active batch:** C3 → done; next D1 (CaGalt). B4b (missing values + FAMD ind_sup) deferred.
+- **Last completed batch:** C3 (descfreq) — frequency-table row description, hypergeometric, parity vs live R
+- **Next exact batch:** D1 (CaGalt — Correspondence Analysis on Generalized Aggregated Lumped Tables)
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `da48f88` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→220 passed, 2 skipped (+97 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `0b51a00` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→221 passed, 2 skipped (+98 parity tests; skips unchanged)
 
 ---
 
@@ -66,6 +66,46 @@
 ---
 
 <!-- Batch entries land below this line, newest first. -->
+
+## Batch C3 — descfreq — 2026-06-01 (COMPLETE — parity vs live R; PHASE C DONE)
+
+**Phase:** Complete. rpy2-parity CI green; descfreq fixture generated + zero drift.
+**Rollback tag:** `elves/pre-batch-c3` (pushed).
+
+**Contract:** `descfreq(donnee, by_quali=NULL, proba=0.05)` — the CA analogue of `catdes`. For each
+ROW of a frequency/contingency table, report the COLUMNS significantly over/under-represented vs the
+marginals (two-sided hypergeometric), sorted by descending `v.test`.
+
+**Implementation (verbatim from R `descfreq.R`, fetched via GitHub API):** new
+`factominer/desc/descfreq.py`. Per cell `n_jk`: over (`n_jk/marge.col > marge.li/total`) →
+`p=2·P(X≥n_jk)` via `hypergeom.sf(n_jk-1)`; else `p=2·P(X≤n_jk)` via `cdf(n_jk)`; `p>1→2-p`. Keep if
+`p<proba`; `v.test=(1-2·[over])·qnorm(p/2)`; row stats `[Intern %, glob %, Intern freq, Glob freq ,
+p.value, v.test]` (the "Glob freq " column name carries R's trailing space). Reuses the scipy
+`hypergeom` + `±qnorm(p/2)` machinery from `catdes` — but the **plain** `phyper×2` test, NOT catdes's
+mid-p (kept distinct).
+
+**Fixture (license-clean):** `descfreq(children[1:14, 1:5])` → `descfreq/children.json` (6 of 14 rows
+have significant columns). Added `dump_descfreq` to the R dump.
+
+**Checks:** ruff clean; **221 passed / 2 skipped**; rpy2-parity green; p.value 1e-5 rel, v.test 1e-6,
+%/freq columns 1e-9; the significant-column set per row matches R exactly.
+
+**Also this batch — a flaky GPA test fixed (commit `0b51a00`):** the `r-fixture-drift` artifact
+proved R's GPA is NOT reproducible across CI runs even with `set.seed` (consensus/Xfin reflection
+flips; PANOVA SS drifts ~2e-4 run-to-run). The PANOVA objet/config assertions were mis-tiered at
+`atol=1e-4` (flaked ~half the runs) — corrected to the stochastic tier `atol=1e-3, rtol=1e-3`
+([[L22]]). Not a deterministic-tolerance loosening; a tier correction. RV/RVs/simi stay exact;
+consensus/Xfin stay pdist-compared.
+
+**Regression attestation:** additive — new `descfreq.py` + test + export; the GPA change only
+loosens a stochastic-tier test tolerance with documented justification. **Confidence: HIGH.**
+
+**Docs updated:** README (descfreq row), ROADMAP (Phase C ✅), CHANGELOG, learnings L22, survival
+guide + `.elves-session.json` advanced to D1.
+
+**Commits:** `6c77eeb` (descfreq), `0b51a00` (GPA tier fix), + this close-out.
+
+---
 
 ## Batch C2 — reconst + estim_ncp — 2026-06-01 (COMPLETE — parity vs live R)
 

@@ -18,6 +18,12 @@ out of pre-release.
 
 ### Added
 
+- **`descfreq` — describe frequency-table rows by their columns.** New
+  `factominer.descfreq(donnee, by_quali, proba)`, the CA analogue of `catdes`:
+  for each row of a contingency / frequency table it reports the columns whose
+  cell count is significantly over- or under-represented vs the marginals (a
+  two-sided hypergeometric test), sorted by descending `v.test`. Parity-verified
+  against live R FactoMineR 2.14.
 - **`reconst` + `estim_ncp`.** `factominer.reconst(res, ncp)` rebuilds the
   active table from the first `ncp` axes of a fitted `PCA` (un-scaled to the
   original units) or `CA` (chi-square reconstruction from the stored margins);

@@ -31,6 +31,7 @@ source of truth for exactly what works and at what parity bar.
 | `dimdesc` | `factominer.dimdesc` | ✅ | ✅ | quantitative + categorical description per axis |
 | `catdes` | `factominer.catdes` | ✅ | ✅ | `Cla/Mod`, `Mod/Cla`, `Global`, hypergeometric v-test; `quanti_var` Eta²; per-level `quanti` with `sd in category` / `Overall sd` / `n` |
 | `condes` | `factominer.condes` | ✅ | ✅ | correlation tests for a continuous target |
+| `descfreq` | `factominer.descfreq` | ✅ | ✅ | describe the rows of a frequency table by their over/under-represented columns (hypergeometric test); the CA analogue of `catdes` |
 | `predict.PCA / .MCA / .FAMD / .MFA` | `factominer.predict` | ✅ | ✅ | project new (held-out) individuals onto a fitted model — `coord`, `cos2`, `dist`. Parity-verified vs live R for all four model types |
 | `reconst` | `factominer.reconst` | ✅ | ✅ | low-rank reconstruction of the original table from a fitted `PCA` or `CA` result (`reconst(res, ncp)`). MFA reconstruction (all-quanti groups only) not yet exposed |
 | `estim_ncp` | `factominer.estim_ncp` | ✅ | ✅ | estimate the number of PCA dimensions by GCV or the smoothing criterion |
