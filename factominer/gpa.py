@@ -340,11 +340,17 @@ def _coeff_rv(X: np.ndarray, Y: np.ndarray) -> tuple[float, float]:
 
 
 def _similarite(X: np.ndarray, Y: np.ndarray) -> float:
-    """Procrustes congruence: rotate Y onto X, then trace(Xᵀ y)/sqrt(tr(XᵀX) tr(yᵀy))."""
+    """Procrustes congruence in its symmetric singular-value form:
+    ``Σ σ(XcᵀYc) / sqrt(tr(XcᵀXc)·tr(YcᵀYc))``. The numerator is the optimal
+    Procrustes ``max_H tr(Xcᵀ Yc H)`` (= sum of singular values of ``XcᵀYc``),
+    which is symmetric and width-agnostic — for equal widths this equals the
+    rotate-Y-onto-X form; for unequal widths it avoids the projection loss of
+    rotating the wider configuration onto the narrower one."""
     Xc = X - X.mean(axis=0)
     Yc = Y - Y.mean(axis=0)
-    y = Yc @ _procrustes_H(Yc, Xc)
-    return float(np.trace(Xc.T @ y) / np.sqrt(np.trace(Xc.T @ Xc) * np.trace(y.T @ y)))
+    s = np.linalg.svd(Xc.T @ Yc, compute_uv=False)
+    denom = np.sqrt(np.trace(Xc.T @ Xc) * np.trace(Yc.T @ Yc))
+    return float(s.sum() / denom) if denom > 0 else 0.0
 
 
 def _safe_corr(a: np.ndarray, b: np.ndarray) -> float:
