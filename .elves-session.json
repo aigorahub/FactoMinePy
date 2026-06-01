@@ -16,10 +16,10 @@
   "run_mode": "finite",
   "merge_policy": "never",
   "continuation_guard": {
-    "remaining_batches": 12,
+    "remaining_batches": 11,
     "stop_allowed": false,
     "checkpoint_is_stop": false,
-    "next_required_action": "Phase A + B1 + B2 + B3 done (all CI-green). Confirm B3 zero-drift, then start B4 (missing values + row weights; folds in deferred FAMD ind_sup + GPA missing-values). Still deferred: Burt+quali_sup."
+    "next_required_action": "A1-A4 + B1-B4 done (all CI-green). Confirm B4 zero-drift, then start B5 (dimdesc CA/MCA branches). Deferred: B4b (missing values + FAMD ind_sup), Burt+quali_sup."
   },
   "test_baseline": {
     "passed": 123,
@@ -29,9 +29,9 @@
     "reason": "Worktree baseline = run #1 final state. The 2 skips are condes(decathlon, Points) quali/category (R legitimately empty at proba=0.05)."
   },
   "current_batch": {
-    "id": "B4",
-    "name": "row weights (PCA row.w); B4b missing-values deferred",
-    "status": "in_progress"
+    "id": "B5",
+    "name": "dimdesc CA/MCA",
+    "status": "pending"
   },
   "phases": [
     {
@@ -165,10 +165,20 @@
     {
       "id": "B4",
       "name": "row weights (PCA row.w) \u2014 B4b missing-values deferred",
-      "status": "in_progress",
+      "status": "complete",
       "rollback_tag": "elves/pre-batch-b4",
-      "commit": null,
+      "commit": "88786d9",
       "started_at": "2026-05-31",
+      "completed_at": "2026-05-31",
+      "parity": "24/24 PCA tests vs live R (row.w fix); B4b missing-values deferred"
+    },
+    {
+      "id": "B5",
+      "name": "dimdesc CA/MCA",
+      "status": "pending",
+      "rollback_tag": "elves/pre-batch-b5",
+      "commit": null,
+      "started_at": null,
       "completed_at": null
     }
   ],

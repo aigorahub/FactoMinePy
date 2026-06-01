@@ -7,6 +7,15 @@ out of pre-release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`PCA` non-uniform row weights (`row_w`)** were not normalized, so passing
+  weights that did not already sum to 1 (e.g. `row_w=ones`) scaled every
+  eigenvalue by `sum(row_w)`. `PCA` now normalizes the row weights to a
+  probability vector (matching `FactoMineR::PCA`), and the `row.w` path is
+  parity-verified against live R. Uniform-weight results (every existing caller)
+  are unchanged.
+
 ### Added
 
 - **`GPA` unequal-width configurations + `correlations` / `PANOVA`.** GPA now

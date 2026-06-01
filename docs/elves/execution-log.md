@@ -12,14 +12,14 @@
 
 ## Run Digest
 
-- **Last updated:** 2026-05-31 (B3 complete, parity-verified)
-- **Current phase:** Phase A + B1 + B2 + B3 done; B4 (missing values + row weights) next
-- **Active batch:** B3 → done; next B4 (missing values + row weights)
-- **Last completed batch:** B3 (GPA edge cases) — 16/16 GPA parity tests green vs live R
-- **Next exact batch:** B4 (PCA/CA/MCA missing values + row.w; + deferred GPA-missing + FAMD ind_sup)
+- **Last updated:** 2026-05-31 (B4 complete, parity-verified)
+- **Current phase:** Phase A + B1 + B2 + B3 + B4 done; B5 (dimdesc CA/MCA) next
+- **Active batch:** B4 → done; next B5 (dimdesc CA/MCA). B4b (missing values + FAMD ind_sup) deferred.
+- **Last completed batch:** B4 (PCA row.w) — 24/24 PCA parity tests green vs live R
+- **Next exact batch:** B5 (wire dimdesc CA/MCA branches; fixtures for dimdesc(CA)/dimdesc(MCA))
 - **Active PR:** [#5](https://github.com/aigorahub/FactoMinePy/pull/5)
-- **Collision tripwire (latest own HEAD):** `93e9bfb` (staging tripwire was `19c448b`)
-- **Test baseline:** 123→205 passed, 2 skipped (+82 parity tests; skips unchanged)
+- **Collision tripwire (latest own HEAD):** `88786d9` (staging tripwire was `19c448b`)
+- **Test baseline:** 123→209 passed, 2 skipped (+86 parity tests; skips unchanged)
 
 ---
 
@@ -67,10 +67,16 @@
 
 <!-- Batch entries land below this line, newest first. -->
 
-## Batch B4 — row weights (PCA row.w) — 2026-05-31 (IN PROGRESS: code done, awaiting CI fixture)
+## Batch B4 — row weights (PCA row.w) — 2026-05-31 (COMPLETE — 24/24 PCA parity vs live R)
 
-**Phase:** Implement complete; local green; rpy2-parity CI loop pending.
+**Phase:** Implement → Validate → Review → Document, done. Parity-verified, first pass.
 **Rollback tag:** `elves/pre-batch-b4` (pushed).
+**Commits:** `674c19b` (fix + harness), `88786d9` (R fixture).
+**Validation (final):** ruff clean; pytest **209 passed / 2 skipped** (baseline). CI green both jobs,
+first attempt: the 4 row.w channels (eig/var.coord/ind.coord/ind.contrib) match live R; existing PCA
+fixtures byte-identical (eig diff 0.0). **Confidence: HIGH** — the normalization is a no-op for the
+uniform default and every existing caller; only non-uniform `row_w` changes, now matching R.
+**Docs updated:** CHANGELOG (Fixed: PCA row.w), ROADMAP.
 
 **Scope decision — B4 split.** The plan's B4 ("missing values + row weights") is large and spans
 several methods with DIFFERENT NA semantics. This batch (B4) does the **row-weights** half — the

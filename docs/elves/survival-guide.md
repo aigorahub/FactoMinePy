@@ -60,12 +60,11 @@ F release). The full plan is `docs/plans/elves-run-2-full-parity.md`.
 
 ## Stop Gate
 
-- **Planned batches remaining:** 12 (7 of 20 enumerated batches done)
+- **Planned batches remaining:** 11 (8 of 20 enumerated batches done; + B4b deferred work)
 - **Stop allowed right now:** no
-- **Why:** 7 done (A1–A4, B1–B3); 12 remain (B4–B5, C1–C3, D1–D4, E1–E3, F1).
-- **Next required action:** confirm B3 zero-drift CI green, then start B4 (missing values + row
-  weights). B4 folds in deferred FAMD `ind_sup` + GPA missing-values. Still deferred: Burt+quali_sup.
-  Entropy check due ~after B5.
+- **Why:** 8 done (A1–A4, B1–B4); 11 remain (B5, C1–C3, D1–D4, E1–E3, F1) + B4b (missing values).
+- **Next required action:** confirm B4 zero-drift CI green, then start B5 (dimdesc CA/MCA). Deferred:
+  B4b (missing values + FAMD ind_sup), Burt+quali_sup. Entropy check due ~after B5/C1.
 
 ---
 
@@ -120,23 +119,42 @@ The venv is at `.venv/` in the worktree root (`pip install -e '.[dev]'`).
 
 ## Current Phase
 
-**Status:** Phase A + entropy + B1 + B2 + B3 done. MFA family + FAMD sup + MCA sup/Burt + GPA
-unequal-width all parity-verified.
+**Status:** Phase A + entropy + B1 + B2 + B3 + B4 done. 8 of 20 batches; everything parity-verified.
 
-**Active batch:** B3 done → B4 (missing values + row weights).
+**Active batch:** B4 done → B5 (dimdesc CA/MCA). B4b (missing values + FAMD ind_sup) deferred.
 
-**What was just finished:** B3 — GPA unequal-width configs + correlations + PANOVA; 16/16 GPA parity
-vs live R (symmetric `_similarite` fixed the unequal-width simi). Equal-width unchanged. 205 passed /
-2 skipped. Commits through `93e9bfb`. README/ROADMAP/CHANGELOG updated. GPA missing-values deferred to
-B4. Earlier: Phase A, entropy check, B1 (FAMD sup), B2 (MCA sup/Burt).
+**What was just finished:** B4 — fixed PCA's `row_w` normalization bug + parity-verified the row.w
+path; 24/24 PCA parity vs live R. Existing PCA fixtures unchanged. 209 passed / 2 skipped. Commits
+through `88786d9`. CHANGELOG/ROADMAP updated. Earlier: Phase A, entropy, B1 (FAMD sup), B2 (MCA
+sup/Burt), B3 (GPA unequal-width). B4 split — missing-value handling is B4b (deferred, recorded).
 
-**Single next action:** confirm B3 zero-drift CI green, then start B4 (missing values + row weights).
+**Single next action:** confirm B4 zero-drift CI green, then start B5 (dimdesc CA/MCA branches).
 
 ---
 
 ## Next Exact Batch
 
-**Batch:** B4 — missing values + row weights
+**Batch:** B5 — dimdesc on CA / MCA
+
+**Scope (from the plan):** wire the **CA and MCA branches** of R's `dimdesc`. Run #1's `dimdesc`
+(`factominer/desc/`) leans on PCA's stashed `call` payload; CA and MCA need their own paths —
+`dimdesc.R` has a dedicated CA branch (describe each CA axis by the rows/cols via their coords /
+correlations) and an MCA branch (describe each MCA axis by the categorical variables via eta² and the
+categories via v.test, like `condes`/`catdes` per axis). Read `R/dimdesc.R` for the exact CA/MCA
+output schemas. Add fixtures `dimdesc(CA_res)` and `dimdesc(MCA_res)` and the column-by-column tests.
+
+**Build on:** the existing `dimdesc` PCA path + `catdes`/`condes` machinery (the MCA dimdesc describes
+each axis much like condes on the axis coordinate). Check what `dimdesc` currently does when handed a
+CA/MCA result (it may only handle PCA via the stashed call).
+
+**Risk:** R `dimdesc` output schemas differ by method (PCA: quanti/quali per axis; CA: a different
+structure; MCA: quali eta² + category v.test). Match R's exact column names (learnings on the
+`P-value`/`p.value` naming quirk [[L6]]).
+
+**Rollback tag:** `elves/pre-batch-b5` (create before starting).
+
+**Note:** B4b (deferred) = missing-value handling for PCA/CA/MCA/GPA + FAMD `ind_sup`. Slot it in
+after B5 or fold into the long-tail phase; specs are in the B1/B3 research summaries + the B4 log.
 
 **Scope (from the plan + deferrals):** audit PCA/CA/MCA for R's missing-value handling and `row.w`
 support; add the paths R supports + fixtures that exercise them. R FactoMineR has documented NA
