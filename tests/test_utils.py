@@ -25,11 +25,12 @@ def test_svd_triplet(r_svd_triplet_decathlon):
     r_vs = np.asarray(r_svd_triplet_decathlon["vs"], dtype=np.float64)
     r_U = _dims(r_svd_triplet_decathlon["U"])
     r_V = _dims(r_svd_triplet_decathlon["V"])
-    k = r_vs.size
-    assert np.allclose(s.vs[:k], r_vs, atol=1e-9, rtol=0)
+    # vs is the full retained spectrum; U/V have ncp columns.
+    assert np.allclose(s.vs[: r_vs.size], r_vs, atol=1e-9, rtol=1e-9)
+    kuv = r_U.shape[1]
     # U/V are sign-dependent per axis (gauge freedom).
-    assert np.allclose(align_to_reference(s.U[:, :k], r_U), r_U, atol=1e-9, rtol=0)
-    assert np.allclose(align_to_reference(s.V[:, :k], r_V), r_V, atol=1e-9, rtol=0)
+    assert np.allclose(align_to_reference(s.U[:, :kuv], r_U), r_U, atol=1e-9, rtol=0)
+    assert np.allclose(align_to_reference(s.V[:, :kuv], r_V), r_V, atol=1e-9, rtol=0)
 
 
 def test_tab_disjonctif(r_tab_disjonctif_tea):

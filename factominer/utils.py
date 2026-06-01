@@ -46,9 +46,11 @@ def svd_triplet(
     sqrt_col = np.sqrt(col_w)
     Y = (A * sqrt_col[None, :]) * sqrt_row[:, None]
     U_full, d_full, Vt_full = np.linalg.svd(Y, full_matrices=False)
-    U = U_full[:, :ncp]
-    V = Vt_full[:ncp].T
-    vs = d_full[:ncp]
+    # R returns the full retained singular spectrum (length min(p, n-1)) but only
+    # ncp singular vectors.
+    vs = d_full[: min(p, n - 1)].copy()
+    U = U_full[:, :ncp].copy()
+    V = Vt_full[:ncp].T.copy()
     if ncp > 1:
         mult = np.sign(V.sum(axis=0))
         mult[mult == 0] = 1.0
@@ -56,7 +58,12 @@ def svd_triplet(
         V = V * mult[None, :]
     U = U / sqrt_row[:, None]
     V = V / sqrt_col[:, None]
-    return SVD(vs=vs.copy(), U=U.copy(), V=V.copy())
+    # R scales the singular vectors of (near-)zero singular values by the value.
+    num = np.where(vs[:ncp] < 1e-15)[0]
+    if num.size:
+        U[:, num] = U[:, num] * vs[num][None, :]
+        V[:, num] = V[:, num] * vs[num][None, :]
+    return SVD(vs=vs, U=U, V=V)
 
 
 def tab_disjonctif(tab: pd.DataFrame) -> pd.DataFrame:
