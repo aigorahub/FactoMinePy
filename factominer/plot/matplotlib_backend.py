@@ -7,18 +7,15 @@ from collections.abc import Iterable
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.patches import Ellipse
-from scipy import stats
 from scipy.cluster.hierarchy import dendrogram
 
 from .._result import Result
 from ..hcpc import HCPCResult
-
-DEFAULT_PALETTE = [
-    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
-    "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
-    "#bcbd22", "#17becf",
-]
+from ._data import (  # noqa: F401  (DEFAULT_PALETTE re-exported)
+    DEFAULT_PALETTE,
+    coord_ellipse,
+    resolve_colors,
+)
 
 
 def plot(
@@ -31,13 +28,25 @@ def plot(
     title: str | None = None,
     ellipse: bool = False,
     ellipse_level: float = 0.95,
-) -> Axes:
+    backend: str = "matplotlib",
+):
     """High-level entry point matching ``plot.PCA`` / ``plot.CA`` / ``plot.MCA`` / ``plot.HCPC``.
 
     ``choix`` controls what is rendered: ``"ind"`` (individuals factor map), ``"var"``
     (variables / correlation circle), ``"biplot"``, ``"scree"``, ``"contrib"``,
     ``"dendrogram"``. Method-specific renderers handle the details.
+
+    ``backend`` selects the renderer: ``"matplotlib"`` (default, returns an
+    ``Axes``) or ``"plotly"`` (returns a ``plotly.graph_objects.Figure``; both
+    backends draw from the same geometry in ``factominer.plot._data``).
     """
+    if backend == "plotly":
+        from .plotly_backend import plot_plotly
+        return plot_plotly(res, choix=choix, axes=axes, habillage=habillage,
+                           invisible=invisible, title=title, ellipse=ellipse,
+                           ellipse_level=ellipse_level)
+    if backend != "matplotlib":
+        raise ValueError(f"unknown backend: {backend!r} (expected 'matplotlib' or 'plotly')")
     invisible = set(invisible or [])
     if isinstance(res, HCPCResult):
         if choix == "dendrogram":
@@ -71,7 +80,45 @@ def plot(
             return plot_ca(res, kind="biplot", axes=axes, ax=ax, title=title)
         if res.method == "MCA":
             return plot_mca(res, kind="biplot", axes=axes, ax=ax, title=title)
+    if choix == "partial":
+        return plot_mfa_partial(res, axes=axes, invisible=invisible, ax=ax, title=title)
     raise ValueError(f"unsupported choix: {choix!r}")
+
+
+def plot_mfa_partial(
+    res: Result,
+    axes: tuple[int, int] = (0, 1),
+    invisible: set[str] | None = None,  # noqa: ARG001
+    ax: Axes | None = None,
+    title: str | None = None,
+) -> Axes:
+    """Partial-individuals factor map (MFA / HMFA): each individual's global point
+    plus one partial point per group, joined by a line. Uses the parity-verified
+    ``res.ind.coord_partiel`` (one row per (individual, group), individual-major)."""
+    cp = getattr(res.ind, "coord_partiel", None) if res.ind is not None else None
+    if cp is None:
+        raise ValueError(f"{res.method} has no partial coordinates (choix='partial')")
+    if ax is None:
+        import matplotlib.pyplot as plt
+        _, ax = plt.subplots(figsize=(7, 6))
+    glob = res.ind.coord.iloc[:, list(axes)].to_numpy()
+    n = glob.shape[0]
+    k = cp.shape[0] // n
+    part = cp.iloc[:, list(axes)].to_numpy()
+    group_names = [str(cp.index[g]).rsplit(".", 1)[-1] for g in range(k)]
+    palette = [f"C{i}" for i in range(k)]
+    ax.scatter(glob[:, 0], glob[:, 1], c="black", s=28, zorder=3)
+    for i in range(n):
+        gx, gy = glob[i]
+        for g in range(k):
+            px, py = part[i * k + g]
+            ax.plot([gx, px], [gy, py], color=palette[g], lw=0.6, alpha=0.55)
+            ax.scatter(px, py, color=palette[g], s=14, zorder=2)
+    for g in range(k):
+        ax.scatter([], [], color=palette[g], label=group_names[g], s=20)
+    ax.legend(title="group", fontsize=8)
+    _axis_decoration(ax, res, axes, title or "Partial individuals factor map (MFA)")
+    return ax
 
 
 # -- PCA --------------------------------------------------------------------
@@ -98,13 +145,15 @@ def plot_pca_ind(
             ax.annotate(str(label), (x, y), fontsize=8, alpha=0.85)
     if ellipse and habillage is not None:
         _draw_confidence_ellipses(ax, coord, habillage, res, level=ellipse_level, colors=colors)
-    if "ind.sup" not in invisible and res.ind_sup is not None:
-        sup_coord = res.ind_sup.coord.iloc[:, list(axes)]
+    ind_sup = getattr(res, "ind_sup", None)
+    if "ind.sup" not in invisible and ind_sup is not None:
+        sup_coord = ind_sup.coord.iloc[:, list(axes)]
         ax.scatter(sup_coord.iloc[:, 0], sup_coord.iloc[:, 1], marker="^", c="dimgray", s=40)
         for label, (x, y) in zip(sup_coord.index, sup_coord.to_numpy(), strict=True):
             ax.annotate(str(label), (x, y), fontsize=8, alpha=0.85, color="dimgray")
-    if "quali.sup" not in invisible and res.quali_sup is not None:
-        qs = res.quali_sup.coord.iloc[:, list(axes)]
+    quali_sup = getattr(res, "quali_sup", None)
+    if "quali.sup" not in invisible and quali_sup is not None:
+        qs = quali_sup.coord.iloc[:, list(axes)]
         ax.scatter(qs.iloc[:, 0], qs.iloc[:, 1], marker="s", c="darkred", s=50)
         for label, (x, y) in zip(qs.index, qs.to_numpy(), strict=True):
             ax.annotate(str(label), (x, y), fontsize=8, color="darkred", weight="bold")
@@ -123,7 +172,11 @@ def plot_pca_var(
         import matplotlib.pyplot as plt
         _, ax = plt.subplots(figsize=(6, 6))
     invisible = invisible or set()
-    coord = res.var.coord.iloc[:, list(axes)]
+    # FAMD/PCA expose ``var``; MFA/HMFA/DMFA/CaGalt expose ``quanti_var`` instead.
+    var_block = res.var if getattr(res, "var", None) is not None else getattr(res, "quanti_var", None)
+    if var_block is None:
+        raise ValueError(f"{res.method} has no variable block to plot for choix='var'")
+    coord = var_block.coord.iloc[:, list(axes)]
     # Correlation circle
     theta = np.linspace(0, 2 * np.pi, 256)
     ax.plot(np.cos(theta), np.sin(theta), color="lightgray", lw=1)
@@ -134,8 +187,9 @@ def plot_pca_var(
             ax.annotate("", xy=(x, y), xytext=(0, 0),
                         arrowprops=dict(arrowstyle="->", color="#1f77b4", lw=1.0))
             ax.annotate(str(label), (x, y), fontsize=9, color="#1f77b4")
-    if "quanti.sup" not in invisible and res.quanti_sup is not None:
-        qs = res.quanti_sup.coord.iloc[:, list(axes)]
+    quanti_sup = getattr(res, "quanti_sup", None)
+    if "quanti.sup" not in invisible and quanti_sup is not None:
+        qs = quanti_sup.coord.iloc[:, list(axes)]
         for label, (x, y) in zip(qs.index, qs.to_numpy(), strict=True):
             ax.annotate("", xy=(x, y), xytext=(0, 0),
                         arrowprops=dict(arrowstyle="->", color="darkgreen", lw=1.0, linestyle="--"))
@@ -290,18 +344,10 @@ def plot_contrib(res: Result, axis: int = 0, ax: Axes | None = None, title: str 
 
 
 def _resolve_colors(n: int, habillage, res: Result) -> list[str]:
-    if habillage is None:
-        return ["#1f77b4"] * n
-    if isinstance(habillage, str):
-        groups = res.call.get("quali_sup_frame")
-        if groups is None or habillage not in groups.columns:
-            return ["#1f77b4"] * n
-        groups = groups[habillage].astype("category")
-    else:
-        groups = pd.Series(habillage).astype("category")
-    levels = list(groups.cat.categories)
-    palette = {lvl: DEFAULT_PALETTE[i % len(DEFAULT_PALETTE)] for i, lvl in enumerate(levels)}
-    return [palette[lvl] for lvl in groups]
+    # Delegates to the backend-agnostic resolver so matplotlib and plotly
+    # assign identical group colors.
+    quali_sup_frame = res.call.get("quali_sup_frame") if isinstance(habillage, str) else None
+    return resolve_colors(n, habillage, quali_sup_frame)
 
 
 def _draw_confidence_ellipses(
@@ -319,26 +365,18 @@ def _draw_confidence_ellipses(
         groups = groups[habillage].astype("category")
     else:
         groups = pd.Series(habillage).astype("category")
-    chi2 = stats.chi2.ppf(level, df=2)
-    for lvl in groups.cat.categories:
-        mask = (groups == lvl).to_numpy()
+    # Use the R-faithful coord.ellipse parametrization (shared with the plotly
+    # backend) so our ellipses are vertex-identical to FactoMineR's, not the
+    # eigenvector form a matplotlib Ellipse patch would draw.
+    ellipses = coord_ellipse(coord.to_numpy(), groups, axes=(0, 1), level=level)
+    codes = groups.cat.codes.to_numpy()
+    for i, lvl in enumerate(groups.cat.categories):
+        mask = codes == i
         if mask.sum() < 3:
             continue
-        sub = coord.loc[mask].to_numpy()
-        center = sub.mean(axis=0)
-        cov = np.cov(sub, rowvar=False)
-        vals, vecs = np.linalg.eigh(cov)
-        order = np.argsort(vals)[::-1]
-        vals = vals[order]
-        vecs = vecs[:, order]
-        if (vals <= 0).any():
-            continue
-        width = 2 * np.sqrt(vals[0] * chi2)
-        height = 2 * np.sqrt(vals[1] * chi2)
-        angle = float(np.degrees(np.arctan2(vecs[1, 0], vecs[0, 0])))
+        pts = ellipses[str(lvl)]
         color = colors[int(np.argmax(mask))] if colors else "gray"
-        ax.add_patch(Ellipse(xy=center, width=width, height=height, angle=angle,
-                             fill=False, color=color, lw=1.2, alpha=0.7))
+        ax.plot(pts[:, 0], pts[:, 1], color=color, lw=1.2, alpha=0.7)
 
 
 def _axis_decoration(ax: Axes, res: Result, axes: tuple[int, int], title: str) -> None:

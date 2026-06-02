@@ -52,3 +52,51 @@ def load_poison() -> pd.DataFrame:
     Mixed categorical + quantitative. Used in MCA / FAMD examples.
     """
     return _load_csv("poison.csv")
+
+
+def load_gpa_synth() -> pd.DataFrame:
+    """8 × 6 deterministic synthetic dataset for GPA.
+
+    Three configurations (``g1_d1``, ``g1_d2``, ``g2_*``, ``g3_*``) of the same
+    8 objects in 2D: a common base shape rotated, scaled, and perturbed per
+    configuration. Generated once from a fixed seed and frozen to CSV, so it is
+    fully reproducible and carries no third-party licensing. Used as the GPA
+    parity fixture (``group=[2, 2, 2]``).
+    """
+    return _load_csv("gpa_synth.csv")
+
+
+def load_gpa_synth_uneven() -> pd.DataFrame:
+    """8 × 7 synthetic GPA dataset with unequal-width configurations.
+
+    Derived deterministically from :func:`load_gpa_synth` by giving the middle
+    configuration a third (rank-increasing) variable, yielding ``group=[2, 3, 2]``.
+    Exercises GPA's general (unequal-width) Procrustes path. Frozen to CSV; MIT,
+    no third-party licensing.
+    """
+    return _load_csv("gpa_synth_uneven.csv")
+
+
+def load_cagalt_synth() -> pd.DataFrame:
+    """12 × 9 deterministic synthetic dataset for CaGalt.
+
+    Columns ``freq1``–``freq6`` are a frequency / lexical table ``Y`` (equal row
+    totals of 50, with a clear first-axis gradient); columns ``cov1``–``cov3``
+    are contextual covariates ``X`` (three linearly-independent patterns —
+    linear, alternating, quadratic — that also round to clean 2-/3-level factors
+    for the ``type="n"`` path). Generated once from fixed structure and frozen to
+    CSV, so it is fully reproducible and carries no third-party licensing (MIT).
+    FactoMineR's own CaGalt example (``health``) is GPL and 115 columns wide, so
+    this small license-clean table is used as the parity fixture instead.
+    """
+    return _load_csv("cagalt_synth.csv")
+
+
+def load_textual_synth() -> pd.DataFrame:
+    """6 × 2 synthetic free-text dataset for ``textual``.
+
+    A ``review`` column of short ASCII sentences (mixed case, to exercise the
+    lowercasing) and a ``grp`` two-level grouping factor. Original synthetic data
+    (MIT); no bundled FactoMineR dataset carries free text.
+    """
+    return _load_csv("textual_synth.csv")

@@ -5,7 +5,7 @@ from __future__ import annotations
 project = "factominer"
 author = "Aigora"
 copyright = "2026, Aigora"
-release = "0.1.0.dev0"
+release = "0.3.0.dev0"
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -21,7 +21,7 @@ source_suffix = {
 }
 
 master_doc = "index"
-exclude_patterns = ["_build", "plans"]
+exclude_patterns = ["_build", "plans", "elves"]
 
 html_theme = "alabaster"
 html_title = "factominer"

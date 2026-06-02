@@ -7,15 +7,24 @@ stubs that raise ``NotImplementedError``.
 
 from __future__ import annotations
 
-# Deferred methods (Round 2). Imported so ``from factominer import HMFA`` works,
-# but the implementations raise NotImplementedError when called.
-from ._deferred import DMFA, FAMD, GPA, HMFA, MFA
 from ._result import Result
 from .ca import CA
-from .desc import catdes, condes, dimdesc
+from .cagalt import CaGalt
+from .desc import catdes, condes, descfreq, dimdesc
+from .dmfa import DMFA
+from .famd import FAMD
+from .gpa import GPA
 from .hcpc import HCPC
+from .hmfa import HMFA
+from .linear_model import AovSum, LinearModel
 from .mca import MCA
+from .mfa import MFA
 from .pca import PCA
+from .predict import predict
+from .reconst import estim_ncp, reconst
+from .reg_best import RegBest
+from .textual import textual
+from .utils import svd_triplet, tab_disjonctif
 
 __all__ = [
     "PCA",
@@ -27,10 +36,21 @@ __all__ = [
     "DMFA",
     "GPA",
     "HCPC",
+    "CaGalt",
     "dimdesc",
     "catdes",
     "condes",
+    "descfreq",
+    "predict",
+    "reconst",
+    "estim_ncp",
+    "RegBest",
+    "LinearModel",
+    "AovSum",
+    "textual",
+    "svd_triplet",
+    "tab_disjonctif",
     "Result",
 ]
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.3.0.dev0"

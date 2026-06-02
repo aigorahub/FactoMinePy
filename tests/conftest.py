@@ -46,6 +46,11 @@ def r_pca_decathlon_plain() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_pca_decathlon_roww() -> dict:
+    return _load_r_fixture("pca", "decathlon_roww")
+
+
+@pytest.fixture(scope="session")
 def r_ca_children() -> dict:
     return _load_r_fixture("ca", "children")
 
@@ -61,6 +66,56 @@ def r_mca_tea() -> dict:
 
 
 @pytest.fixture(scope="session")
+def r_mca_tea_burt() -> dict:
+    return _load_r_fixture("mca", "tea_burt")
+
+
+@pytest.fixture(scope="session")
+def r_famd_poison() -> dict:
+    return _load_r_fixture("famd", "poison")
+
+
+@pytest.fixture(scope="session")
+def r_famd_poison_sup() -> dict:
+    return _load_r_fixture("famd", "poison_sup")
+
+
+@pytest.fixture(scope="session")
+def r_mfa_poison() -> dict:
+    return _load_r_fixture("mfa", "poison")
+
+
+@pytest.fixture(scope="session")
+def r_hmfa_poison() -> dict:
+    return _load_r_fixture("hmfa", "poison")
+
+
+@pytest.fixture(scope="session")
+def r_hmfa_decathlon() -> dict:
+    return _load_r_fixture("hmfa", "decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_dmfa_decathlon() -> dict:
+    return _load_r_fixture("dmfa", "decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_plot_ellipse_decathlon() -> dict:
+    return _load_r_fixture("plot", "ellipse_decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_gpa_synth() -> dict:
+    return _load_r_fixture("gpa", "synth")
+
+
+@pytest.fixture(scope="session")
+def r_gpa_synth_uneven() -> dict:
+    return _load_r_fixture("gpa", "synth_uneven")
+
+
+@pytest.fixture(scope="session")
 def r_hcpc_decathlon() -> dict:
     return _load_r_fixture("hcpc", "decathlon_plain_k4")
 
@@ -68,6 +123,11 @@ def r_hcpc_decathlon() -> dict:
 @pytest.fixture(scope="session")
 def r_dimdesc_pca_decathlon() -> dict:
     return _load_r_fixture("dimdesc", "pca_decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_dimdesc_mca_tea() -> dict:
+    return _load_r_fixture("dimdesc", "mca_tea")
 
 
 @pytest.fixture(scope="session")
@@ -88,3 +148,103 @@ def r_condes_tea_age() -> dict:
 @pytest.fixture(scope="session")
 def r_dimdesc_pca_decathlon_proba50() -> dict:
     return _load_r_fixture("dimdesc", "pca_decathlon_proba50")
+
+
+@pytest.fixture(scope="session")
+def r_predict_pca_decathlon() -> dict:
+    return _load_r_fixture("predict_pca", "decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_predict_mca_tea() -> dict:
+    return _load_r_fixture("predict_mca", "tea")
+
+
+@pytest.fixture(scope="session")
+def r_predict_famd_poison() -> dict:
+    return _load_r_fixture("predict_famd", "poison")
+
+
+@pytest.fixture(scope="session")
+def r_predict_mfa_poison() -> dict:
+    return _load_r_fixture("predict_mfa", "poison")
+
+
+@pytest.fixture(scope="session")
+def r_reconst_pca_decathlon() -> dict:
+    return _load_r_fixture("reconst", "pca_decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_reconst_ca_children() -> dict:
+    return _load_r_fixture("reconst", "ca_children")
+
+
+@pytest.fixture(scope="session")
+def r_estim_ncp_decathlon_gcv() -> dict:
+    return _load_r_fixture("estim_ncp", "decathlon_gcv")
+
+
+@pytest.fixture(scope="session")
+def r_estim_ncp_decathlon_smooth() -> dict:
+    return _load_r_fixture("estim_ncp", "decathlon_smooth")
+
+
+@pytest.fixture(scope="session")
+def r_descfreq_children() -> dict:
+    return _load_r_fixture("descfreq", "children")
+
+
+@pytest.fixture(scope="session")
+def r_cagalt_synth_s() -> dict:
+    return _load_r_fixture("cagalt", "synth_s")
+
+
+@pytest.fixture(scope="session")
+def r_regbest_decathlon_r2() -> dict:
+    return _load_r_fixture("regbest", "decathlon_r2")
+
+
+@pytest.fixture(scope="session")
+def r_regbest_decathlon_cp() -> dict:
+    return _load_r_fixture("regbest", "decathlon_cp")
+
+
+@pytest.fixture(scope="session")
+def r_regbest_decathlon_adjr2() -> dict:
+    return _load_r_fixture("regbest", "decathlon_adjr2")
+
+
+@pytest.fixture(scope="session")
+def r_linear_model_poison_main() -> dict:
+    return _load_r_fixture("linear_model", "poison_main")
+
+
+@pytest.fixture(scope="session")
+def r_linear_model_poison_inter() -> dict:
+    return _load_r_fixture("linear_model", "poison_inter")
+
+
+@pytest.fixture(scope="session")
+def r_aovsum_poison_main() -> dict:
+    return _load_r_fixture("aovsum", "poison_main")
+
+
+@pytest.fixture(scope="session")
+def r_textual_synth_grp() -> dict:
+    return _load_r_fixture("textual", "synth_grp")
+
+
+@pytest.fixture(scope="session")
+def r_textual_synth_doc() -> dict:
+    return _load_r_fixture("textual", "synth_doc")
+
+
+@pytest.fixture(scope="session")
+def r_svd_triplet_decathlon() -> dict:
+    return _load_r_fixture("svd_triplet", "decathlon")
+
+
+@pytest.fixture(scope="session")
+def r_tab_disjonctif_tea() -> dict:
+    return _load_r_fixture("tab_disjonctif", "tea")

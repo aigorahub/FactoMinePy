@@ -4,9 +4,43 @@
 family (MFA / HMFA / DMFA) by adding FAMD, GPA, and a plotly backend, plus
 plot-data parity tests. Bump to `v0.2.0.dev0`.
 
-**Branch convention:** one branch per batch, named
-`feat/<batch-id>-<short-name>`. PR per batch, reviewed by `/codex review`
-or independent subagent before merge.
+---
+
+## Revised orchestration (2026-05-29, after the GPA finding)
+
+Batch 1 (FAMD) landed. The GPA research surfaced that **R's GPA is
+non-deterministic** (random multi-start + rnorm basis completion), so its
+`consensus`/`Xfin` cannot meet the exact-1e-9 bar — only `RV`/`RVs`/`simi`
+are deterministic. **User decision: do it all, GPA included, with an honest
+two-tier parity story; reorder so the clean-bar batches land first.**
+
+Remaining sequence (each batch is driven by a Workflow):
+
+| Order | Batch | Workflow shape | Parity bar |
+| --- | --- | --- | --- |
+| 1 | **PD** — plot-data layer + parity | `understand`: 3 parallel readers (matplotlib_backend data computations; R `plot.PCA/.CA/.MCA/.HCPC` `$data`; fixture+test strategy) → implement `factominer/plot/_data.py` + refactor mpl backend + R plot-data fixtures → rpy2-parity loop | exact 1e-9 on extracted plot data |
+| 2 | **PL** — plotly backend | `understand` (lighter): 2 readers (the refactored `_data.py` surface; plotly figure/trace + dispatcher + `test_plots.py` patterns) → implement `plotly_backend.py` on the shared data layer → structural tests (no R) | structural |
+| 3 | **GPA** — two-tier parity | research already done (`docs/plans/gpa-research-findings.json`). Implement deterministic `algogpa` core + `GPAResult` dataclass + synthetic K-config dataset, then an **adversarial-verify** workflow: parallel checkers per component (Procrustes H, scaling pds eigen-step, coeffRV/rvstd, consensus eigen-rotation) compare the port against the R source → rpy2-parity loop | Tier 1 exact (RV/RVs/simi, 1e-7); Tier 2 rotation-invariant (consensus/Xfin via inter-point distances / Procrustes alignment) |
+| 4 | **POLISH** — v0.2.0.dev0 | `review` fan-out: multi-dimension final review (parity-claim accuracy vs README, CHANGELOG completeness, version-bump correctness, docs cross-refs) → tag `v0.2.0.dev0` → release.yml auto-publishes | n/a |
+
+Ordering rationale: PD before PL so plotly is built on the shared
+`_data.py` layer from the start (no build-then-refactor). GPA after the
+clean batches to bank exact-parity wins first. POLISH last.
+
+README honesty: GPA's row will read `✅ live / ⚠️ rotation-invariant parity`
+(not the plain `✅ ✅` the deterministic methods get), with a known-
+limitations note that consensus/Xfin match R only up to rotation/
+reflection because R's GPA is stochastic.
+
+The original Batch 1–5 sections below are superseded by this table for
+ordering; their per-batch deliverable detail still applies.
+
+**Branch convention:** one working branch `feat/elves-run-1` for the
+entire run; commits accumulate on it batch by batch (per the elves skill
+default). Open a single PR after Batch 0 (session setup) and use it
+throughout. Review happens continuously via PR comments / bots / subagent
+reviews between batches; the user merges the PR after the final batch
+lands.
 
 **Compaction-recovery anchor:** this file. If context is lost mid-run, the
 "Resume here" line at the top of each batch tells you what the next

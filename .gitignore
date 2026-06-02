@@ -33,5 +33,9 @@ docs/_build/
 # Jupyter outputs
 .ipynb_checkpoints/
 
-# Local elves state
-.elves-session.json
+# Elves ephemeral artifacts (committed during a run for compaction
+# recovery; the skill's Final Completion step git-rm's them before
+# the user reviews the PR).
+.playwright-mcp/
+docs/audit/
+

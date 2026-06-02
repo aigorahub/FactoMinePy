@@ -91,3 +91,20 @@ def test_plot_dispatch_hcpc():
     fig, ax = plt.subplots()
     plot(clust, choix="factor_map", ax=ax)
     plt.close(fig)
+
+
+def test_plot_contrib_renders(pca_res):
+    fig, ax = plt.subplots()
+    plot(pca_res, choix="contrib", axes=(0, 1), ax=ax)
+    # contribution bars are present and sorted descending
+    heights = [p.get_height() for p in ax.patches]
+    assert len(heights) > 0
+    assert heights == sorted(heights, reverse=True)
+    plt.close(fig)
+
+
+def test_plot_scree_renders(pca_res):
+    fig, ax = plt.subplots()
+    plot(pca_res, choix="scree", ax=ax)
+    assert len(ax.patches) == pca_res.eig.shape[0]
+    plt.close(fig)
