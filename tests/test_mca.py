@@ -210,3 +210,118 @@ def test_mca_ind_contrib(r_mca_tea):
     )
     py = res.ind.contrib.to_numpy()[:, :5]
     assert np.allclose(py, r_arr, atol=1e-8, rtol=0)
+
+
+# ---------------------------------------------------------------------------
+# Supplementary blocks (quanti.sup = age; quali.sup = 17 vars, cols 20-36)
+# ---------------------------------------------------------------------------
+
+
+def test_mca_quanti_sup_coord(r_mca_tea):
+    payload = r_mca_tea.get("quanti.sup")
+    if payload is None or payload.get("coord") is None:
+        return
+    res = _mca()
+    r_arr, r_labels = _r_block_to_array(payload["coord"], 5)
+    py = res.quanti_sup.coord.loc[r_labels].to_numpy()[:, :5]
+    py_aligned = align_to_reference(py, r_arr)
+    assert np.allclose(py_aligned, r_arr, atol=1e-9, rtol=0)
+
+
+def _sup_var_for():
+    return _build_var_for(load_tea().columns[19:36].tolist())
+
+
+def test_mca_quali_sup_coord(r_mca_tea):
+    payload = r_mca_tea.get("quali.sup")
+    if payload is None or payload.get("coord") is None:
+        return
+    res = _mca()
+    r_arr, r_labels = _r_block_to_array(payload["coord"], 5)
+    chosen, kept = _resolve_r_labels(r_labels, list(res.quali_sup.coord.index), _sup_var_for())
+    py = res.quali_sup.coord.loc[chosen].to_numpy()[:, :5]
+    py_aligned = align_to_reference(py, _kept(r_arr, kept))
+    assert np.allclose(py_aligned, _kept(r_arr, kept), atol=1e-7, rtol=0)
+
+
+def test_mca_quali_sup_cos2(r_mca_tea):
+    payload = r_mca_tea.get("quali.sup")
+    if payload is None or payload.get("cos2") is None:
+        return
+    res = _mca()
+    r_arr, r_labels = _r_block_to_array(payload["cos2"], 5)
+    chosen, kept = _resolve_r_labels(r_labels, list(res.quali_sup.cos2.index), _sup_var_for())
+    py = res.quali_sup.cos2.loc[chosen].to_numpy()[:, :5]
+    assert np.allclose(py, _kept(r_arr, kept), atol=1e-7, rtol=0)
+
+
+def test_mca_quali_sup_vtest(r_mca_tea):
+    payload = r_mca_tea.get("quali.sup")
+    if payload is None or payload.get("v.test") is None:
+        return
+    res = _mca()
+    r_arr, r_labels = _r_block_to_array(payload["v.test"], 5)
+    chosen, kept = _resolve_r_labels(r_labels, list(res.quali_sup.v_test.index), _sup_var_for())
+    py = res.quali_sup.v_test.loc[chosen].to_numpy()[:, :5]
+    py_aligned = align_to_reference(py, _kept(r_arr, kept))
+    assert np.allclose(py_aligned, _kept(r_arr, kept), atol=1e-6, rtol=0)
+
+
+def test_mca_quali_sup_eta2(r_mca_tea):
+    payload = r_mca_tea.get("quali.sup")
+    if payload is None or payload.get("eta2") is None:
+        return
+    res = _mca()
+    r_arr, r_labels = _r_block_to_array(payload["eta2"], 5)  # indexed by variable name
+    py = res.quali_sup.eta2.loc[r_labels].to_numpy()[:, :5]
+    assert np.allclose(py, r_arr, atol=1e-9, rtol=0)
+
+
+# ---------------------------------------------------------------------------
+# Burt method (all-active 8-variable tea slice)
+# ---------------------------------------------------------------------------
+
+_BURT_COLS = ["breakfast", "tea.time", "evening", "lunch", "dinner", "Tea", "sugar", "sex"]
+
+
+def _mca_burt():
+    return MCA(load_tea()[_BURT_COLS], ncp=5, method="burt")
+
+
+def test_mca_burt_eig(r_mca_tea_burt):
+    res = _mca_burt()
+    r_eig = np.array([row["eigenvalue"] for row in r_mca_tea_burt["eig"]])
+    py_eig = res.eig["eigenvalue"].to_numpy()
+    assert np.allclose(py_eig, r_eig, atol=1e-10, rtol=0)
+
+
+def _burt_var_for():
+    return _build_var_for(_BURT_COLS)
+
+
+def test_mca_burt_var_coord(r_mca_tea_burt):
+    res = _mca_burt()
+    r_arr, r_labels = _r_block_to_array(r_mca_tea_burt["var"]["coord"], 5)
+    chosen, kept = _resolve_r_labels(r_labels, list(res.var.coord.index), _burt_var_for())
+    py = res.var.coord.loc[chosen].to_numpy()[:, :5]
+    py_aligned = align_to_reference(py, _kept(r_arr, kept))
+    assert np.allclose(py_aligned, _kept(r_arr, kept), atol=1e-9, rtol=0)
+
+
+def test_mca_burt_var_cos2(r_mca_tea_burt):
+    res = _mca_burt()
+    r_arr, r_labels = _r_block_to_array(r_mca_tea_burt["var"]["cos2"], 5)
+    chosen, kept = _resolve_r_labels(r_labels, list(res.var.cos2.index), _burt_var_for())
+    py = res.var.cos2.loc[chosen].to_numpy()[:, :5]
+    assert np.allclose(py, _kept(r_arr, kept), atol=1e-9, rtol=0)
+
+
+def test_mca_burt_ind_coord(r_mca_tea_burt):
+    res = _mca_burt()
+    r_arr = np.asarray(
+        [[row[f"Dim {i + 1}"] for i in range(5)] for row in r_mca_tea_burt["ind"]["coord"]],
+        dtype=np.float64,
+    )
+    py = res.ind.coord.to_numpy()[:, :5]
+    py_aligned = align_to_reference(py, r_arr)
+    assert np.allclose(py_aligned, r_arr, atol=1e-9, rtol=0)

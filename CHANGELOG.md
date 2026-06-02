@@ -5,7 +5,162 @@ All notable changes to FactoMinePy are tracked here. The format follows
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once
 out of pre-release.
 
-## [Unreleased]
+## [0.3.0.dev0] - 2026-06-01
+
+This dev release closes the gap to complete R FactoMineR 2.14 feature parity for
+every analytically meaningful method: the MFA family (`MFA`/`HMFA`/`DMFA`),
+`CaGalt`, the regression family (`LinearModel`/`AovSum`/`RegBest`), `textual`,
+`predict.*`, `reconst`, `estim_ncp`, `descfreq`, the `dimdesc` CA/MCA branches,
+completeness work across the shipped methods (FAMD/MCA/GPA supplementary and
+edge-case handling, PCA row weights), and the `svd_triplet` / `tab_disjonctif`
+utilities. Every analytic method is parity-verified against live R; the package
+remains experimental. See the entries below.
+
+### Fixed
+
+- **`PCA` non-uniform row weights (`row_w`)** were not normalized, so passing
+  weights that did not already sum to 1 (e.g. `row_w=ones`) scaled every
+  eigenvalue by `sum(row_w)`. `PCA` now normalizes the row weights to a
+  probability vector (matching `FactoMineR::PCA`), and the `row.w` path is
+  parity-verified against live R. Uniform-weight results (every existing caller)
+  are unchanged.
+
+### Added
+
+- **Plotting the newer methods.** `factominer.plot.plot()` now accepts `FAMD`,
+  `MFA`, `HMFA`, `DMFA`, and `CaGalt` results for the `ind` / `var` / `scree`
+  factor maps on both the matplotlib and plotly backends (the variable map falls
+  back to the `quanti_var` block when a method has no `var` block).
+- **Utility exports: `svd_triplet`, `tab_disjonctif`.**
+  `factominer.svd_triplet(X, row_w, col_w, ncp)` exposes the row/column-weighted
+  SVD primitive (R's `svd.triplet`); `factominer.tab_disjonctif(tab)` exposes the
+  disjunctive (one-hot) coder (R's `tab.disjonctif`, including its
+  `y`/`n`/`Y`/`N` column-naming rule). Both parity-verified against live R.
+- **`textual` — free text to a document × word contingency table.** New
+  `factominer.textual(tab, num_text, contingence_by, maj_in_min, sep_word)`
+  tokenizes a free-text column (faithfully replicating R's separator handling and
+  lowercasing) and counts word frequencies per document or per grouping level,
+  returning `cont_table` (a drop-in `CA`/`descfreq` input) and `nb_words`.
+  Parity-verified (exact integer counts) against live R FactoMineR 2.14.
+- **Regression family: `LinearModel`, `AovSum`, `RegBest`.**
+  `factominer.LinearModel(formula, data, type, selection)` and
+  `factominer.AovSum(formula, data)` fit a linear model with `contr.sum`
+  (sum-to-zero) contrasts and report the Type-III/II ANOVA table (`Ftest`), the
+  per-level coefficient table (`Ttest`, including reconstructed omitted levels
+  and interaction cell grids), and `r.squared`/`sigma`/`fstatistic`/`aic`/`bic`.
+  `factominer.RegBest(y, x, method)` does best-subset regression (lowest-RSS
+  subset of each size; selection by `"r2"`/`"Cp"`/`"adjr2"`). All parity-verified
+  against live R FactoMineR 2.14; numpy/scipy only (no statsmodels). LinearModel
+  stepwise `selection` (aic/bic) and `meansComp` are deferred.
+- **`CaGalt` — Correspondence Analysis on Generalized Aggregated Lumped
+  Tables.** New `factominer.CaGalt(Y, X, type, ...)` relates a frequency /
+  lexical table `Y` to contextual covariates `X` via a generalized SVD built on
+  PCA. Parity-verified against live R FactoMineR 2.14 for `type="s"`/`"c"`
+  (quantitative covariates): `eig`, individual coords/cos2, the `freq` block
+  (coord/cos2/contrib), and `quanti.var` (coord/cor/cos2). Ships a small
+  license-clean synthetic fixture dataset (`load_cagalt_synth`). `type="n"`
+  (qualitative covariates) and the bootstrap confidence ellipses are deferred.
+- **`descfreq` — describe frequency-table rows by their columns.** New
+  `factominer.descfreq(donnee, by_quali, proba)`, the CA analogue of `catdes`:
+  for each row of a contingency / frequency table it reports the columns whose
+  cell count is significantly over- or under-represented vs the marginals (a
+  two-sided hypergeometric test), sorted by descending `v.test`. Parity-verified
+  against live R FactoMineR 2.14.
+- **`reconst` + `estim_ncp`.** `factominer.reconst(res, ncp)` rebuilds the
+  active table from the first `ncp` axes of a fitted `PCA` (un-scaled to the
+  original units) or `CA` (chi-square reconstruction from the stored margins);
+  full-rank reconstruction reproduces the original table. `factominer.estim_ncp`
+  estimates the number of PCA dimensions by generalized cross-validation
+  (`method="GCV"`, default) or the smoothing criterion (`method="Smooth"`),
+  returning the chosen `ncp` and the criterion curve. Both parity-verified
+  against live R FactoMineR 2.14.
+- **`predict.*` — project new individuals onto a fitted model.** New
+  `factominer.predict(res, newdata)` (dispatching on the model type) projects
+  held-out individuals onto a fitted `PCA`, `MCA`, `FAMD`, or `MFA`, returning
+  `coord`, `cos2`, and the distance to the origin. Each uses the model's
+  training centers / scales / category proportions, so the projection matches
+  `FactoMineR::predict.*` exactly (parity-verified to the supplementary tier for
+  all four). MCA returns the principal row coordinate (same scale as
+  `ind$coord`); MFA reproduces R's per-group new-data scaling. The `PCA`
+  supplementary-individual path was refactored onto the same shared projection
+  helper.
+- **`dimdesc` CA and MCA branches.** `dimdesc` now describes the axes of `CA`
+  and `MCA` results, not only `PCA`. MCA routes through the same `condes` path as
+  PCA (per-axis `quali` eta²/p.value and `category` Estimate/p.value) and is
+  parity-verified against live R FactoMineR 2.14. CA describes each axis by its
+  row and column coordinates sorted ascending (active + supplementary); it is
+  verified for self-consistency against the (R-parity-verified) CA coordinates
+  because R 2.14's own `dimdesc(CA)` errors on R 4.x (`order()` on a one-column
+  data frame). Passing a CA/MCA result to `dimdesc` previously raised.
+- **`GPA` unequal-width configurations + `correlations` / `PANOVA`.** GPA now
+  handles configurations of different column counts (the equal-width restriction
+  is lifted): each calibrated configuration is padded to `max(group)` and the
+  Procrustes congruence uses a symmetric, width-agnostic form. Adds the
+  per-configuration `correlations` (original variables vs the consensus axes) and
+  the `PANOVA` (Procrustes ANOVA) sum-of-squares tables. `RV`/`RVs`/`simi` and the
+  PANOVA per-object/per-config tables are parity-verified exactly against live R
+  FactoMineR 2.14; `consensus`/`Xfin`/`correlations` match up to the global
+  rotation/reflection gauge (R's GPA is stochastic). Missing values remain
+  unsupported.
+- **`MCA` supplementary blocks + Burt method.** MCA now computes the
+  supplementary-variable blocks (`quanti_sup` correlations with the axes;
+  `quali_sup` category barycenters with cos²/v.test and per-variable eta²) — the
+  arguments were previously accepted but the blocks were never produced. The
+  `method="Burt"` option is now a true Burt analysis (eigenvalues squared,
+  coordinates rescaled by √λ, cos² against the all-axes Burt distance) rather
+  than silently returning the indicator result. Both are parity-verified against
+  live R FactoMineR 2.14 on the tea dataset. Burt is not yet combined with
+  `quali_sup`.
+- **`FAMD` supplementary variables** (`sup_var`): FAMD now projects
+  supplementary quantitative variables (correlations with the axes) and
+  supplementary qualitative variables (category barycenters with cos²/v.test/
+  eta²), routed through the inner PCA's sup machinery, plus the combined
+  `var.coord_sup` / `var.cos2_sup` summary. Parity-verified against live R
+  FactoMineR 2.14 on `FAMD(poison, sup.var=c("Time","Sex"))`. Supplementary
+  individuals (`ind_sup`) are not yet supported.
+- **`DMFA` (Dual Multiple Factor Analysis)** is now implemented
+  (`factominer/dmfa.py` + a `DMFAResult` container), completing the MFA family
+  (MFA, HMFA, DMFA all live). DMFA studies how the cloud of variables varies
+  across the levels of a grouping factor: each group's sub-table is standardized
+  by its own mean/sd, the per-group-centered sub-tables are stacked, a plain PCA
+  (the factor as supplementary qualitative) is run, and each group is placed by
+  the trace `group.coord[j,s] = v_sᵀ Cov_j v_s / λ_s`. Outputs `eig`, `ind`
+  (reordered to input order), `var`, `quanti.sup`, the group block
+  (`coord`/`coord.n`/`cos2`), and the per-group `cor.dim.gr` / `var.partiel`
+  diagnostics. Parity-verified against live R FactoMineR 2.14 on
+  `DMFA(decathlon, num.fact="Competition", quanti.sup=Rank/Points)`.
+  Supplementary qualitatives are not yet supported.
+- **`HMFA` (Hierarchical Multiple Factor Analysis)** is now implemented
+  (`factominer/hmfa.py` + an `HMFAResult` container). HMFA generalizes MFA to a
+  hierarchy of groups (`H`, a list of per-level group counts): each hierarchy
+  level multiplies in another `1/λ₁` normalization, then a single weighted PCA
+  on the level-1-standardized matrix yields the analysis. Outputs `eig`, `ind`,
+  `quanti.var`, `quali.var`, `group.coord` (one matrix per hierarchy level),
+  `group.canonical` (canonical correlations), and the per-level partial
+  coordinate arrays. Parity-verified column-by-column against live R FactoMineR
+  2.14 on a categorical 2-level poison hierarchy and a pure-quantitative
+  decathlon hierarchy. Group types `"s"`/`"c"`/`"n"`, active groups, uniform
+  row weights. As part of this, `MFA` gained a `weight_col_mfa` argument and
+  exposes its internal data matrix / column weights / expanded group sizes,
+  which HMFA reuses per level.
+
+- **`MFA` (Multiple Factor Analysis)** is now implemented
+  (`factominer/mfa.py` + an `MFAGroup` result container). MFA runs a single
+  global weighted PCA on the per-group-normalized (`1/λ₁`) concatenation of the
+  groups; the eigen-step is delegated to `factominer.PCA`
+  (`scale_unit=False`, `col_w=ponderation`), mirroring how R delegates to
+  `FactoMineR::PCA`. Supports group types `"s"` (standardized-quantitative),
+  `"c"` (centered-quantitative), and `"n"` (categorical). Outputs `eig`, `ind`,
+  `quanti.var`, `quali.var`, and the `group` block (coordinates, contributions,
+  cos², dist², and the `Lg` / `RV` matrices including the global "MFA" row).
+  Parity-verified column-by-column against live R FactoMineR 2.14 on the
+  canonical `MFA(poison, group=c(2,2,5,6), type=c("s","n","n","n"))` example.
+  Also exposes the partial-factor-map machinery: `ind.coord_partiel` (per-group
+  partial individual coordinates), `group.correlation`, `partial_axes`
+  (coordinates/correlations/contributions of each group's separate principal
+  axes with the global axes), and `inertia_ratio` — all parity-verified.
+  Active groups with uniform row weights; supplementary groups and
+  frequency/mixed (`"f"`/`"m"`) groups are not yet supported.
 
 ## [0.2.0.dev0] — 2026-05-30
 
